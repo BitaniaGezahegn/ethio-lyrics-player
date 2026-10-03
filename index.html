@@ -35,6 +35,18 @@
         <span class="brand-title">Ethio Lyrics Player</span>
       </div>
 
+      <!-- Primary View Switcher: Home Explore vs Synced Lyrics -->
+      <nav class="nav-view-switcher">
+        <button id="btnNavHome" class="btn-pill btn-nav-pill active" title="Music Discovery & Suggestions">
+          <span>🏠</span>
+          <span>Explore</span>
+        </button>
+        <button id="btnNavLyricsStage" class="btn-pill btn-nav-pill" title="Synchronized Lyrics & Visualizer">
+          <span>🎵</span>
+          <span>Lyrics Stage</span>
+        </button>
+      </nav>
+
       <div class="top-actions">
         <!-- Admin Dashboard Badge (Appears for Admin) -->
         <button id="btnOpenAdminModal" class="btn-pill btn-admin-badge" style="display:none;" title="Admin Moderation & R2 Catalog">
@@ -57,15 +69,15 @@
         </div>
 
         <button id="btnOpenThemeModal" class="btn-pill" title="Switch Display Style">
-          <span>&#127912;</span>
-          <span>Change Design</span>
+          <span>🎨</span>
+          <span>Design</span>
         </button>
         <button id="btnOpenTrackModal" class="btn-pill" title="Choose Track or Upload MP3">
-          <span>&#128194;</span>
-          <span>Music Library</span>
+          <span>📁</span>
+          <span>Library</span>
         </button>
         <button id="btnOpenLrcEditor" class="btn-pill" title="Open LRC Editor">
-          <span>&#127925;</span>
+          <span>✍️</span>
           <span>LRC Editor</span>
         </button>
         <button id="btnToggleFullscreen" class="btn-pill" title="Toggle Fullscreen">
@@ -74,7 +86,7 @@
       </div>
     </header>
 
-    <!-- Main Visual Stage -->
+    <!-- Main Stage -->
     <main class="main-stage">
       <!-- Ambient Visual Backdrop -->
       <div class="stage-backdrop">
@@ -85,7 +97,106 @@
         </div>
       </div>
 
-      <div class="stage-content">
+      <!-- VIEW 1: Home Music Discovery & Suggestion Engine (Default Home Page) -->
+      <div id="homeExploreView" class="home-explore-view">
+        <!-- Hero Spotlight Featured Song Banner -->
+        <section class="home-hero-section">
+          <div class="hero-card" id="heroCard">
+            <div class="hero-glow-bg" id="heroGlowBg"></div>
+            <div class="hero-content-wrap">
+              <div class="hero-artwork-box">
+                <img id="heroArtworkImg" src="assets/weleta_cover.jpg" alt="Featured Track" class="hero-artwork-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                <div class="hero-play-badge" id="btnHeroPlayBadge">▶</div>
+              </div>
+              <div class="hero-details">
+                <div class="hero-badge-tag">
+                  <span class="spotlight-dot"></span>
+                  <span id="heroBadgeText">Featured Spotlight</span>
+                </div>
+                <h1 id="heroTitle" class="hero-title">Select a Song to Begin</h1>
+                <h2 id="heroArtist" class="hero-artist">Ethio Lyrics Player</h2>
+                <p id="heroDescription" class="hero-description">
+                  Stream Ethiopian music with real-time synchronized Amharic lyrics and adaptive artwork themes.
+                </p>
+                <div class="hero-actions">
+                  <button id="btnHeroPlay" class="btn-primary hero-btn-play">
+                    <span>▶</span> <span id="heroPlayLabel">Play Track</span>
+                  </button>
+                  <button id="btnHeroOpenLyrics" class="btn-pill hero-btn-lyrics">
+                    <span>📜</span> <span>Open Lyrics Stage</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mood & Genre Filter Pills -->
+        <section class="home-filter-section">
+          <div class="home-filter-scroll" id="homeFilterRow">
+            <button class="filter-chip active" data-filter="all">🔥 All Tracks</button>
+            <button class="filter-chip" data-filter="suggested">✨ Recommended</button>
+            <button class="filter-chip" data-filter="classic">🇪🇹 Classic &amp; Soul</button>
+            <button class="filter-chip" data-filter="pop">⚡ Modern Pop</button>
+            <button class="filter-chip" data-filter="lrc">🎙️ Synced Lyrics</button>
+            <button class="filter-chip" data-filter="offline">💾 Saved Offline</button>
+          </div>
+        </section>
+
+        <!-- Home Search Bar -->
+        <section class="home-search-section">
+          <div class="home-search-input-wrap">
+            <span class="home-search-icon">🔍</span>
+            <input type="text" id="inputHomeSearch" class="home-search-input" placeholder="Search by song title, artist, or album...">
+          </div>
+        </section>
+
+        <!-- Suggestion Section 1: Recommended For You -->
+        <section class="home-catalog-section" id="sectionRecommendations">
+          <div class="home-section-header">
+            <div>
+              <h2 class="home-section-title">✨ Recommended &amp; Suggested For You</h2>
+              <div class="home-section-subtitle">Smart picks tailored to your listening vibes and synchronized lyrics</div>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridSuggestions">
+            <!-- Dynamically populated cards -->
+          </div>
+        </section>
+
+        <!-- Suggestion Section 2: Global Cloud Catalog -->
+        <section class="home-catalog-section" id="sectionGlobalCatalog">
+          <div class="home-section-header">
+            <div>
+              <h2 class="home-section-title">🌐 Global Cloud Catalog</h2>
+              <div class="home-section-subtitle">Cloud tracks streamed via Cloudflare R2 and synced worldwide</div>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridGlobalCatalog">
+            <!-- Dynamically populated cards -->
+          </div>
+        </section>
+
+        <!-- Suggestion Section 3: My Offline & Personal Songs -->
+        <section class="home-catalog-section" id="sectionPersonalCatalog">
+          <div class="home-section-header">
+            <div>
+              <h2 class="home-section-title">💾 My Offline &amp; Uploaded Library</h2>
+              <div class="home-section-subtitle">Your downloaded songs and personal uploads stored on this device</div>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridPersonalCatalog">
+            <!-- Dynamically populated cards -->
+          </div>
+        </section>
+      </div>
+
+      <!-- VIEW 2: Synchronized Lyrics & Vinyl Visualizer Stage -->
+      <div id="lyricsStageView" class="stage-content" style="display:none;">
+        <button id="btnStageBackToHome" class="btn-pill btn-stage-back">
+          <span>←</span> <span>Back to Explore</span>
+        </button>
+
         <!-- Song Header Metadata -->
         <section class="song-header-section">
           <div class="artist-heading">
@@ -112,7 +223,7 @@
             <div class="disc-wrapper">
               <div class="disc-outer-grooves"></div>
               <div class="vinyl-disc" id="vinylDisc">
-                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc">
+                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
                 <div class="disc-center-hole"></div>
               </div>
             </div>
@@ -131,11 +242,11 @@
     <!-- Docked Playback Bar -->
     <footer class="player-bar-dock">
       <!-- Left Track Info -->
-      <div class="track-pill-info">
-        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art">
+      <div class="track-pill-info" id="dockTrackInfo" style="cursor:pointer;" title="Click to open Lyrics Stage">
+        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
         <div class="track-text-meta">
-          <div id="playerMiniTitle" class="track-mini-title">Loading...</div>
-          <div id="playerMiniArtist" class="track-mini-artist">...</div>
+          <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
+          <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
         </div>
       </div>
 

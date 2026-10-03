@@ -1,120 +1,152 @@
 /**
  * Dynamic Artwork Color Palette Extractor
- * Samples album artwork via an offscreen 36x36 canvas in <1ms to extract:
- * - Dominant primary vibrant color
- * - Contrasting secondary accent
- * - Deep ambient dark background tone
- * - Luminous glow highlight
+ * Ultra-compatible across Mobile (iOS WebKit / Android Chrome) and Desktop.
+ * Uses Blob ObjectURLs to prevent tainted-canvas SecurityErrors on mobile browsers.
  */
 export class PaletteExtractor {
-  static extractFromImage(imageSource) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
+  static _cache = new Map();
 
-      img.onload = () => {
+  static async extractFromImage(imageSource) {
+    if (!imageSource) return this.getDefaultPalette();
+
+    const cacheKey = typeof imageSource === 'string' ? imageSource : imageSource.src;
+    if (cacheKey && this._cache.has(cacheKey)) {
+      return this._cache.get(cacheKey);
+    }
+
+    try {
+      let resolvedSrc = cacheKey;
+      let isBlobCreated = false;
+
+      // For remote HTTP/HTTPS images, fetch as Blob first to bypass mobile canvas cross-origin taint
+      if (typeof cacheKey === 'string' && cacheKey.startsWith('http')) {
         try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 36;
-          canvas.height = 36;
-          const ctx = canvas.getContext('2d', { willReadFrequently: true });
-          ctx.drawImage(img, 0, 0, 36, 36);
-
-          const imageData = ctx.getImageData(0, 0, 36, 36);
-          const data = imageData.data;
-
-          const validColors = [];
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            if (a < 128) continue;
-
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            const lum = (max + min) / 510;
-            const sat = max === 0 ? 0 : (max - min) / max;
-
-            validColors.push({ r, g, b, sat, lum });
+          const res = await fetch(cacheKey, { mode: 'cors' });
+          if (res.ok) {
+            const blob = await res.blob();
+            resolvedSrc = URL.createObjectURL(blob);
+            isBlobCreated = true;
           }
-
-          if (validColors.length === 0) {
-            return resolve(this.getDefaultPalette());
-          }
-
-          // Prioritize vibrant saturated colors with balanced luminance
-          const vibrant = validColors.filter(c => c.lum >= 0.18 && c.lum <= 0.82 && c.sat >= 0.15);
-          vibrant.sort((a, b) => (b.sat * 1.5 + b.lum) - (a.sat * 1.5 + a.lum));
-
-          const primary = vibrant.length > 0 ? vibrant[0] : validColors[0];
-
-          // Find secondary color with chromatic distance
-          let secondary = vibrant.find(c => {
-            const dist = Math.abs(c.r - primary.r) + Math.abs(c.g - primary.g) + Math.abs(c.b - primary.b);
-            return dist > 95;
-          });
-
-          if (!secondary) {
-            secondary = {
-              r: Math.min(255, Math.floor(primary.r * 0.4 + 40)),
-              g: Math.min(255, Math.floor(primary.g * 0.7 + 60)),
-              b: Math.min(255, Math.floor(primary.b * 1.1 + 90))
-            };
-          }
-
-          // Dark tone: deep rich 12% ambient base
-          const dark = {
-            r: Math.floor(primary.r * 0.12),
-            g: Math.floor(primary.g * 0.12),
-            b: Math.floor(primary.b * 0.14)
-          };
-
-          // Glow tone
-          const glow = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.5)`;
-
-          // Highlight tone
-          const highlight = {
-            r: Math.min(255, primary.r + 50),
-            g: Math.min(255, primary.g + 50),
-            b: Math.min(255, primary.b + 50)
-          };
-
-          resolve({
-            primary: `rgb(${primary.r}, ${primary.g}, ${primary.b})`,
-            secondary: `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`,
-            dark: `rgb(${dark.r}, ${dark.g}, ${dark.b})`,
-            glow: glow,
-            highlight: `rgb(${highlight.r}, ${highlight.g}, ${highlight.b})`
-          });
-        } catch (e) {
-          console.warn('PaletteExtractor error, falling back to default:', e);
-          resolve(this.getDefaultPalette());
+        } catch (fetchErr) {
+          console.warn('Direct blob fetch failed, falling back to direct image loading:', fetchErr);
         }
-      };
-
-      img.onerror = () => {
-        resolve(this.getDefaultPalette());
-      };
-
-      if (typeof imageSource === 'string') {
-        img.src = imageSource;
-      } else if (imageSource && imageSource.src) {
-        img.src = imageSource.src;
-      } else {
-        resolve(this.getDefaultPalette());
       }
-    });
+
+      const palette = await new Promise((resolve) => {
+        const img = new Image();
+        // Do not set crossOrigin if already a local blob or data URL
+        if (!resolvedSrc.startsWith('blob:') && !resolvedSrc.startsWith('data:')) {
+          img.crossOrigin = 'Anonymous';
+        }
+
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 48;
+            canvas.height = 48;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0, 48, 48);
+
+            const imageData = ctx.getImageData(0, 0, 48, 48);
+            const data = imageData.data;
+
+            const validColors = [];
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const a = data[i + 3];
+
+              if (a < 128) continue;
+
+              const max = Math.max(r, g, b);
+              const min = Math.min(r, g, b);
+              const lum = (max + min) / 510;
+              const sat = max === 0 ? 0 : (max - min) / max;
+
+              // Filter out extreme pitch blacks and pure whites for vibrant tones
+              if (lum > 0.08 && lum < 0.92) {
+                validColors.push({ r, g, b, sat, lum });
+              }
+            }
+
+            if (validColors.length === 0) {
+              return resolve(this.getDefaultPalette());
+            }
+
+            // Rank by saturation and chromatic interest
+            validColors.sort((a, b) => {
+              const scoreA = a.sat * 2.0 + (1 - Math.abs(a.lum - 0.5));
+              const scoreB = b.sat * 2.0 + (1 - Math.abs(b.lum - 0.5));
+              return scoreB - scoreA;
+            });
+
+            const primary = validColors[0];
+
+            // Find complementary / distinct secondary color
+            let secondary = validColors.find(c => {
+              const dist = Math.abs(c.r - primary.r) + Math.abs(c.g - primary.g) + Math.abs(c.b - primary.b);
+              return dist > 80;
+            });
+
+            if (!secondary) {
+              // Synthesize a harmonious complementary tone
+              secondary = {
+                r: Math.min(255, Math.max(0, Math.floor(primary.r * 0.4 + 30))),
+                g: Math.min(255, Math.max(0, Math.floor(primary.g * 0.8 + 40))),
+                b: Math.min(255, Math.max(0, Math.floor(primary.b * 1.2 + 60)))
+              };
+            }
+
+            // Ambient dark base (10-15% of primary)
+            const dark = {
+              r: Math.floor(primary.r * 0.12),
+              g: Math.floor(primary.g * 0.12),
+              b: Math.floor(primary.b * 0.14)
+            };
+
+            const result = {
+              primary: `rgb(${primary.r}, ${primary.g}, ${primary.b})`,
+              secondary: `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`,
+              dark: `rgb(${dark.r}, ${dark.g}, ${dark.b})`,
+              glow: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.55)`,
+              highlight: `rgb(${Math.min(255, primary.r + 40)}, ${Math.min(255, primary.g + 40)}, ${Math.min(255, primary.b + 40)})`
+            };
+
+            resolve(result);
+          } catch (canvasErr) {
+            console.warn('Canvas pixel extraction failed on mobile:', canvasErr);
+            resolve(this.getDefaultPalette());
+          } finally {
+            if (isBlobCreated) {
+              URL.revokeObjectURL(resolvedSrc);
+            }
+          }
+        };
+
+        img.onerror = () => {
+          if (isBlobCreated) URL.revokeObjectURL(resolvedSrc);
+          resolve(this.getDefaultPalette());
+        };
+
+        img.src = resolvedSrc;
+      });
+
+      if (cacheKey) this._cache.set(cacheKey, palette);
+      return palette;
+    } catch (outerErr) {
+      console.warn('PaletteExtractor outer error:', outerErr);
+      return this.getDefaultPalette();
+    }
   }
 
   static getDefaultPalette() {
     return {
-      primary: '#9b1d20',
-      secondary: '#1d4ed8',
-      dark: '#080104',
-      glow: 'rgba(155, 29, 32, 0.45)',
-      highlight: '#e11d48'
+      primary: '#10b981', // Refreshing emerald green default rather than red
+      secondary: '#06b6d4',
+      dark: '#05130e',
+      glow: 'rgba(16, 185, 129, 0.45)',
+      highlight: '#34d399'
     };
   }
 
