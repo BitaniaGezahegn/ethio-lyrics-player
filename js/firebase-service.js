@@ -332,7 +332,7 @@ export const FirebaseService = {
       hostName: hostInfo.name || 'Party Host',
       hostAvatar: hostInfo.avatar || '',
       currentTrack: trackData ? {
-        id: trackData.id,
+        id: trackData.id || ('track_' + Date.now()),
         title: trackData.title || 'Untitled',
         artist: trackData.artist || 'Unknown Artist',
         album: trackData.album || 'Single',
