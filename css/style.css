@@ -3452,13 +3452,19 @@ html, body {
     font-size: 0.68rem;
   }
 
-  .room-bar-reactions {
-    gap: 0.22rem;
+  .room-reactions-wrapper {
+    position: relative;
   }
 
-  .btn-reaction {
+  .btn-reaction-toggle {
     width: 32px;
     height: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .btn-reaction-toggle .reaction-toggle-label {
+    display: none;
   }
 
   .room-bar-actions {
@@ -3521,10 +3527,65 @@ html, body {
   white-space: nowrap;
 }
 
-.room-bar-reactions {
-  display: flex;
+/* Expandable Reaction Drawer & Trigger */
+.room-reactions-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-reaction-toggle {
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  background: rgba(236, 72, 153, 0.14);
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  border-radius: 9999px;
+  padding: 0.32rem 0.75rem;
+  color: #f472b6;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-reaction-toggle:hover,
+.btn-reaction-toggle.active {
+  background: rgba(236, 72, 153, 0.25);
+  border-color: rgba(236, 72, 153, 0.75);
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.4);
+  transform: scale(1.06);
+}
+
+.reactions-popover-tray {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 10, 16, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  padding: 0.35rem 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 15px rgba(236, 72, 153, 0.25);
+  z-index: 120;
+  animation: tray-pop-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tray-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
 .btn-reaction {

@@ -5,6 +5,9 @@ export class AudioPlayer {
   constructor() {
     this.audioElement = new Audio();
     this.audioElement.preload = 'auto';
+    this.audioElement.preservesPitch = true;
+    this.audioElement.mozPreservesPitch = true;
+    this.audioElement.webkitPreservesPitch = true;
     
     this.isPlaying = false;
     this.currentTime = 0;

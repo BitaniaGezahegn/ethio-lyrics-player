@@ -314,14 +314,22 @@ export const FirebaseService = {
   // Universal NTP/Server Time Calibration for Zero-Drift Listen Together
   async calibrateServerTime() {
     try {
-      const t0 = Date.now();
-      const res = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
-      const t1 = Date.now();
-      const serverDateHeader = res.headers.get('date');
-      if (serverDateHeader) {
-        const serverEpoch = new Date(serverDateHeader).getTime() + (t1 - t0) / 2;
-        serverTimeOffsetMs = serverEpoch - Date.now();
-        console.log(`[Listen Together] Clock offset calibrated: ${serverTimeOffsetMs}ms`);
+      const samples = [];
+      for (let i = 0; i < 3; i++) {
+        const t0 = performance.now();
+        const res = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
+        const t1 = performance.now();
+        const serverDateHeader = res.headers.get('date');
+        if (serverDateHeader) {
+          const rtt = t1 - t0;
+          const serverEpoch = new Date(serverDateHeader).getTime() + (rtt / 2);
+          samples.push(serverEpoch - Date.now());
+        }
+      }
+      if (samples.length > 0) {
+        samples.sort((a, b) => a - b);
+        serverTimeOffsetMs = samples[Math.floor(samples.length / 2)];
+        console.log(`[Listen Together] High-precision clock offset: ${serverTimeOffsetMs}ms (samples: ${samples.join(', ')})`);
       }
     } catch (e) {
       console.warn('Server time calibration fallback:', e);

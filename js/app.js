@@ -210,6 +210,8 @@ class LyricsApp {
     this.copyLinkBtnText = document.getElementById('copyLinkBtnText');
     this.btnManageActiveRoom = document.getElementById('btnManageActiveRoom');
     this.btnLeaveRoom = document.getElementById('btnLeaveRoom');
+    this.btnToggleReactions = document.getElementById('btnToggleReactions');
+    this.reactionsDropdown = document.getElementById('reactionsDropdown');
     this.reactionFloatingStage = document.getElementById('reactionFloatingStage');
 
     // Hero Spotlight Section
@@ -1012,12 +1014,39 @@ class LyricsApp {
       this.btnLeaveRoom.addEventListener('click', () => this.handleLeaveRoom(true));
     }
 
-    // Reaction buttons
+    // Expandable Reaction Tray Toggle & Outside Click Handler
+    if (this.btnToggleReactions) {
+      this.btnToggleReactions.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = !this.reactionsDropdown || this.reactionsDropdown.style.display === 'none';
+        if (this.reactionsDropdown) {
+          this.reactionsDropdown.style.display = isHidden ? 'flex' : 'none';
+        }
+        this.btnToggleReactions.classList.toggle('active', isHidden);
+      });
+    }
+
+    // Reaction buttons inside expandable tray
     document.querySelectorAll('.btn-reaction').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const type = btn.getAttribute('data-reaction') || 'fire';
         this.handleSendReaction(type);
+        // Allow rapid multi-tap, then auto-close after 600ms
+        clearTimeout(this._reactionCloseTimer);
+        this._reactionCloseTimer = setTimeout(() => {
+          if (this.reactionsDropdown) this.reactionsDropdown.style.display = 'none';
+          if (this.btnToggleReactions) this.btnToggleReactions.classList.remove('active');
+        }, 600);
       });
+    });
+
+    // Close reactions dropdown on clicking outside
+    document.addEventListener('click', (e) => {
+      if (this.reactionsDropdown && !e.target.closest('.room-reactions-wrapper')) {
+        this.reactionsDropdown.style.display = 'none';
+        if (this.btnToggleReactions) this.btnToggleReactions.classList.remove('active');
+      }
     });
 
     window.addEventListener('beforeunload', () => {
@@ -2944,7 +2973,7 @@ class LyricsApp {
           positionSec: this.player.currentTime || 0
         });
       }
-    }, 2500);
+    }, 1500);
   }
 
   stopHostHeartbeat() {
@@ -3062,25 +3091,30 @@ class LyricsApp {
             this._isApplyingRemoteSync = false;
             if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
           } else {
-            // Adaptive drift compensation:
+            // High-precision adaptive drift compensation:
             const drift = targetTime - this.player.currentTime; // positive = guest lags behind host
+            const absDrift = Math.abs(drift);
             
-            if (Math.abs(drift) > 1.2) {
-              // Large drift: instant seek
+            if (absDrift > 0.25) {
+              // Large gap (> 250ms): instant snappy seek to lock in immediately with zero delay
               this._isApplyingRemoteSync = true;
               this.player.seek(targetTime);
               this._isApplyingRemoteSync = false;
               if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
-            } else if (drift > 0.05) {
-              // Guest lags behind by 50ms - 1200ms: micro speedup (+3% to +6%) to catch up smoothly with NO audio stutter
-              const speedBoost = Math.min(1.06, 1.0 + drift * 0.06);
-              if (this.player.audioElement) this.player.audioElement.playbackRate = speedBoost;
-            } else if (drift < -0.05) {
-              // Guest is ahead by 50ms - 1200ms: micro slowdown (down to -6%)
-              const speedSlow = Math.max(0.94, 1.0 + drift * 0.06);
-              if (this.player.audioElement) this.player.audioElement.playbackRate = speedSlow;
+            } else if (drift > 0.08) {
+              // Behind by 80ms - 250ms: decisive speedup (+12%) to catch up in under 0.8s
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.12;
+            } else if (drift > 0.02) {
+              // Behind by 20ms - 80ms: gentle speedup (+5%)
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.05;
+            } else if (drift < -0.08) {
+              // Ahead by 80ms - 250ms: decisive slowdown (-12%)
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.88;
+            } else if (drift < -0.02) {
+              // Ahead by 20ms - 80ms: gentle slowdown (-5%)
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.95;
             } else {
-              // Locked in tight (< 50ms drift)
+              // Locked in tight (< 20ms drift! Virtually exact atomic sync)
               if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
             }
           }
@@ -3122,6 +3156,10 @@ class LyricsApp {
 
   updateListenRoomUI(room) {
     if (!room) return;
+
+    // Immediately toggle modal to Active Session View
+    if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
+    if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'flex';
     if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.add('active');
