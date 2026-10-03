@@ -30,6 +30,13 @@ class LyricsApp {
     this.isAdmin = false;
     this.currentLibraryTab = 'global'; // 'global' | 'offline'
 
+    // Cloud Sync State
+    this.favorites = Storage.getFavorites();
+    this.recentlyPlayed = Storage.getRecentlyPlayed();
+    this.userSyncUnsubscribe = null;
+    this.isSyncing = false;
+    this._cloudSyncTimer = null;
+
     // Track Form / Upload State
     this.editingTrackId = null;
     this.selectedCoverDataUrl = null;
@@ -134,6 +141,10 @@ class LyricsApp {
     this.btnOpenAdminStudioFromSettings = document.getElementById('btnOpenAdminStudioFromSettings');
     this.settingsAdminPendingBadge = document.getElementById('settingsAdminPendingBadge');
     this.btnOpenLrcEditorFromSettings = document.getElementById('btnOpenLrcEditorFromSettings');
+    this.btnManualSyncNow = document.getElementById('btnManualSyncNow');
+    this.syncStatusBadge = document.getElementById('syncStatusBadge');
+    this.lastSyncedTimeLabel = document.getElementById('lastSyncedTimeLabel');
+    this.syncNowIcon = document.getElementById('syncNowIcon');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -144,6 +155,7 @@ class LyricsApp {
     this.heroPlayLabel = document.getElementById('heroPlayLabel');
     this.btnHeroPlay = document.getElementById('btnHeroPlay');
     this.btnHeroOpenLyrics = document.getElementById('btnHeroOpenLyrics');
+    this.btnHeroFavorite = document.getElementById('btnHeroFavorite');
 
     // Home Discovery Grids & Filters
     this.homeFilterRow = document.getElementById('homeFilterRow');
@@ -156,6 +168,8 @@ class LyricsApp {
     this.artistAmharic = document.getElementById('artistAmharic');
     this.artistEnglish = document.getElementById('artistEnglish');
     this.songTitleAmharic = document.getElementById('songTitleAmharic');
+    this.btnLyricsFavorite = document.getElementById('btnLyricsFavorite');
+    this.lyricsFavText = document.getElementById('lyricsFavText');
     this.albumTitle = document.getElementById('albumTitle');
     this.albumYear = document.getElementById('albumYear');
     this.discArtwork = document.getElementById('discArtwork');
@@ -165,6 +179,7 @@ class LyricsApp {
     this.playerMiniArt = document.getElementById('playerMiniArt');
     this.playerMiniTitle = document.getElementById('playerMiniTitle');
     this.playerMiniArtist = document.getElementById('playerMiniArtist');
+    this.btnDockFavorite = document.getElementById('btnDockFavorite');
 
     // Lyrics Viewport
     this.lyricsViewport = document.getElementById('lyricsViewport');
@@ -323,12 +338,17 @@ class LyricsApp {
       if (this.settingsAdminRow) {
         this.settingsAdminRow.style.display = isAdmin ? 'flex' : 'none';
       }
+      this.initCloudSync(user.uid);
     } else {
       if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'inline-flex';
       if (this.userProfilePill) this.userProfilePill.style.display = 'none';
       if (this.settingsAuthSignedOut) this.settingsAuthSignedOut.style.display = 'flex';
       if (this.settingsAuthSignedIn) this.settingsAuthSignedIn.style.display = 'none';
       if (this.settingsAdminRow) this.settingsAdminRow.style.display = 'none';
+      if (this.userSyncUnsubscribe) {
+        this.userSyncUnsubscribe();
+        this.userSyncUnsubscribe = null;
+      }
     }
 
     // Show Admin Badge if Admin
@@ -508,6 +528,30 @@ class LyricsApp {
     }
     if (this.btnHeroOpenLyrics) {
       this.btnHeroOpenLyrics.addEventListener('click', () => this.switchTab('lyrics'));
+    }
+    if (this.btnHeroFavorite) {
+      this.btnHeroFavorite.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+        if (track) this.toggleTrackFavorite(track.id);
+      });
+    }
+    if (this.btnDockFavorite) {
+      this.btnDockFavorite.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.currentTrack) this.toggleTrackFavorite(this.currentTrack.id);
+      });
+    }
+    if (this.btnLyricsFavorite) {
+      this.btnLyricsFavorite.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.currentTrack) this.toggleTrackFavorite(this.currentTrack.id);
+      });
+    }
+    if (this.btnManualSyncNow) {
+      this.btnManualSyncNow.addEventListener('click', async () => {
+        await this.triggerManualSync();
+      });
     }
     if (this.userProfilePill) {
       this.userProfilePill.addEventListener('click', () => this.switchTab('settings'));
@@ -1082,7 +1126,18 @@ class LyricsApp {
       );
     }
 
-    if (this.activeFilter === 'suggested') {
+    if (this.activeFilter === 'favorites') {
+      const favIds = this.favorites || [];
+      filtered = allTracks.filter(t => favIds.includes(t.id));
+    } else if (this.activeFilter === 'recent') {
+      const recentIds = this.recentlyPlayed || [];
+      const ordered = [];
+      recentIds.forEach(id => {
+        const match = allTracks.find(t => t.id === id);
+        if (match && !ordered.includes(match)) ordered.push(match);
+      });
+      filtered = ordered;
+    } else if (this.activeFilter === 'suggested') {
       // Suggestion Engine: Prioritizes tracks with synced lyrics, distinct artists, or recent additions
       filtered = filtered.filter(t => t.lrc && t.lrc.length > 10);
     } else if (this.activeFilter === 'classic') {
@@ -1137,6 +1192,7 @@ class LyricsApp {
     tracks.forEach(track => {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
+      const isFav = this.favorites && this.favorites.includes(track.id);
 
       const card = document.createElement('div');
       card.className = `music-card ${isCurrent ? 'playing' : ''}`;
@@ -1153,7 +1209,10 @@ class LyricsApp {
           <div class="card-tag-row">
             <span class="card-tag">${track.lrc ? 'Synced' : 'Audio'}</span>
             <div class="card-actions-row">
-              <button class="card-btn-action btn-card-download" title="Save for Offline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="card-btn-action btn-card-fav ${isFav ? 'is-favorite' : ''}" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#f43f5e' : 'none'}" stroke="${isFav ? '#f43f5e' : 'currentColor'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+              <button class="card-btn-action btn-card-download" title="Save for Offline" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
             </div>
           </div>
         </div>
@@ -1168,6 +1227,15 @@ class LyricsApp {
         }
         this.renderHomePage();
       });
+
+      // Favorite button
+      const favBtn = card.querySelector('.btn-card-fav');
+      if (favBtn) {
+        favBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleTrackFavorite(track.id);
+        });
+      }
 
       // Download button
       const dlBtn = card.querySelector('.btn-card-download');
@@ -1227,6 +1295,14 @@ class LyricsApp {
 
     if (autoPlay) {
       this.player.play();
+    }
+
+    // Record into recently played
+    Storage.addRecentlyPlayed(track.id);
+    this.recentlyPlayed = Storage.getRecentlyPlayed();
+    this.updateFavoriteButtonsState();
+    if (this.currentUser) {
+      this.pushCloudSyncDebounced();
     }
 
     this.updateHeroState();
@@ -2402,6 +2478,9 @@ class LyricsApp {
         card.classList.add('active');
         if (badgeLabel) badgeLabel.textContent = t.name;
         if (this.themeModal) this.themeModal.classList.remove('active');
+        if (this.currentUser) {
+          this.pushCloudSyncDebounced();
+        }
         requestAnimationFrame(() => {
           if (this.currentView === 'stage' || this.currentView === 'lyrics') {
             this.syncLyrics(this.player.currentTime);
@@ -2410,6 +2489,206 @@ class LyricsApp {
       });
       this.themeOptionsList.appendChild(card);
     });
+  }
+
+  // --------------------------------------------------------------------------
+  // Cross-Device Cloud Sync Engine (Favorites, History, Themes & Playlists)
+  // --------------------------------------------------------------------------
+  async initCloudSync(userId) {
+    if (!userId) return;
+
+    if (this.syncStatusBadge) {
+      this.syncStatusBadge.textContent = 'Syncing...';
+    }
+
+    try {
+      // 1. Fetch remote cloud state from Firestore
+      const remoteData = await FirebaseService.getUserSync(userId);
+
+      if (remoteData) {
+        // Merge favorites (Union of local and remote)
+        const localFavs = Storage.getFavorites() || [];
+        const remoteFavs = Array.isArray(remoteData.favorites) ? remoteData.favorites : [];
+        const mergedFavs = Array.from(new Set([...remoteFavs, ...localFavs]));
+        this.favorites = mergedFavs;
+        Storage.setFavorites(mergedFavs);
+
+        // Merge recently played (Combine preserving order)
+        const localRecent = Storage.getRecentlyPlayed() || [];
+        const remoteRecent = Array.isArray(remoteData.recentlyPlayed) ? remoteData.recentlyPlayed : [];
+        const mergedRecent = Array.from(new Set([...remoteRecent, ...localRecent])).slice(0, 30);
+        this.recentlyPlayed = mergedRecent;
+        Storage.setRecentlyPlayed(mergedRecent);
+
+        // Sync preferred theme if stored
+        if (remoteData.preferredTheme && remoteData.preferredTheme !== this.themeManager.currentTheme) {
+          this.themeManager.applyTheme(remoteData.preferredTheme);
+          const badgeLabel = document.getElementById('activeThemeBadgeLabel');
+          const tObj = THEMES.find(t => t.id === remoteData.preferredTheme);
+          if (badgeLabel && tObj) badgeLabel.textContent = tObj.name;
+        }
+
+        // Push combined state back to cloud so both sides are completely reconciled
+        await this.pushCloudSync(false);
+      } else {
+        // No remote document yet; push initial local state
+        await this.pushCloudSync(false);
+      }
+
+      if (this.syncStatusBadge) {
+        this.syncStatusBadge.textContent = 'Real-Time Active';
+      }
+      if (this.lastSyncedTimeLabel) {
+        this.lastSyncedTimeLabel.textContent = `Last synced: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      this.updateFavoriteButtonsState();
+      this.renderHomePage();
+
+      // 2. Subscribe to real-time changes across devices
+      if (this.userSyncUnsubscribe) {
+        this.userSyncUnsubscribe();
+      }
+
+      this.userSyncUnsubscribe = FirebaseService.subscribeUserSync(userId, (remote) => {
+        if (!remote) return;
+        let changed = false;
+
+        if (Array.isArray(remote.favorites)) {
+          const currentStr = JSON.stringify(this.favorites);
+          const remoteStr = JSON.stringify(remote.favorites);
+          if (currentStr !== remoteStr) {
+            this.favorites = remote.favorites;
+            Storage.setFavorites(remote.favorites);
+            changed = true;
+          }
+        }
+
+        if (Array.isArray(remote.recentlyPlayed)) {
+          const currentStr = JSON.stringify(this.recentlyPlayed);
+          const remoteStr = JSON.stringify(remote.recentlyPlayed);
+          if (currentStr !== remoteStr) {
+            this.recentlyPlayed = remote.recentlyPlayed;
+            Storage.setRecentlyPlayed(remote.recentlyPlayed);
+            changed = true;
+          }
+        }
+
+        if (remote.preferredTheme && remote.preferredTheme !== this.themeManager.currentTheme) {
+          this.themeManager.applyTheme(remote.preferredTheme);
+          const badgeLabel = document.getElementById('activeThemeBadgeLabel');
+          const tObj = THEMES.find(t => t.id === remote.preferredTheme);
+          if (badgeLabel && tObj) badgeLabel.textContent = tObj.name;
+        }
+
+        if (this.lastSyncedTimeLabel) {
+          this.lastSyncedTimeLabel.textContent = `Last synced: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        }
+
+        if (changed) {
+          this.updateFavoriteButtonsState();
+          if (this.activeFilter === 'favorites' || this.activeFilter === 'recent') {
+            this.renderHomePage();
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('initCloudSync error:', e);
+      if (this.syncStatusBadge) {
+        this.syncStatusBadge.textContent = 'Offline (Local)';
+      }
+    }
+  }
+
+  async pushCloudSync(updateBadge = true) {
+    if (!this.currentUser) return;
+    try {
+      this.isSyncing = true;
+      const syncData = {
+        favorites: Storage.getFavorites(),
+        recentlyPlayed: Storage.getRecentlyPlayed(),
+        playlists: Storage.getPlaylists(),
+        preferredTheme: this.themeManager.currentTheme,
+        lastActiveTrackId: this.currentTrack ? this.currentTrack.id : null,
+      };
+
+      await FirebaseService.saveUserSync(this.currentUser.uid, syncData);
+
+      if (updateBadge && this.lastSyncedTimeLabel) {
+        this.lastSyncedTimeLabel.textContent = `Last synced: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+    } catch (e) {
+      console.warn('pushCloudSync error:', e);
+    } finally {
+      this.isSyncing = false;
+    }
+  }
+
+  pushCloudSyncDebounced() {
+    if (!this.currentUser) return;
+    if (this._cloudSyncTimer) clearTimeout(this._cloudSyncTimer);
+    this._cloudSyncTimer = setTimeout(() => {
+      this.pushCloudSync(true);
+    }, 1200);
+  }
+
+  async triggerManualSync() {
+    if (!this.currentUser) {
+      alert('Please sign in with Google to sync your favorites and music across devices.');
+      return;
+    }
+    if (this.syncNowIcon) this.syncNowIcon.classList.add('sync-spinning');
+    if (this.syncStatusBadge) {
+      this.syncStatusBadge.textContent = 'Syncing...';
+    }
+
+    try {
+      await this.pushCloudSync(true);
+      if (this.syncStatusBadge) {
+        this.syncStatusBadge.textContent = 'Synced!';
+        setTimeout(() => {
+          if (this.syncStatusBadge) this.syncStatusBadge.textContent = 'Real-Time Active';
+        }, 1500);
+      }
+    } catch (err) {
+      if (this.syncStatusBadge) this.syncStatusBadge.textContent = 'Sync Error';
+    } finally {
+      if (this.syncNowIcon) this.syncNowIcon.classList.remove('sync-spinning');
+    }
+  }
+
+  toggleTrackFavorite(trackId) {
+    if (!trackId) return;
+    const isNowFav = Storage.toggleFavorite(trackId);
+    this.favorites = Storage.getFavorites();
+    this.updateFavoriteButtonsState();
+
+    if (this.currentUser) {
+      this.pushCloudSyncDebounced();
+    }
+
+    this.renderHomePage();
+    return isNowFav;
+  }
+
+  updateFavoriteButtonsState() {
+    const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+    const isFav = track ? Storage.isFavorite(track.id) : false;
+
+    [this.btnDockFavorite, this.btnHeroFavorite, this.btnLyricsFavorite].forEach(btn => {
+      if (!btn) return;
+      if (isFav) {
+        btn.classList.add('is-favorite');
+        btn.title = 'Remove from Favorites';
+      } else {
+        btn.classList.remove('is-favorite');
+        btn.title = 'Add to Favorites';
+      }
+    });
+
+    if (this.lyricsFavText) {
+      this.lyricsFavText.textContent = isFav ? 'Favorited' : 'Favorite';
+    }
   }
 }
 

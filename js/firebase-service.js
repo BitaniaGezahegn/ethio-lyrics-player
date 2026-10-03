@@ -16,13 +16,15 @@ import {
   getFirestore, 
   collection, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   addDoc, 
   deleteDoc, 
   query, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
 export const firebaseConfig = {
@@ -254,5 +256,53 @@ export const FirebaseService = {
     if (!db) throw new Error('Firestore not initialized');
     await deleteDoc(doc(db, 'submissions', submissionId));
     return true;
+  },
+
+  // -------------------------------------------------------------
+  // Cross-Device User Sync (Favorites, History, Playlists & State)
+  // -------------------------------------------------------------
+  async getUserSync(userId) {
+    if (!db || !userId) return null;
+    try {
+      const docRef = doc(db, 'user_sync', userId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return snap.data();
+      }
+      return null;
+    } catch (e) {
+      console.warn('Failed to fetch user sync data:', e);
+      return null;
+    }
+  },
+
+  async saveUserSync(userId, syncData) {
+    if (!db || !userId) return;
+    try {
+      const docRef = doc(db, 'user_sync', userId);
+      await setDoc(docRef, {
+        ...syncData,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to save user sync data:', e);
+    }
+  },
+
+  subscribeUserSync(userId, callback) {
+    if (!db || !userId) return () => {};
+    try {
+      const docRef = doc(db, 'user_sync', userId);
+      return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          callback(docSnap.data());
+        }
+      }, (err) => {
+        console.warn('User sync subscription error:', err);
+      });
+    } catch (e) {
+      console.warn('subscribeUserSync error:', e);
+      return () => {};
+    }
   }
 };

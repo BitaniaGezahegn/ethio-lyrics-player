@@ -170,5 +170,84 @@ export const Storage = {
         localStorage.removeItem('ethio_lyrics_active_track_id');
       }
     } catch (e) {}
+  },
+
+  // Favorites Storage
+  getFavorites() {
+    try {
+      const data = localStorage.getItem('ethio_lyrics_favorites');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  setFavorites(favoritesList) {
+    try {
+      localStorage.setItem('ethio_lyrics_favorites', JSON.stringify(favoritesList || []));
+    } catch (e) {}
+  },
+
+  isFavorite(trackId) {
+    if (!trackId) return false;
+    const favs = this.getFavorites();
+    return favs.includes(trackId);
+  },
+
+  toggleFavorite(trackId) {
+    if (!trackId) return false;
+    let favs = this.getFavorites();
+    const index = favs.indexOf(trackId);
+    let isNowFav = false;
+    if (index > -1) {
+      favs.splice(index, 1);
+      isNowFav = false;
+    } else {
+      favs.unshift(trackId);
+      isNowFav = true;
+    }
+    this.setFavorites(favs);
+    return isNowFav;
+  },
+
+  // Recently Played Storage
+  getRecentlyPlayed() {
+    try {
+      const data = localStorage.getItem('ethio_lyrics_recent');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  setRecentlyPlayed(recentList) {
+    try {
+      localStorage.setItem('ethio_lyrics_recent', JSON.stringify(recentList || []));
+    } catch (e) {}
+  },
+
+  addRecentlyPlayed(trackId) {
+    if (!trackId) return;
+    let recent = this.getRecentlyPlayed();
+    recent = recent.filter(id => id !== trackId);
+    recent.unshift(trackId);
+    if (recent.length > 30) recent = recent.slice(0, 30);
+    this.setRecentlyPlayed(recent);
+  },
+
+  // Playlists Storage
+  getPlaylists() {
+    try {
+      const data = localStorage.getItem('ethio_lyrics_playlists');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  setPlaylists(playlists) {
+    try {
+      localStorage.setItem('ethio_lyrics_playlists', JSON.stringify(playlists || []));
+    } catch (e) {}
   }
 };
