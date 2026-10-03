@@ -58,6 +58,8 @@ try {
   console.warn('Firebase initialization error (possibly offline):', err);
 }
 
+let serverTimeOffsetMs = 0;
+
 export const FirebaseService = {
   get isInitialized() {
     return !!(app && auth && db);
@@ -309,6 +311,32 @@ export const FirebaseService = {
     }
   },
 
+  // Universal NTP/Server Time Calibration for Zero-Drift Listen Together
+  async calibrateServerTime() {
+    try {
+      const t0 = Date.now();
+      const res = await fetch(window.location.href, { method: 'HEAD', cache: 'no-store' });
+      const t1 = Date.now();
+      const serverDateHeader = res.headers.get('date');
+      if (serverDateHeader) {
+        const serverEpoch = new Date(serverDateHeader).getTime() + (t1 - t0) / 2;
+        serverTimeOffsetMs = serverEpoch - Date.now();
+        console.log(`[Listen Together] Clock offset calibrated: ${serverTimeOffsetMs}ms`);
+      }
+    } catch (e) {
+      console.warn('Server time calibration fallback:', e);
+    }
+    return serverTimeOffsetMs;
+  },
+
+  getServerNow() {
+    return Date.now() + serverTimeOffsetMs;
+  },
+
+  getServerTimeOffset() {
+    return serverTimeOffsetMs;
+  },
+
   // -------------------------------------------------------------
   // Listen Together (Party Room & Synced Playback Engine)
   // -------------------------------------------------------------
@@ -343,7 +371,7 @@ export const FirebaseService = {
       } : null,
       playbackState: playbackState, // 'playing' | 'paused'
       positionSec: Number(positionSec) || 0,
-      clientTimestamp: Date.now(),
+      clientTimestamp: this.getServerNow(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       participants: [{
@@ -455,7 +483,7 @@ export const FirebaseService = {
       const docRef = doc(db, 'listen_rooms', cleanCode);
       await updateDoc(docRef, {
         ...updateData,
-        clientTimestamp: Date.now(),
+        clientTimestamp: this.getServerNow(),
         updatedAt: serverTimestamp()
       });
     } catch (e) {

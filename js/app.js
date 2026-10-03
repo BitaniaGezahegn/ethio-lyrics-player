@@ -45,6 +45,7 @@ class LyricsApp {
     this._lastReceivedPlaybackTimestamp = 0;
     this._isApplyingRemoteSync = false;
     this._seenReactionIds = new Set();
+    this._roomHeartbeatTimer = null;
 
     // Track Form / Upload State
     this.editingTrackId = null;
@@ -84,6 +85,9 @@ class LyricsApp {
   }
 
   async initLibrary() {
+    // 0. Calibrate universal server clock for zero-latency Listen Together
+    FirebaseService.calibrateServerTime();
+
     // 1. Clean up legacy hardcoded sample tracks from early development
     this.tracks = await Storage.getAllTracks();
     const legacyIds = ['abinet_athijibegn', 'ethio_tizita'];
@@ -775,6 +779,11 @@ class LyricsApp {
 
       // Broadcast playback state if Host
       if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+        if (state === 'playing') {
+          this.startHostHeartbeat();
+        } else {
+          this.stopHostHeartbeat();
+        }
         FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
           playbackState: state === 'playing' ? 'playing' : 'paused',
           positionSec: this.player.currentTime || 0
@@ -793,6 +802,7 @@ class LyricsApp {
 
     // Smart Queue: When a song ends, play the next suggested track
     this.player.onEnded = async () => {
+      this.stopHostHeartbeat();
       if (this.playIcon) this.playIcon.style.display = 'block';
       if (this.pauseIcon) this.pauseIcon.style.display = 'none';
       if (this.vinylDisc) this.vinylDisc.classList.remove('spinning');
@@ -2906,6 +2916,9 @@ class LyricsApp {
 
       this.activeRoom = room;
       this.isRoomHost = true;
+      if (this.player.isPlaying) {
+        this.startHostHeartbeat();
+      }
       this.subscribeToRoom(room.roomCode);
 
       this.updateListenRoomUI(room);
@@ -2919,6 +2932,25 @@ class LyricsApp {
         this.btnCreateRoom.disabled = false;
         this.btnCreateRoom.textContent = 'Start Session';
       }
+    }
+  }
+
+  startHostHeartbeat() {
+    this.stopHostHeartbeat();
+    this._roomHeartbeatTimer = setInterval(() => {
+      if (this.activeRoom && this.isRoomHost && this.player.isPlaying && !this._isApplyingRemoteSync) {
+        FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
+          playbackState: 'playing',
+          positionSec: this.player.currentTime || 0
+        });
+      }
+    }, 2500);
+  }
+
+  stopHostHeartbeat() {
+    if (this._roomHeartbeatTimer) {
+      clearInterval(this._roomHeartbeatTimer);
+      this._roomHeartbeatTimer = null;
     }
   }
 
@@ -3016,10 +3048,11 @@ class LyricsApp {
           this._isApplyingRemoteSync = false;
         }
 
-        // 2. Sync Playback State & Drift Compensation
-        const clientTimestamp = room.clientTimestamp || Date.now();
-        const elapsed = (Date.now() - clientTimestamp) / 1000;
-        const targetTime = room.playbackState === 'playing' ? (room.positionSec + Math.max(0, elapsed)) : room.positionSec;
+        // 2. Calibrated Universal Time & Elapsed Drift Calculation
+        const currentServerNow = FirebaseService.getServerNow();
+        const eventServerTime = room.clientTimestamp || currentServerNow;
+        const elapsedSec = Math.max(0, (currentServerNow - eventServerTime) / 1000);
+        const targetTime = room.playbackState === 'playing' ? (room.positionSec + elapsedSec) : room.positionSec;
 
         if (room.playbackState === 'playing') {
           if (!this.player.isPlaying) {
@@ -3027,13 +3060,28 @@ class LyricsApp {
             this.player.seek(targetTime);
             this.player.play();
             this._isApplyingRemoteSync = false;
+            if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
           } else {
-            // Check drift threshold (0.6s)
-            const diff = Math.abs(this.player.currentTime - targetTime);
-            if (diff > 0.6) {
+            // Adaptive drift compensation:
+            const drift = targetTime - this.player.currentTime; // positive = guest lags behind host
+            
+            if (Math.abs(drift) > 1.2) {
+              // Large drift: instant seek
               this._isApplyingRemoteSync = true;
               this.player.seek(targetTime);
               this._isApplyingRemoteSync = false;
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+            } else if (drift > 0.05) {
+              // Guest lags behind by 50ms - 1200ms: micro speedup (+3% to +6%) to catch up smoothly with NO audio stutter
+              const speedBoost = Math.min(1.06, 1.0 + drift * 0.06);
+              if (this.player.audioElement) this.player.audioElement.playbackRate = speedBoost;
+            } else if (drift < -0.05) {
+              // Guest is ahead by 50ms - 1200ms: micro slowdown (down to -6%)
+              const speedSlow = Math.max(0.94, 1.0 + drift * 0.06);
+              if (this.player.audioElement) this.player.audioElement.playbackRate = speedSlow;
+            } else {
+              // Locked in tight (< 50ms drift)
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
             }
           }
         } else if (room.playbackState === 'paused') {
@@ -3043,12 +3091,16 @@ class LyricsApp {
             this.player.seek(targetTime);
             this._isApplyingRemoteSync = false;
           }
+          if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
         }
       }
     });
   }
 
   async handleLeaveRoom(notifyCloud = true) {
+    this.stopHostHeartbeat();
+    if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+
     if (this.activeRoom && notifyCloud && this.myParticipant) {
       await FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
     }
@@ -3133,6 +3185,11 @@ class LyricsApp {
 
   handleSendReaction(type) {
     if (!this.activeRoom) return;
+    const btn = document.querySelector(`.btn-reaction[data-reaction="${type}"]`);
+    if (btn) {
+      btn.style.transform = 'scale(1.35)';
+      setTimeout(() => { if (btn) btn.style.transform = ''; }, 180);
+    }
     const name = this.myParticipant ? this.myParticipant.name : 'Friend';
     FirebaseService.sendRoomReaction(this.activeRoom.roomCode, {
       type: type,
@@ -3163,7 +3220,8 @@ class LyricsApp {
       <span class="reaction-from-name">${fromName}</span>
     `;
 
-    const randomLeft = 15 + Math.random() * 70;
+    const isMobile = window.innerWidth <= 680;
+    const randomLeft = isMobile ? (52 + Math.random() * 38) : (20 + Math.random() * 60);
     reactionEl.style.left = `${randomLeft}%`;
 
     this.reactionFloatingStage.appendChild(reactionEl);
@@ -3172,7 +3230,7 @@ class LyricsApp {
       if (reactionEl.parentNode) {
         reactionEl.parentNode.removeChild(reactionEl);
       }
-    }, 2300);
+    }, 2400);
   }
 
   copyRoomInviteLink(buttonEl, labelEl) {

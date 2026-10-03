@@ -3426,10 +3426,58 @@ html, body {
 
 @media (max-width: 680px) {
   .active-room-floating-bar {
-    bottom: 125px; /* Above mini player & mobile nav */
-    width: calc(100% - 1.5rem);
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
+    bottom: 122px; /* Nicely situated above docked mini-player & mobile nav */
+    width: calc(100% - 1rem);
+    max-width: 440px;
+    padding: 0.38rem 0.65rem;
+    gap: 0.45rem;
+    border-radius: 9999px;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.7), 0 0 12px rgba(96, 165, 250, 0.2);
+  }
+
+  .room-bar-left {
+    gap: 0.4rem;
+  }
+
+  .room-bar-title {
+    font-size: 0.8rem;
+    gap: 0.3rem;
+  }
+
+  .room-role-pill {
+    display: none; /* Keep clean on small mobile displays */
+  }
+
+  .room-bar-listeners {
+    font-size: 0.68rem;
+  }
+
+  .room-bar-reactions {
+    gap: 0.22rem;
+  }
+
+  .btn-reaction {
+    width: 32px;
+    height: 32px;
+  }
+
+  .room-bar-actions {
+    gap: 0.3rem;
+  }
+
+  .room-bar-actions .btn-pill {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .room-bar-actions .btn-pill span {
+    display: none; /* Hide labels on mobile: keep clean, thumb-friendly icon circles */
   }
 }
 
@@ -3438,6 +3486,7 @@ html, body {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .room-bar-info {
@@ -3479,31 +3528,57 @@ html, body {
 }
 
 .btn-reaction {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, box-shadow 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btn-reaction:hover {
-  transform: scale(1.18);
-  background: rgba(255, 255, 255, 0.12);
+.btn-reaction:hover, .btn-reaction:active {
+  transform: scale(1.22);
 }
 
-.btn-reaction:active {
-  transform: scale(0.9);
+.btn-reaction[data-reaction="fire"]:active,
+.btn-reaction[data-reaction="fire"]:hover {
+  background: rgba(244, 63, 94, 0.22);
+  border-color: rgba(244, 63, 94, 0.6);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
+}
+
+.btn-reaction[data-reaction="heart"]:active,
+.btn-reaction[data-reaction="heart"]:hover {
+  background: rgba(236, 72, 153, 0.22);
+  border-color: rgba(236, 72, 153, 0.6);
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.45);
+}
+
+.btn-reaction[data-reaction="music"]:active,
+.btn-reaction[data-reaction="music"]:hover {
+  background: rgba(229, 185, 90, 0.22);
+  border-color: rgba(229, 185, 90, 0.6);
+  box-shadow: 0 0 12px rgba(229, 185, 90, 0.45);
+}
+
+.btn-reaction[data-reaction="sparkle"]:active,
+.btn-reaction[data-reaction="sparkle"]:hover {
+  background: rgba(96, 165, 250, 0.22);
+  border-color: rgba(96, 165, 250, 0.6);
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.45);
 }
 
 .room-bar-actions {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  margin-left: auto;
 }
 
 .btn-danger-pill {
@@ -3527,44 +3602,54 @@ html, body {
 
 .reaction-floating-item {
   position: absolute;
-  bottom: 120px;
+  bottom: 125px;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   padding: 0.35rem 0.75rem;
-  background: rgba(20, 10, 16, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(18, 10, 16, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 9999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  animation: float-up-reaction 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 12px rgba(229, 185, 90, 0.15);
+  animation: float-up-reaction 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@media (max-width: 680px) {
+  .reaction-floating-item {
+    bottom: 120px;
+    padding: 0.3rem 0.6rem;
+  }
 }
 
 .reaction-floating-item .reaction-from-name {
   font-size: 0.72rem;
   font-weight: 600;
   color: #fff;
+  letter-spacing: 0.02em;
 }
 
 @keyframes float-up-reaction {
   0% {
     opacity: 0;
-    transform: translateY(30px) scale(0.6) rotate(-5deg);
+    transform: translateY(35px) scale(0.5) rotate(-6deg);
   }
-  15% {
+  12% {
     opacity: 1;
-    transform: translateY(0px) scale(1.1) rotate(3deg);
+    transform: translateY(0px) scale(1.18) rotate(3deg);
   }
-  30% {
-    transform: translateY(-40px) scale(1) rotate(-2deg);
+  24% {
+    transform: translateY(-30px) scale(1) rotate(-3deg);
   }
-  80% {
-    opacity: 0.9;
+  65% {
+    opacity: 0.95;
+    transform: translateY(-160px) scale(0.98) rotate(4deg);
   }
   100% {
     opacity: 0;
-    transform: translateY(-220px) scale(0.9) rotate(5deg);
+    transform: translateY(-290px) scale(0.85) rotate(-5deg);
   }
 }
 
