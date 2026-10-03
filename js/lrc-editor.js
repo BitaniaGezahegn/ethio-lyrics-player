@@ -39,15 +39,15 @@ export class LrcEditor {
           <div class="lrc-panel active" data-panel="import">
             <p class="lrc-hint">Paste your lyrics below - one line per lyric. Plain text, no timestamps needed. You can also upload a <code>.txt</code> file.</p>
             <div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
-              <button class="btn-pill" id="lrcImportFilePick">&#128193; Upload .txt</button>
+              <button class="btn-pill" id="lrcImportFilePick">Upload .txt</button>
               <input type="file" id="lrcImportFileInput" accept=".txt,.lrc" style="display:none">
-              <button class="btn-pill" id="lrcImportClear">&#128465; Clear</button>
+              <button class="btn-pill" id="lrcImportClear">Clear</button>
             </div>
             <textarea id="lrcImportTextarea" class="form-textarea lrc-import-textarea" placeholder="Line 1&#10;Line 2&#10;Line 3&#10;..."></textarea>
             <div id="lrcHeaderNotice" class="lrc-header-notice" style="display:none; margin-top:0.6rem; padding:0.6rem 0.85rem; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); border-radius:10px; font-size:0.85rem; color:#e0e7ff;">
               <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer;">
                 <input type="checkbox" id="lrcTreatAsIntro" checked style="width:16px; height:16px; cursor:pointer; accent-color:#6366f1;">
-                <span><strong>🎵 Title Header Detected:</strong> <span id="lrcDetectedTitle" style="color:#fbbf24; font-weight:600;"></span><br>
+                <span><strong>Title Header Detected:</strong> <span id="lrcDetectedTitle" style="color:#fbbf24; font-weight:600;"></span><br>
                 <span style="font-size:0.78rem; opacity:0.85;">Set as 0:00 Intro line so Tap Sync starts directly on the first sung lyric (prevents off-by-one delay).</span></span>
               </label>
             </div>
@@ -85,26 +85,26 @@ export class LrcEditor {
               <div class="sync-context-line sync-far-next2" id="lrcSyncNextLine3"></div>
             </div>
             <div class="sync-controls">
-              <button class="btn-primary" id="lrcSyncStartBtn">&#9654; Start Sync</button>
-              <button class="btn-pill" id="lrcSyncTapBtn" disabled>&#9000; Tap / Enter</button>
-              <button class="btn-pill" id="lrcSyncIntroBtn" title="Set current line as 0:00 Intro and advance to next line" disabled>🎵 0:00 Intro</button>
-              <button class="btn-pill" id="lrcSyncUndoBtn" title="Undo last tap (Z)" disabled>&#8617; Undo</button>
-              <button class="btn-pill" id="lrcSyncSkipBtn" title="Skip this line (S)" disabled>&#9197; Skip</button>
-              <button class="btn-primary btn-save-lyrics" id="lrcSyncSaveBtn" title="Save timestamps and apply to current song">&#128190; Save &amp; Apply</button>
+              <button class="btn-primary" id="lrcSyncStartBtn">Start Sync</button>
+              <button class="btn-pill" id="lrcSyncTapBtn" disabled>Tap / Enter</button>
+              <button class="btn-pill" id="lrcSyncIntroBtn" title="Set current line as 0:00 Intro and advance to next line" disabled>0:00 Intro</button>
+              <button class="btn-pill" id="lrcSyncUndoBtn" title="Undo last tap (Z)" disabled>Undo</button>
+              <button class="btn-pill" id="lrcSyncSkipBtn" title="Skip this line (S)" disabled>Skip</button>
+              <button class="btn-primary btn-save-lyrics" id="lrcSyncSaveBtn" title="Save timestamps and apply to current song">Save &amp; Apply</button>
             </div>
             <div class="sync-status" id="lrcSyncStatus">0 / 0 lines stamped</div>
           </div>
           <div class="lrc-panel" data-panel="edit">
             <div class="edit-toolbar">
-              <button class="btn-pill btn-shift-fix" id="lrcShiftUpBtn" title="Fix 1-line delay: Shift all timestamps up by 1 line and set line 1 to 0:00">⏮ Fix 1-Line Offset (Shift Up)</button>
-              <button class="btn-pill" id="lrcShiftDownBtn" title="Shift all timestamps down by 1 line">⏭ Shift Down</button>
+              <button class="btn-pill btn-shift-fix" id="lrcShiftUpBtn" title="Fix 1-line delay: Shift all timestamps up by 1 line and set line 1 to 0:00">Fix 1-Line Offset (Shift Up)</button>
+              <button class="btn-pill" id="lrcShiftDownBtn" title="Shift all timestamps down by 1 line">Shift Down</button>
               <span style="opacity:0.3; margin:0 0.2rem;">|</span>
               <label>Global offset (ms):</label>
               <input type="number" id="lrcOffsetInput" class="form-input lrc-offset-input" value="0" step="100">
               <button class="btn-pill" id="lrcApplyOffset">Apply Offset</button>
               <span style="flex:1"></span>
               <button class="btn-pill" id="lrcEditAddLine">+ Add Line</button>
-              <button class="btn-primary btn-save-lyrics" id="lrcEditSaveBtn" title="Save edited lyrics and apply to current song">&#128190; Save &amp; Apply</button>
+              <button class="btn-primary btn-save-lyrics" id="lrcEditSaveBtn" title="Save edited lyrics and apply to current song">Save &amp; Apply</button>
             </div>
             <div class="lrc-lines-list" id="lrcLinesList"></div>
           </div>
@@ -424,7 +424,7 @@ export class LrcEditor {
       this.lines[0].isIntro = true;
     }
     this._renderEditList();
-    alert('✅ Fixed! All timestamps shifted up by 1 line, and line 1 set as 0:00 Intro. Click "Save & Apply" to apply to playback!');
+    alert('Fixed! All timestamps shifted up by 1 line, and line 1 set as 0:00 Intro. Click "Save & Apply" to apply to playback!');
   }
 
   _shiftTimestampsDown() {
@@ -476,15 +476,15 @@ export class LrcEditor {
     if (instruction) {
       if (!this.isSyncing) {
         if (this.syncIndex >= this.lines.length && this.lines.length > 0) {
-          instruction.innerHTML = '🎉 <strong>All lines stamped!</strong> Click "Save & Apply" below to play from the beginning.';
+          instruction.innerHTML = '<strong>All lines stamped!</strong> Click "Save & Apply" below to play from the beginning.';
         } else {
           instruction.innerHTML = 'Press <strong>"Start Sync"</strong> to begin playback. Then tap <kbd>Enter</kbd> as each line begins.';
         }
       } else {
         if (curr) {
-          instruction.innerHTML = `🎤 <strong>Tap Enter</strong> the moment singer begins: <span style="color:#fbbf24; font-weight:600;">"${this._escapeHtml(curr.text)}"</span> (Line ${i + 1} of ${this.lines.length})`;
+          instruction.innerHTML = `<strong>Tap Enter</strong> the moment singer begins: <span style="color:#fbbf24; font-weight:600;">"${this._escapeHtml(curr.text)}"</span> (Line ${i + 1} of ${this.lines.length})`;
         } else {
-          instruction.innerHTML = '🎉 <strong>All lines stamped!</strong> Click "Save & Apply" below.';
+          instruction.innerHTML = '<strong>All lines stamped!</strong> Click "Save & Apply" below.';
         }
       }
     }

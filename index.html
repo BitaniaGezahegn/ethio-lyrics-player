@@ -2,18 +2,19 @@
 <html lang="am">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ethio Lyrics Player | Synced Lyrics</title>
-  <meta name="description" content="Synchronized Ethiopian Music Lyrics Player featuring customizable themes, tap-sync LRC editor, and visualizer design.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Ethio Lyrics Player | Synced Ethiopian Music</title>
+  <meta name="description" content="Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
 
   <!-- PWA & Mobile Web Meta -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#160910">
+  <meta name="theme-color" content="#0b0507">
   <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127925;</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5b95a%22 stroke-width=%222%22><path d=%22M9 18V5l12-2v13%22/><circle cx=%226%22 cy=%2218%22 r=%223%22/><circle cx=%2218%22 cy=%2216%22 r=%223%22/></svg>">
 
   <!-- Preconnect for Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,65 +29,59 @@
 
   <div id="app" class="theme-artwork-ambient">
 
-    <!-- Top Utility Bar -->
+    <!-- Top Navigation Bar -->
     <header class="top-bar">
       <div class="brand-badge">
-        <span class="brand-icon">&#127925;</span>
-        <span class="brand-title">Ethio Lyrics Player</span>
+        <svg class="brand-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <span class="brand-title">Ethio Lyrics</span>
       </div>
 
-      <!-- Primary View Switcher: Home Explore vs Synced Lyrics -->
-      <nav class="nav-view-switcher">
-        <button id="btnNavHome" class="btn-pill btn-nav-pill active" title="Music Discovery & Suggestions">
-          <span>🏠</span>
-          <span>Explore</span>
+      <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
+      <nav class="desktop-nav-tabs">
+        <button class="nav-tab-btn active" data-tab="home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Home</span>
         </button>
-        <button id="btnNavLyricsStage" class="btn-pill btn-nav-pill" title="Synchronized Lyrics & Visualizer">
-          <span>🎵</span>
+        <button class="nav-tab-btn" data-tab="library">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg>
+          <span>Library</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="lyrics">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
           <span>Lyrics Stage</span>
+        </button>
+        <button class="nav-tab-btn" data-tab="settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Settings</span>
+          <span id="desktopPendingDot" class="badge-dot" style="display:none;"></span>
         </button>
       </nav>
 
+      <!-- Top Right Actions -->
       <div class="top-actions">
-        <!-- Admin Dashboard Badge (Appears for Admin) -->
-        <button id="btnOpenAdminModal" class="btn-pill btn-admin-badge" style="display:none;" title="Admin Moderation & R2 Catalog">
-          <span>🛡️</span>
-          <span>Admin</span>
-          <span id="adminPendingBadge" class="badge-counter" style="display:none;">0</span>
-        </button>
-
-        <!-- Google Auth Profile Pill -->
+        <!-- Auth Profile Quick Pill -->
         <div id="authContainer" class="auth-bar-item">
           <button id="btnGoogleSignIn" class="btn-pill btn-auth-pill" title="Sign in with Google">
             <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
             <span>Sign In</span>
           </button>
-          <div id="userProfilePill" class="user-profile-pill" style="display:none;">
-            <img id="userAvatarImg" src="" alt="Avatar" class="user-avatar-mini">
+          <div id="userProfilePill" class="user-profile-pill" style="display:none;" title="Account Profile">
+            <img id="userAvatarImg" src="" alt="Avatar" class="user-avatar-mini" crossorigin="anonymous">
             <span id="userNameLabel" class="user-name-label">User</span>
-            <button id="btnSignOut" class="btn-sign-out-icon" title="Sign Out">✕</button>
           </div>
         </div>
 
-        <button id="btnOpenThemeModal" class="btn-pill" title="Switch Display Style">
-          <span>🎨</span>
-          <span>Design</span>
-        </button>
-        <button id="btnOpenTrackModal" class="btn-pill" title="Choose Track or Upload MP3">
-          <span>📁</span>
-          <span>Library</span>
-        </button>
-        <button id="btnOpenLrcEditor" class="btn-pill" title="Open LRC Editor">
-          <span>✍️</span>
-          <span>LRC Editor</span>
-        </button>
-        <button id="btnToggleFullscreen" class="btn-pill" title="Toggle Fullscreen">
-          <span id="fullscreenIcon">&#9974;</span>
+        <button id="btnToggleFullscreen" class="btn-pill btn-icon-only" title="Toggle Fullscreen">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
       </div>
     </header>
 
-    <!-- Main Stage -->
+    <!-- Main Stage Content -->
     <main class="main-stage">
       <!-- Ambient Visual Backdrop -->
       <div class="stage-backdrop">
@@ -97,16 +92,20 @@
         </div>
       </div>
 
-      <!-- VIEW 1: Home Music Discovery & Suggestion Engine (Default Home Page) -->
-      <div id="homeExploreView" class="home-explore-view">
+      <!-- ====================================================================
+           TAB 1: HOME (Music Discovery & Suggestion Engine)
+           ==================================================================== -->
+      <section id="tabViewHome" class="tab-view active">
         <!-- Hero Spotlight Featured Song Banner -->
-        <section class="home-hero-section">
+        <div class="home-hero-section">
           <div class="hero-card" id="heroCard">
             <div class="hero-glow-bg" id="heroGlowBg"></div>
             <div class="hero-content-wrap">
               <div class="hero-artwork-box">
                 <img id="heroArtworkImg" src="assets/weleta_cover.jpg" alt="Featured Track" class="hero-artwork-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
-                <div class="hero-play-badge" id="btnHeroPlayBadge">▶</div>
+                <div class="hero-play-badge" id="btnHeroPlayBadge">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                </div>
               </div>
               <div class="hero-details">
                 <div class="hero-badge-tag">
@@ -116,285 +115,143 @@
                 <h1 id="heroTitle" class="hero-title">Select a Song to Begin</h1>
                 <h2 id="heroArtist" class="hero-artist">Ethio Lyrics Player</h2>
                 <p id="heroDescription" class="hero-description">
-                  Stream Ethiopian music with real-time synchronized Amharic lyrics and adaptive artwork themes.
+                  Stream Ethiopian music with synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and offline listening.
                 </p>
                 <div class="hero-actions">
                   <button id="btnHeroPlay" class="btn-primary hero-btn-play">
-                    <span>▶</span> <span id="heroPlayLabel">Play Track</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    <span id="heroPlayLabel">Play Track</span>
                   </button>
                   <button id="btnHeroOpenLyrics" class="btn-pill hero-btn-lyrics">
-                    <span>📜</span> <span>Open Lyrics Stage</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <span>View Lyrics Stage</span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Mood & Genre Filter Pills -->
-        <section class="home-filter-section">
+        <!-- Filter Chips (No emojis, clean modern pills) -->
+        <div class="home-filter-section">
           <div class="home-filter-scroll" id="homeFilterRow">
-            <button class="filter-chip active" data-filter="all">🔥 All Tracks</button>
-            <button class="filter-chip" data-filter="suggested">✨ Recommended</button>
-            <button class="filter-chip" data-filter="classic">🇪🇹 Classic &amp; Soul</button>
-            <button class="filter-chip" data-filter="pop">⚡ Modern Pop</button>
-            <button class="filter-chip" data-filter="lrc">🎙️ Synced Lyrics</button>
-            <button class="filter-chip" data-filter="offline">💾 Saved Offline</button>
+            <button class="filter-chip active" data-filter="all">All Music</button>
+            <button class="filter-chip" data-filter="suggested">Recommended</button>
+            <button class="filter-chip" data-filter="classic">Ethio Classic</button>
+            <button class="filter-chip" data-filter="pop">Modern Pop</button>
+            <button class="filter-chip" data-filter="lrc">Synced Lyrics</button>
+            <button class="filter-chip" data-filter="offline">Downloaded</button>
           </div>
-        </section>
+        </div>
 
-        <!-- Home Search Bar -->
-        <section class="home-search-section">
+        <!-- Search Bar -->
+        <div class="home-search-section">
           <div class="home-search-input-wrap">
-            <span class="home-search-icon">🔍</span>
-            <input type="text" id="inputHomeSearch" class="home-search-input" placeholder="Search by song title, artist, or album...">
+            <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="inputHomeSearch" class="home-search-input" placeholder="Search by song, artist, or album...">
           </div>
-        </section>
+        </div>
 
-        <!-- Suggestion Section 1: Recommended For You -->
-        <section class="home-catalog-section" id="sectionRecommendations">
+        <!-- Section 1: Recommended For You -->
+        <div class="home-catalog-section" id="sectionRecommendations">
           <div class="home-section-header">
             <div>
-              <h2 class="home-section-title">✨ Recommended &amp; Suggested For You</h2>
-              <div class="home-section-subtitle">Smart picks tailored to your listening vibes and synchronized lyrics</div>
+              <h2 class="home-section-title">Recommended For You</h2>
+              <div class="home-section-subtitle">Curated picks based on synchronized lyrics and listening vibes</div>
             </div>
           </div>
-          <div class="home-music-grid" id="gridSuggestions">
-            <!-- Dynamically populated cards -->
-          </div>
-        </section>
+          <div class="home-music-grid" id="gridSuggestions"></div>
+        </div>
 
-        <!-- Suggestion Section 2: Global Cloud Catalog -->
-        <section class="home-catalog-section" id="sectionGlobalCatalog">
+        <!-- Section 2: Global Cloud Catalog -->
+        <div class="home-catalog-section" id="sectionGlobalCatalog">
           <div class="home-section-header">
             <div>
-              <h2 class="home-section-title">🌐 Global Cloud Catalog</h2>
-              <div class="home-section-subtitle">Cloud tracks streamed via Cloudflare R2 and synced worldwide</div>
+              <h2 class="home-section-title">Global Catalog</h2>
+              <div class="home-section-subtitle">Streamed globally via Cloudflare R2 object storage</div>
             </div>
           </div>
-          <div class="home-music-grid" id="gridGlobalCatalog">
-            <!-- Dynamically populated cards -->
-          </div>
-        </section>
+          <div class="home-music-grid" id="gridGlobalCatalog"></div>
+        </div>
+      </section>
 
-        <!-- Suggestion Section 3: My Offline & Personal Songs -->
-        <section class="home-catalog-section" id="sectionPersonalCatalog">
-          <div class="home-section-header">
+      <!-- ====================================================================
+           TAB 2: LIBRARY (Cloud & Offline Catalog + Upload)
+           ==================================================================== -->
+      <section id="tabViewLibrary" class="tab-view" style="display:none;">
+        <div class="library-view-container">
+          <div class="library-header-row">
             <div>
-              <h2 class="home-section-title">💾 My Offline &amp; Uploaded Library</h2>
-              <div class="home-section-subtitle">Your downloaded songs and personal uploads stored on this device</div>
+              <h1 class="library-page-title">Music Library</h1>
+              <p class="library-page-subtitle">Manage cloud catalog songs and your offline downloads</p>
             </div>
+            <button id="btnShowUploadForm" class="btn-primary" style="display:inline-flex; align-items:center; gap:0.5rem; font-size:0.85rem; padding:0.55rem 1.1rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Upload Song</span>
+            </button>
           </div>
-          <div class="home-music-grid" id="gridPersonalCatalog">
-            <!-- Dynamically populated cards -->
-          </div>
-        </section>
-      </div>
 
-      <!-- VIEW 2: Synchronized Lyrics & Vinyl Visualizer Stage -->
-      <div id="lyricsStageView" class="stage-content" style="display:none;">
-        <button id="btnStageBackToHome" class="btn-pill btn-stage-back">
-          <span>←</span> <span>Back to Explore</span>
-        </button>
-
-        <!-- Song Header Metadata -->
-        <section class="song-header-section">
-          <div class="artist-heading">
-            <h1 id="artistAmharic" class="artist-amharic">አቢነት አጎናፍር</h1>
-            <h2 id="artistEnglish" class="artist-english">ABINET AGONAFIR</h2>
-          </div>
-          <div class="song-title-box">
-            <h1 id="songTitleAmharic" class="song-title-amharic">አትሒጅብኝ</h1>
-          </div>
-        </section>
-
-        <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
-        <section class="stage-split">
-          <!-- Lyrics Viewport -->
-          <div class="lyrics-container" id="lyricsViewport">
-            <div class="lyrics-scroll-wrap" id="lyricsScrollWrap">
-              <!-- Dynamically populated lyrics lines or empty state -->
+          <!-- View A: Library Track List with Sub-Tabs -->
+          <div id="trackListView">
+            <div class="library-tabs-nav">
+              <button id="tabGlobalCatalog" class="library-tab active">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <span>Global Catalog</span>
+              </button>
+              <button id="tabOfflineLibrary" class="library-tab">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Saved Offline</span>
+              </button>
             </div>
-            <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
-          </div>
 
-          <!-- Circular Vinyl Disc / Album Badge -->
-          <div class="visualizer-container">
-            <div class="disc-wrapper">
-              <div class="disc-outer-grooves"></div>
-              <div class="vinyl-disc" id="vinylDisc">
-                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
-                <div class="disc-center-hole"></div>
+            <!-- Search Bar in Library -->
+            <div class="library-search-bar" id="catalogSearchWrap">
+              <div class="home-search-input-wrap">
+                <svg class="home-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="inputCatalogSearch" class="home-search-input" placeholder="Search songs, artists, or albums...">
               </div>
             </div>
 
-            <!-- Album Title and Year -->
-            <div class="album-meta-tag">
-              <span id="albumTitle">Album</span>
-              <span class="album-meta-divider">|</span>
-              <span id="albumYear">2024</span>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <!-- Docked Playback Bar -->
-    <footer class="player-bar-dock">
-      <!-- Left Track Info -->
-      <div class="track-pill-info" id="dockTrackInfo" style="cursor:pointer;" title="Click to open Lyrics Stage">
-        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
-        <div class="track-text-meta">
-          <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
-          <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
-        </div>
-      </div>
-
-      <!-- Center Audio Controls & Scrubber -->
-      <div class="playback-controls-center">
-        <div class="buttons-row">
-          <button id="btnRewind" class="ctrl-btn" title="Rewind 5 seconds">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
-            </svg>
-          </button>
-
-          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause">
-            <svg id="playIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-            <svg id="pauseIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          </button>
-
-          <button id="btnForward" class="ctrl-btn" title="Fast Forward 5 seconds">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="timeline-container">
-          <span id="currentTimeLabel" class="time-label">0:00</span>
-          <div id="scrubberTrack" class="scrubber-track">
-            <div id="scrubberFill" class="scrubber-fill">
-              <div class="scrubber-thumb"></div>
-            </div>
-          </div>
-          <span id="durationLabel" class="time-label">0:00</span>
-        </div>
-      </div>
-
-      <!-- Right Controls: Speed & Volume -->
-      <div class="player-controls-right">
-        <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">
-          1.0x
-        </button>
-
-        <div class="volume-container">
-          <button id="btnMute" class="ctrl-btn" title="Mute/Unmute">
-            <svg id="volumeIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
-          </button>
-          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.8">
-        </div>
-      </div>
-    </footer>
-
-    <!-- Modal 1: Theme / Design Picker -->
-    <div id="themeModal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2>Select Lyrics Display Design</h2>
-          <button class="modal-close-btn" data-close="themeModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p style="color: var(--color-text-dim); font-size: 0.9rem;">
-            Choose a visual presentation theme. All themes dynamically synchronize lyrics with audio in real time.
-          </p>
-          <div class="theme-grid" id="themeOptionsList">
-            <!-- Dynamically populated theme cards -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal 2: Track Library & Upload -->
-    <div id="trackModal" class="modal-overlay">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2 id="trackModalTitle">Music Library</h2>
-          <div style="display:flex; align-items:center; gap:0.6rem;">
-            <button id="btnShowUploadForm" class="btn-pill btn-primary-action" style="font-size:0.8rem; padding:0.4rem 0.9rem;">
-              <span>+ Upload Song</span>
-            </button>
-            <button class="modal-close-btn" data-close="trackModal">&times;</button>
-          </div>
-        </div>
-        <div class="modal-body">
-          <!-- View 1: Track List View with Tabs -->
-          <div id="trackListView">
-            <!-- Library Tabs -->
-            <div class="library-tabs-nav">
-              <button id="tabGlobalCatalog" class="library-tab active">
-                <span>🌐</span> <span>Global Catalog</span>
-              </button>
-              <button id="tabOfflineLibrary" class="library-tab">
-                <span>💾</span> <span>My Offline Music</span>
-              </button>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="library-search-bar" id="catalogSearchWrap">
-              <input type="text" id="inputCatalogSearch" class="form-input" placeholder="🔍 Search songs, artists, or albums...">
-            </div>
-
             <!-- Global Public Catalog Container -->
-            <div id="globalCatalogList" style="display:flex; flex-direction:column; gap:0.6rem;">
-              <div class="loading-catalog-spinner" style="text-align:center; padding:2rem; color:var(--color-text-dim);">
-                <div style="font-size:1.5rem; animation: pulse-glow 1.5s infinite;">⏳</div>
-                <div style="margin-top:0.5rem; font-size:0.85rem;">Loading Global Catalog...</div>
+            <div id="globalCatalogList" style="display:flex; flex-direction:column; gap:0.65rem;">
+              <div class="loading-catalog-spinner" style="text-align:center; padding:3rem; color:var(--color-text-dim);">
+                <div>Loading catalog...</div>
               </div>
             </div>
 
             <!-- Local Offline Library Container -->
-            <div id="localTracksList" style="display:none; flex-direction:column; gap:0.6rem;">
-              <!-- Populated via JS -->
-            </div>
+            <div id="localTracksList" style="display:none; flex-direction:column; gap:0.65rem;"></div>
           </div>
 
-          <!-- View 2: Track Upload / Edit Form View -->
-          <div id="trackFormView" style="display:none; flex-direction:column; gap:1.1rem;">
+          <!-- View B: Track Upload / Edit Form View -->
+          <div id="trackFormView" style="display:none; flex-direction:column; gap:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:1.5rem;">
             <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:0.75rem; border-bottom:1px solid rgba(255,255,255,0.08);">
               <button id="btnBackToLibrary" class="btn-pill" style="font-size:0.8rem; padding:0.35rem 0.8rem;">
                 &larr; Back to Library
               </button>
-              <h3 id="trackFormModeTitle" style="font-size:1rem; font-weight:600; margin:0;">Upload New Song</h3>
+              <h3 id="trackFormModeTitle" style="font-size:1.05rem; font-weight:600; margin:0;">Upload Song</h3>
             </div>
 
-            <!-- Form Validation Error Banner -->
             <div id="trackFormError" style="display:none; padding:0.65rem 0.9rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; color:#fca5a5; font-size:0.82rem;"></div>
 
             <!-- Audio File Dropzone -->
             <div class="form-group">
               <label>Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
               <div class="dropzone" id="audioDropzone">
-                <span style="font-size:1.6rem;">📁</span>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                 <p style="margin-top:0.4rem; font-size:0.85rem;" id="audioDropzoneLabel">Click or Drag &amp; Drop Audio File (MP3, WAV, AAC, M4A)</p>
                 <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
               </div>
             </div>
 
-            <!-- Cover Artwork / Image Picker -->
+            <!-- Cover Artwork Picker -->
             <div class="form-group">
-              <label>Cover / Artwork Image <span class="optional-badge">(Optional)</span></label>
+              <label>Artwork Image <span class="optional-badge">(Optional)</span></label>
               <div class="cover-picker-container">
                 <div class="cover-preview-box" id="coverPreviewBox" title="Click to upload custom cover image">
-                  <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img">
+                  <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img" crossorigin="anonymous">
                   <div class="cover-preview-overlay">
-                    <span>📷 Change</span>
+                    <span>Change</span>
                   </div>
                 </div>
                 <div class="cover-picker-info">
@@ -406,7 +263,7 @@
                       Select Image
                     </button>
                     <button type="button" id="btnRemoveCover" class="btn-pill" style="font-size:0.75rem; color:#ff7b7b;">
-                      Reset Image
+                      Reset
                     </button>
                     <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
                   </div>
@@ -448,15 +305,15 @@
               <textarea id="inputCustomLrc" class="form-textarea" placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
             </div>
 
-            <!-- Public Submission / Publishing Options -->
+            <!-- Public Submission Checkbox -->
             <div class="public-submit-card" id="publicSubmissionGroup">
               <label class="checkbox-container">
                 <input type="checkbox" id="checkSubmitToPublic">
                 <span class="checkmark"></span>
-                <span class="checkbox-label-text" id="publicSubmitCheckLabel">🚀 Submit for Public Catalog (Admin Review)</span>
+                <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Catalog (Admin Review)</span>
               </label>
               <p style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
-                Share your music with the community. When approved by the admin, it will be published to the global catalog for everyone!
+                Share your track with the global community. Once approved by the admin, it will be published to the catalog for all visitors.
               </p>
               <div id="publicAudioUrlField" style="display:none; margin-top:0.6rem; padding-left:1.6rem;">
                 <label style="font-size:0.78rem; color:var(--color-gold);">Public Audio URL or Cloudflare R2 Filename (Optional):</label>
@@ -474,15 +331,231 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Modal 3: Admin Review & Moderation Panel -->
+      <!-- ====================================================================
+           TAB 3: LYRICS (Now Playing Synced Lyrics Stage & Vinyl Visualizer)
+           ==================================================================== -->
+      <section id="tabViewLyrics" class="tab-view stage-content" style="display:none;">
+        <button id="btnStageBackToHome" class="btn-pill btn-stage-back">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Back</span>
+        </button>
+
+        <!-- Song Header Metadata -->
+        <div class="song-header-section">
+          <div class="artist-heading">
+            <h1 id="artistAmharic" class="artist-amharic">የሙዚቃ ማጫወቻ</h1>
+            <h2 id="artistEnglish" class="artist-english">ETHIO LYRICS PLAYER</h2>
+          </div>
+          <div class="song-title-box">
+            <h1 id="songTitleAmharic" class="song-title-amharic">ሙዚቃ ይምረጡ</h1>
+          </div>
+        </div>
+
+        <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
+        <div class="stage-split">
+          <!-- Lyrics Viewport -->
+          <div class="lyrics-container" id="lyricsViewport">
+            <div class="lyrics-scroll-wrap" id="lyricsScrollWrap"></div>
+            <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
+          </div>
+
+          <!-- Circular Vinyl Disc / Album Badge -->
+          <div class="visualizer-container">
+            <div class="disc-wrapper">
+              <div class="disc-outer-grooves"></div>
+              <div class="vinyl-disc" id="vinylDisc">
+                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                <div class="disc-center-hole"></div>
+              </div>
+            </div>
+
+            <!-- Album Title and Year -->
+            <div class="album-meta-tag">
+              <span id="albumTitle">Album</span>
+              <span class="album-meta-divider">|</span>
+              <span id="albumYear">2024</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           TAB 4: SETTINGS (Account, Themes, Tools & Admin Studio)
+           ==================================================================== -->
+      <section id="tabViewSettings" class="tab-view" style="display:none;">
+        <div class="settings-view-container">
+          <h1 class="settings-page-title">Settings</h1>
+          <p class="settings-page-subtitle">Configure your account, visual presentation, and creative studio tools</p>
+
+          <!-- Setting Card 1: Account & Authentication -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <h2>Account &amp; Cloud Sync</h2>
+            </div>
+            <div class="settings-card-body">
+              <div id="settingsAuthSignedOut" style="display:flex; flex-direction:column; gap:0.6rem;">
+                <p style="font-size:0.85rem; color:var(--color-text-dim); margin:0;">
+                  Sign in with Google to submit tracks to the global catalog and sync preferences.
+                </p>
+                <button id="btnSettingsGoogleSignIn" class="btn-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:fit-content; padding:0.65rem 1.4rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                  <span>Sign in with Google</span>
+                </button>
+              </div>
+
+              <div id="settingsAuthSignedIn" style="display:none; flex-direction:column; gap:0.9rem;">
+                <div style="display:flex; align-items:center; gap:0.85rem;">
+                  <img id="settingsUserAvatar" src="" alt="User Avatar" class="user-avatar-mini" style="width:42px; height:42px;" crossorigin="anonymous">
+                  <div>
+                    <div id="settingsUserName" style="font-weight:600; font-size:1rem; color:#fff;">User</div>
+                    <div id="settingsUserEmail" style="font-size:0.8rem; color:var(--color-text-dim);">email@example.com</div>
+                  </div>
+                  <button id="btnSettingsSignOut" class="btn-pill" style="margin-left:auto; font-size:0.78rem;">
+                    Sign Out
+                  </button>
+                </div>
+
+                <!-- Admin Action Banner -->
+                <div id="settingsAdminRow" style="display:none; padding:0.9rem 1.1rem; background:rgba(229,185,90,0.1); border:1px solid rgba(229,185,90,0.3); border-radius:14px; align-items:center; justify-content:space-between;">
+                  <div>
+                    <div style="font-weight:700; font-size:0.92rem; color:#fce7b2;">Admin Privileges Active</div>
+                    <div style="font-size:0.78rem; color:var(--color-text-dim);">Review community submissions and publish tracks to R2</div>
+                  </div>
+                  <button id="btnOpenAdminStudioFromSettings" class="btn-pill btn-admin-badge" style="font-size:0.82rem; padding:0.45rem 1rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Admin Studio</span>
+                    <span id="settingsAdminPendingBadge" class="badge-counter" style="display:none;">0</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Card 2: Themes & Display Styles -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+              <h2>Display Themes</h2>
+            </div>
+            <div class="settings-card-body">
+              <p style="color:var(--color-text-dim); font-size:0.85rem; margin:0 0 0.75rem 0;">
+                Choose visual presentation style for the synchronized lyrics stage.
+              </p>
+              <div class="theme-grid" id="themeOptionsList"></div>
+            </div>
+          </div>
+
+          <!-- Setting Card 3: Creative Studio Tools -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <h2>Creative Studio Tools</h2>
+            </div>
+            <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div>
+                  <div style="font-weight:600; font-size:0.9rem;">LRC Lyrics Editor</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Tap-to-sync timecodes to audio for any track</div>
+                </div>
+                <button id="btnOpenLrcEditorFromSettings" class="btn-pill" style="font-size:0.8rem;">
+                  Open Editor
+                </button>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0;">
+                <div>
+                  <div style="font-weight:600; font-size:0.9rem;">Offline Storage Engine</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Service Worker &amp; IndexedDB Persistent Cache</div>
+                </div>
+                <span class="badge-status-active">Active</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Persistent Docked Mini-Player Bar -->
+    <footer class="player-bar-dock">
+      <!-- Left Track Info (Clicking opens Lyrics Stage) -->
+      <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics Stage">
+        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
+        <div class="track-text-meta">
+          <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
+          <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
+        </div>
+      </div>
+
+      <!-- Center Audio Controls & Scrubber -->
+      <div class="playback-controls-center">
+        <div class="buttons-row">
+          <button id="btnRewind" class="ctrl-btn" title="Rewind 5s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+          </button>
+
+          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause">
+            <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+
+          <button id="btnForward" class="ctrl-btn" title="Fast Forward 5s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+          </button>
+        </div>
+
+        <div class="timeline-container">
+          <span id="currentTimeLabel" class="time-label">0:00</span>
+          <div id="scrubberTrack" class="scrubber-track">
+            <div id="scrubberFill" class="scrubber-fill">
+              <div class="scrubber-thumb"></div>
+            </div>
+          </div>
+          <span id="durationLabel" class="time-label">0:00</span>
+        </div>
+      </div>
+
+      <!-- Right Controls: Speed & Volume (Desktop Only) -->
+      <div class="player-controls-right">
+        <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">1.0x</button>
+        <div class="volume-container">
+          <button id="btnMute" class="ctrl-btn" title="Mute/Unmute">
+            <svg id="volumeIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          </button>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.8">
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mobile Bottom Navigation Bar (Fixed at bottom on phones) -->
+    <nav class="mobile-bottom-nav">
+      <button class="bottom-nav-item active" data-tab="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Home</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="library">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg>
+        <span>Library</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="lyrics">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        <span>Lyrics</span>
+      </button>
+      <button class="bottom-nav-item" data-tab="settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Settings</span>
+        <span id="mobilePendingDot" class="badge-dot" style="display:none;"></span>
+      </button>
+    </nav>
+
+    <!-- Modal: Admin Review & Moderation Studio -->
     <div id="adminModal" class="modal-overlay">
       <div class="modal-card admin-modal-card">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <span style="font-size:1.3rem;">🛡️</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <div>
               <h2 style="font-size:1.15rem; margin:0;">Admin Studio</h2>
               <div style="font-size:0.75rem; color:var(--color-gold);">Review Submissions &amp; Manage Global Catalog</div>
@@ -491,10 +564,9 @@
           <button class="modal-close-btn" data-close="adminModal">&times;</button>
         </div>
         <div class="modal-body">
-          <!-- R2 Bucket Info Banner -->
           <div class="r2-info-banner">
             <div style="font-weight:600; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
-              <span>⚡ Cloudflare R2 Bucket:</span>
+              <span>Cloudflare R2 Bucket:</span>
               <span style="color:#f4a261;">ethio-lyrics-media</span>
             </div>
             <div style="font-size:0.75rem; color:var(--color-text-dim); margin-top:0.2rem; word-break:break-all;">
@@ -502,27 +574,20 @@
             </div>
           </div>
 
-          <!-- Admin Tabs -->
           <div class="library-tabs-nav">
             <button id="adminTabSubmissions" class="library-tab active">
-              <span>📥</span> <span>Pending Submissions</span>
+              <span>Pending Submissions</span>
               <span id="adminSubmissionsBadge" class="badge-counter" style="display:none;">0</span>
             </button>
             <button id="adminTabDirectPublish" class="library-tab">
-              <span>⚡</span> <span>Quick Publish to R2 / Catalog</span>
+              <span>Quick Publish to R2 / Catalog</span>
             </button>
           </div>
 
-          <!-- Section A: Pending Submissions Queue -->
           <div id="adminSubmissionsSection">
-            <div id="adminSubmissionsList" style="display:flex; flex-direction:column; gap:0.8rem;">
-              <div style="text-align:center; padding:2rem; color:var(--color-text-dim); font-size:0.88rem;">
-                No pending submissions.
-              </div>
-            </div>
+            <div id="adminSubmissionsList" style="display:flex; flex-direction:column; gap:0.8rem;"></div>
           </div>
 
-          <!-- Section B: Direct Quick Publish Form for Admin -->
           <div id="adminDirectPublishSection" style="display:none; flex-direction:column; gap:0.9rem;">
             <div class="form-grid-2col">
               <div class="form-group">
@@ -557,7 +622,7 @@
             </div>
 
             <div class="form-group">
-              <label>Cover Artwork URL (or upload local file)</label>
+              <label>Cover Artwork URL</label>
               <input type="text" id="adminNewCoverUrl" class="form-input" placeholder="assets/weleta_cover.jpg or https://...">
             </div>
 
@@ -567,7 +632,7 @@
             </div>
 
             <button id="btnAdminPublishDirect" class="btn-primary" style="margin-top:0.5rem;">
-              🚀 Publish Directly to Global Catalog
+              Publish Directly to Global Catalog
             </button>
           </div>
         </div>

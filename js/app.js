@@ -108,13 +108,31 @@ class LyricsApp {
   }
 
   initDOMElements() {
-    // Primary View Switcher & Stages
-    this.homeExploreView = document.getElementById('homeExploreView');
-    this.lyricsStageView = document.getElementById('lyricsStageView');
-    this.btnNavHome = document.getElementById('btnNavHome');
-    this.btnNavLyricsStage = document.getElementById('btnNavLyricsStage');
+    // Primary Tab Views & Navigation
+    this.tabViewHome = document.getElementById('tabViewHome');
+    this.tabViewLibrary = document.getElementById('tabViewLibrary');
+    this.tabViewLyrics = document.getElementById('tabViewLyrics');
+    this.tabViewSettings = document.getElementById('tabViewSettings');
+    this.homeExploreView = this.tabViewHome;
+    this.lyricsStageView = this.tabViewLyrics;
+
+    this.desktopPendingDot = document.getElementById('desktopPendingDot');
+    this.mobilePendingDot = document.getElementById('mobilePendingDot');
     this.btnStageBackToHome = document.getElementById('btnStageBackToHome');
     this.dockTrackInfo = document.getElementById('dockTrackInfo');
+
+    // Settings View Elements
+    this.btnSettingsGoogleSignIn = document.getElementById('btnSettingsGoogleSignIn');
+    this.btnSettingsSignOut = document.getElementById('btnSettingsSignOut');
+    this.settingsAuthSignedOut = document.getElementById('settingsAuthSignedOut');
+    this.settingsAuthSignedIn = document.getElementById('settingsAuthSignedIn');
+    this.settingsUserAvatar = document.getElementById('settingsUserAvatar');
+    this.settingsUserName = document.getElementById('settingsUserName');
+    this.settingsUserEmail = document.getElementById('settingsUserEmail');
+    this.settingsAdminRow = document.getElementById('settingsAdminRow');
+    this.btnOpenAdminStudioFromSettings = document.getElementById('btnOpenAdminStudioFromSettings');
+    this.settingsAdminPendingBadge = document.getElementById('settingsAdminPendingBadge');
+    this.btnOpenLrcEditorFromSettings = document.getElementById('btnOpenLrcEditorFromSettings');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -279,17 +297,18 @@ class LyricsApp {
       if (isAdmin) {
         if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'inline-flex';
         if (this.publicSubmitCheckLabel) {
-          this.publicSubmitCheckLabel.textContent = '⚡ Directly publish to Global Catalog (Admin)';
+          this.publicSubmitCheckLabel.textContent = 'Directly publish to Global Catalog (Admin)';
         }
         this.checkPendingSubmissionsCount();
       } else {
         if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'none';
         if (this.publicSubmitCheckLabel) {
-          this.publicSubmitCheckLabel.textContent = '🚀 Submit for Public Catalog (Admin Review)';
+          this.publicSubmitCheckLabel.textContent = 'Submit for Public Catalog (Admin Review)';
         }
       }
 
       this.renderHomePage();
+      this.renderSettingsView();
     });
   }
 
@@ -304,46 +323,162 @@ class LyricsApp {
       }
       if (this.adminSubmissionsBadge) {
         this.adminSubmissionsBadge.textContent = count;
-        this.adminSubmissionsBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+        this.adminSubmissionsBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+      if (this.settingsAdminPendingBadge) {
+        this.settingsAdminPendingBadge.textContent = count;
+        this.settingsAdminPendingBadge.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+      if (this.desktopPendingDot) {
+        this.desktopPendingDot.style.display = count > 0 ? 'inline-block' : 'none';
+      }
+      if (this.mobilePendingDot) {
+        this.mobilePendingDot.style.display = count > 0 ? 'inline-block' : 'none';
       }
     } catch (e) {
       console.warn('Pending count check error:', e);
     }
   }
 
-  switchView(viewName) {
-    this.currentView = viewName;
-    if (viewName === 'home') {
-      if (this.homeExploreView) this.homeExploreView.style.display = 'flex';
-      if (this.lyricsStageView) this.lyricsStageView.style.display = 'none';
-      if (this.btnNavHome) this.btnNavHome.classList.add('active');
-      if (this.btnNavLyricsStage) this.btnNavLyricsStage.classList.remove('active');
+  switchTab(tabId) {
+    if (tabId === 'stage') tabId = 'lyrics';
+    this.currentView = tabId;
+
+    // Toggle active class on navigation tabs (desktop and mobile)
+    document.querySelectorAll('.desktop-nav-tabs .nav-tab-btn, .mobile-bottom-nav .bottom-nav-item').forEach(btn => {
+      if (btn.getAttribute('data-tab') === tabId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Toggle Tab Views
+    const tabMap = {
+      home: this.tabViewHome || document.getElementById('tabViewHome'),
+      library: this.tabViewLibrary || document.getElementById('tabViewLibrary'),
+      lyrics: this.tabViewLyrics || document.getElementById('tabViewLyrics'),
+      settings: this.tabViewSettings || document.getElementById('tabViewSettings')
+    };
+
+    Object.entries(tabMap).forEach(([id, el]) => {
+      if (!el) return;
+      if (id === tabId) {
+        el.style.display = 'flex';
+        el.classList.add('active');
+      } else {
+        el.style.display = 'none';
+        el.classList.remove('active');
+      }
+    });
+
+    if (tabId === 'home') {
       this.renderHomePage();
-    } else {
-      if (this.homeExploreView) this.homeExploreView.style.display = 'none';
-      if (this.lyricsStageView) this.lyricsStageView.style.display = 'flex';
-      if (this.btnNavHome) this.btnNavHome.classList.remove('active');
-      if (this.btnNavLyricsStage) this.btnNavLyricsStage.classList.add('active');
+    } else if (tabId === 'library') {
+      this.renderLibraryView();
+    } else if (tabId === 'lyrics') {
       requestAnimationFrame(() => {
         this.syncLyrics(this.player.currentTime);
       });
+    } else if (tabId === 'settings') {
+      this.renderSettingsView();
+    }
+  }
+
+  switchView(viewName) {
+    this.switchTab(viewName);
+  }
+
+  renderLibraryView() {
+    this.showTrackList();
+    const query = this.inputCatalogSearch ? this.inputCatalogSearch.value.trim().toLowerCase() : '';
+    if (this.currentLibraryTab === 'global') {
+      this.renderPublicCatalog(query);
+    } else {
+      this.renderOfflineLibrary(query);
+    }
+  }
+
+  renderSettingsView() {
+    if (this.currentUser) {
+      if (this.settingsAuthSignedOut) this.settingsAuthSignedOut.style.display = 'none';
+      if (this.settingsAuthSignedIn) this.settingsAuthSignedIn.style.display = 'flex';
+      if (this.settingsUserName) this.settingsUserName.textContent = this.currentUser.displayName || 'Google User';
+      if (this.settingsUserEmail) this.settingsUserEmail.textContent = this.currentUser.email || '';
+      if (this.settingsUserAvatar) {
+        if (this.currentUser.photoURL) {
+          this.settingsUserAvatar.src = this.currentUser.photoURL;
+          this.settingsUserAvatar.style.display = 'block';
+        } else {
+          this.settingsUserAvatar.style.display = 'none';
+        }
+      }
+      if (this.settingsAdminRow) {
+        this.settingsAdminRow.style.display = this.isAdmin ? 'flex' : 'none';
+      }
+    } else {
+      if (this.settingsAuthSignedOut) this.settingsAuthSignedOut.style.display = 'flex';
+      if (this.settingsAuthSignedIn) this.settingsAuthSignedIn.style.display = 'none';
+      if (this.settingsAdminRow) this.settingsAdminRow.style.display = 'none';
+    }
+
+    this.initThemeSystem();
+  }
+
+  openAdminModal() {
+    if (this.adminModal) {
+      this.adminModal.classList.add('active');
+      this.loadAdminSubmissions();
     }
   }
 
   initEvents() {
-    // View Switchers
-    if (this.btnNavHome) {
-      this.btnNavHome.addEventListener('click', () => this.switchView('home'));
-    }
-    if (this.btnNavLyricsStage) {
-      this.btnNavLyricsStage.addEventListener('click', () => this.switchView('stage'));
-    }
+    // Tab Navigation (Desktop & Mobile-First)
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.getAttribute('data-tab');
+        if (tabId) this.switchTab(tabId);
+      });
+    });
+
     if (this.btnStageBackToHome) {
-      this.btnStageBackToHome.addEventListener('click', () => this.switchView('home'));
+      this.btnStageBackToHome.addEventListener('click', () => this.switchTab('home'));
     }
     // Clicking dock mini-player opens the Lyrics Stage
     if (this.dockTrackInfo) {
-      this.dockTrackInfo.addEventListener('click', () => this.switchView('stage'));
+      this.dockTrackInfo.addEventListener('click', () => this.switchTab('lyrics'));
+    }
+    if (this.btnHeroOpenLyrics) {
+      this.btnHeroOpenLyrics.addEventListener('click', () => this.switchTab('lyrics'));
+    }
+    if (this.userProfilePill) {
+      this.userProfilePill.addEventListener('click', () => this.switchTab('settings'));
+    }
+
+    // Settings View Triggers
+    if (this.btnSettingsGoogleSignIn) {
+      this.btnSettingsGoogleSignIn.addEventListener('click', async () => {
+        try {
+          await FirebaseService.loginWithGoogle();
+        } catch (err) {
+          alert('Google Sign-In: ' + (err.message || 'Please check your internet connection'));
+        }
+      });
+    }
+    if (this.btnSettingsSignOut) {
+      this.btnSettingsSignOut.addEventListener('click', async () => {
+        await FirebaseService.logout();
+      });
+    }
+    if (this.btnOpenAdminStudioFromSettings) {
+      this.btnOpenAdminStudioFromSettings.addEventListener('click', () => {
+        this.openAdminModal();
+      });
+    }
+    if (this.btnOpenLrcEditorFromSettings) {
+      this.btnOpenLrcEditorFromSettings.addEventListener('click', () => {
+        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+      });
     }
 
     // Hero Spotlight Controls
@@ -633,7 +768,7 @@ class LyricsApp {
     this.audioFileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
-        this.audioDropzoneLabel.textContent = `🎵 Selected: ${file.name}`;
+        this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
         this.selectedAudioFile = file;
         if (!this.inputCustomTitle.value) {
           const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
@@ -663,7 +798,7 @@ class LyricsApp {
         const file = e.dataTransfer.files[0];
         if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
           this.selectedAudioFile = file;
-          this.audioDropzoneLabel.textContent = `🎵 Selected: ${file.name}`;
+          this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
           if (!this.inputCustomTitle.value) {
             const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
             this.inputCustomTitle.value = nameWithoutExt;
@@ -747,7 +882,9 @@ class LyricsApp {
       this.heroPlayLabel.textContent = isPlaying ? 'Pause Track' : 'Play Track';
     }
     if (this.btnHeroPlayBadge) {
-      this.btnHeroPlayBadge.textContent = isPlaying ? '❚❚' : '▶';
+      this.btnHeroPlayBadge.innerHTML = isPlaying 
+        ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' 
+        : '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
     }
   }
 
@@ -840,16 +977,16 @@ class LyricsApp {
         <div class="card-art-wrap">
           <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="card-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div class="card-play-overlay">
-            <div class="card-play-icon">${isPlaying ? '❚❚' : '▶'}</div>
+            <div class="card-play-icon">${isPlaying ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
         </div>
         <div class="card-meta">
           <div class="card-title" title="${track.title}">${track.title}</div>
           <div class="card-artist" title="${track.artist}">${track.artist}</div>
           <div class="card-tag-row">
-            <span class="card-tag">${track.lrc ? '🎙️ Synced' : '🎵 Song'}</span>
+            <span class="card-tag">${track.lrc ? 'Synced' : 'Audio'}</span>
             <div class="card-actions-row">
-              <button class="card-btn-action btn-card-download" title="Save for Offline">⬇️</button>
+              <button class="card-btn-action btn-card-download" title="Save for Offline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
             </div>
           </div>
         </div>
@@ -869,15 +1006,15 @@ class LyricsApp {
       const dlBtn = card.querySelector('.btn-card-download');
       dlBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        dlBtn.textContent = '⏳';
+        dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
         try {
           await Storage.downloadTrackForOffline(track);
-          dlBtn.textContent = '✓';
+          dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
           dlBtn.title = 'Saved Offline';
           this.tracks = await Storage.getAllTracks();
         } catch (err) {
-          dlBtn.textContent = '⚠️';
-          setTimeout(() => { dlBtn.textContent = '⬇️'; }, 2000);
+          dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+          setTimeout(() => { dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'; }, 2000);
         }
       });
 
@@ -946,12 +1083,14 @@ class LyricsApp {
     if (this.lyricsScrollWrap) {
       this.lyricsScrollWrap.innerHTML = `
         <div class="lyrics-no-content">
-          <div class="no-lyrics-icon">🎵</div>
+          <div class="no-lyrics-icon">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          </div>
           <div class="no-lyrics-title">No Tracks in Library</div>
           <div class="no-lyrics-subtitle">Select a song from Explore or upload an audio song to start listening with synchronized lyrics.</div>
           <div class="no-lyrics-actions">
             <button id="btnEmptyUploadTrack" class="btn-pill btn-primary-action">
-              <span>📂</span> <span>Upload Song &amp; Lyrics</span>
+              <span>Upload Song &amp; Lyrics</span>
             </button>
           </div>
         </div>
@@ -959,8 +1098,8 @@ class LyricsApp {
       const btn = document.getElementById('btnEmptyUploadTrack');
       if (btn) {
         btn.addEventListener('click', () => {
+          this.switchTab('library');
           this.showTrackForm();
-          this.trackModal.classList.add('active');
         });
       }
       this.lyricsScrollWrap.style.transform = 'none';
@@ -975,15 +1114,17 @@ class LyricsApp {
     if (!this.parsedLyrics || this.parsedLyrics.length === 0) {
       this.lyricsScrollWrap.innerHTML = `
         <div class="lyrics-no-content">
-          <div class="no-lyrics-icon">📜</div>
+          <div class="no-lyrics-icon">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
           <div class="no-lyrics-title">Lyrics Unavailable</div>
           <div class="no-lyrics-subtitle">No synchronized lyrics attached to "${this.currentTrack ? this.currentTrack.title : 'this song'}". You can upload an .LRC file or use the editor to create synchronized lyrics!</div>
           <div class="no-lyrics-actions">
             <button id="btnNoLyricsUploadLrc" class="btn-pill btn-primary-action">
-              <span>📂</span> <span>Upload .LRC File</span>
+              <span>Upload .LRC File</span>
             </button>
             <button id="btnNoLyricsOpenEditor" class="btn-pill btn-secondary-action">
-              <span>✍️</span> <span>Add / Sync Lyrics</span>
+              <span>Add / Sync Lyrics</span>
             </button>
           </div>
         </div>
@@ -1180,16 +1321,16 @@ class LyricsApp {
             ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
           </button>
           <button class="btn-pill btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${song.id}">
-            ${isOfflineReady ? '✓ Offline' : '⬇️ Download'}
+            ${isOfflineReady ? 'Saved' : 'Download'}
           </button>
-          ${this.isAdmin ? `<button class="btn-pill btn-delete-public" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete from Global Catalog">✕</button>` : ''}
+          ${this.isAdmin ? `<button class="btn-pill btn-delete-public" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete from Global Catalog">&times;</button>` : ''}
         </div>
       `;
 
       card.querySelector('.btn-play-public').addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.loadTrack(song, true);
-        this.trackModal.classList.remove('active');
+        if (this.trackModal) this.trackModal.classList.remove('active');
         this.renderHomePage();
       });
 
@@ -1197,16 +1338,16 @@ class LyricsApp {
       dlBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (dlBtn.classList.contains('downloaded')) return;
-        dlBtn.textContent = '⏳ Saving...';
+        dlBtn.textContent = 'Saving...';
         try {
           await Storage.downloadTrackForOffline(song);
-          dlBtn.textContent = '✓ Offline';
+          dlBtn.textContent = 'Saved';
           dlBtn.classList.add('downloaded');
           this.tracks = await Storage.getAllTracks();
           this.renderHomePage();
         } catch (err) {
-          dlBtn.textContent = '⚠️ Failed';
-          setTimeout(() => { dlBtn.textContent = '⬇️ Download'; }, 2000);
+          dlBtn.textContent = 'Failed';
+          setTimeout(() => { dlBtn.textContent = 'Download'; }, 2000);
         }
       });
 
@@ -1252,7 +1393,9 @@ class LyricsApp {
     if (!tracksToDisplay || tracksToDisplay.length === 0) {
       this.localTracksList.innerHTML = `
         <div class="empty-library-state">
-          <div style="font-size:2rem; margin-bottom:0.25rem;">💾</div>
+          <div style="margin-bottom:0.25rem;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.6;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
           <div style="font-weight:600; font-size:1rem; color:#fff;">No Offline Tracks Yet</div>
           <div style="font-size:0.82rem; color:var(--color-text-dim); max-width:340px; margin-top:0.25rem; line-height:1.4;">
             Upload your own audio files or download songs from the Global Catalog to listen offline.
@@ -1288,15 +1431,15 @@ class LyricsApp {
           <button class="btn-pill btn-play-custom" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
             ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
           </button>
-          <button class="btn-pill btn-edit-custom" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Edit Metadata & Artwork">✏️ Edit</button>
-          <button class="btn-pill btn-delete-custom" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete Song">✕</button>
+          <button class="btn-pill btn-edit-custom" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Edit Metadata & Artwork">Edit</button>
+          <button class="btn-pill btn-delete-custom" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete Song">&times;</button>
         </div>
       `;
 
       card.querySelector('.btn-play-custom').addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.loadTrack(song, true);
-        this.trackModal.classList.remove('active');
+        if (this.trackModal) this.trackModal.classList.remove('active');
         this.renderHomePage();
       });
 
@@ -1360,7 +1503,7 @@ class LyricsApp {
 
       this.selectedAudioFile = null;
       if (this.audioFileInput) this.audioFileInput.value = '';
-      if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = '🎵 Existing Audio Attached (Click to replace file)';
+      if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = 'Existing Audio Attached (Click to replace file)';
 
       this.selectedCoverDataUrl = trackToEdit.cover || null;
       if (this.coverPreviewImg) this.coverPreviewImg.src = trackToEdit.cover || 'assets/weleta_cover.jpg';
@@ -1513,7 +1656,7 @@ class LyricsApp {
             audioUrl: publicAudioUrl || `${R2_PUBLIC_BASE}/${this.selectedAudioFile.name}`
           });
           await this.loadPublicCatalog();
-          alert(`⚡ Published "${title}" directly to the Global Public Catalog!`);
+          alert(`Published "${title}" directly to the Global Public Catalog!`);
         } catch (pubErr) {
           console.warn('Direct admin publish error:', pubErr);
         }
@@ -1529,7 +1672,7 @@ class LyricsApp {
             audioUrl: publicAudioUrl,
             audioFileName: this.selectedAudioFile.name
           });
-          alert(`🎉 "${title}" was saved locally and submitted for Public Catalog review! Once approved by the admin, it will be published for everyone.`);
+          alert(`"${title}" was saved locally and submitted for Public Catalog review! Once approved by the admin, it will be published for everyone.`);
         } catch (subErr) {
           console.warn('Submission queue error:', subErr);
           alert('Saved locally! Note: Submission to public queue requires an active internet connection.');
@@ -1597,7 +1740,7 @@ class LyricsApp {
       if (list.length === 0) {
         this.adminSubmissionsList.innerHTML = `
           <div style="text-align:center; padding:2.5rem; color:var(--color-text-dim); font-size:0.88rem;">
-            🎉 All caught up! There are currently no pending submissions in the queue.
+            All caught up! There are currently no pending submissions in the queue.
           </div>
         `;
         return;
@@ -1615,7 +1758,7 @@ class LyricsApp {
                 Album: ${sub.album || 'Single'} (${sub.year || '2024'}) • By: <b style="color:#fce7b2;">${sub.submittedByEmail || 'Visitor'}</b>
               </div>
               <div style="font-size:0.72rem; color:var(--color-accent); margin-top:2px;">
-                ${sub.lrc ? '✓ Has Timed Lyrics' : 'No Lyrics'} • Audio: ${sub.audioUrl ? 'Direct Link' : (sub.audioFileName || 'Local File')}
+                ${sub.lrc ? 'Has Timed Lyrics' : 'No Lyrics'} • Audio: ${sub.audioUrl ? 'Direct Link' : (sub.audioFileName || 'Local File')}
               </div>
             </div>
           </div>
@@ -1628,18 +1771,18 @@ class LyricsApp {
           <div class="submission-actions-row">
             <div style="display:flex; gap:0.4rem;">
               <button class="btn-pill btn-sub-preview-audio" style="font-size:0.75rem; padding:0.3rem 0.65rem;">
-                ▶ Play Preview
+                Play Preview
               </button>
               <button class="btn-pill btn-sub-preview-lyrics" style="font-size:0.75rem; padding:0.3rem 0.65rem;">
-                📜 View Lyrics
+                View Lyrics
               </button>
             </div>
             <div style="display:flex; gap:0.4rem;">
               <button class="btn-pill btn-approve-submission" data-id="${sub.id}">
-                ✓ Approve &amp; Publish
+                Approve &amp; Publish
               </button>
               <button class="btn-pill btn-reject-submission" data-id="${sub.id}">
-                ✕ Reject
+                Reject
               </button>
             </div>
           </div>
@@ -1718,8 +1861,8 @@ class LyricsApp {
         lrc
       });
 
-      this.btnAdminPublishDirect.textContent = '🚀 Publish Directly to Global Catalog';
-      this.adminModal.classList.remove('active');
+      this.btnAdminPublishDirect.textContent = 'Publish Directly to Global Catalog';
+      if (this.adminModal) this.adminModal.classList.remove('active');
       await this.loadPublicCatalog();
       this.renderHomePage();
       await this.loadTrack(published, true);
@@ -1732,7 +1875,7 @@ class LyricsApp {
       this.adminNewCoverUrl.value = '';
       this.adminNewLrc.value = '';
     } catch (err) {
-      this.btnAdminPublishDirect.textContent = '🚀 Publish Directly to Global Catalog';
+      this.btnAdminPublishDirect.textContent = 'Publish Directly to Global Catalog';
       alert('Publishing error: ' + err.message);
     }
   }
