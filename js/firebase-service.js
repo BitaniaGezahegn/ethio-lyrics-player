@@ -19,12 +19,15 @@ import {
   getDoc,
   doc, 
   setDoc, 
+  updateDoc,
   addDoc, 
   deleteDoc, 
   query, 
   orderBy, 
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  arrayUnion,
+  arrayRemove
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
 export const firebaseConfig = {
@@ -302,6 +305,201 @@ export const FirebaseService = {
       });
     } catch (e) {
       console.warn('subscribeUserSync error:', e);
+      return () => {};
+    }
+  },
+
+  // -------------------------------------------------------------
+  // Listen Together (Party Room & Synced Playback Engine)
+  // -------------------------------------------------------------
+  generateRoomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `ETHIO-${code}`;
+  },
+
+  async createListenRoom(hostInfo, trackData, playbackState = 'paused', positionSec = 0) {
+    if (!db) throw new Error('Firestore not initialized');
+    const roomCode = this.generateRoomCode();
+    const docRef = doc(db, 'listen_rooms', roomCode);
+
+    const roomPayload = {
+      roomCode: roomCode,
+      hostId: hostInfo.id,
+      hostName: hostInfo.name || 'Party Host',
+      hostAvatar: hostInfo.avatar || '',
+      currentTrack: trackData ? {
+        id: trackData.id,
+        title: trackData.title || 'Untitled',
+        artist: trackData.artist || 'Unknown Artist',
+        album: trackData.album || 'Single',
+        year: trackData.year || '2024',
+        cover: trackData.cover || 'assets/weleta_cover.jpg',
+        audioUrl: trackData.audioUrl || '',
+        lrc: trackData.lrc || ''
+      } : null,
+      playbackState: playbackState, // 'playing' | 'paused'
+      positionSec: Number(positionSec) || 0,
+      clientTimestamp: Date.now(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      participants: [{
+        id: hostInfo.id,
+        name: hostInfo.name || 'Party Host',
+        avatar: hostInfo.avatar || '',
+        isHost: true,
+        joinedAt: Date.now()
+      }],
+      reactions: [],
+      isActive: true
+    };
+
+    await setDoc(docRef, roomPayload);
+    return roomPayload;
+  },
+
+  async getListenRoom(roomCode) {
+    if (!db || !roomCode) return null;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.isActive !== false) return data;
+      }
+      return null;
+    } catch (e) {
+      console.warn('getListenRoom error:', e);
+      return null;
+    }
+  },
+
+  async joinListenRoom(roomCode, participant) {
+    if (!db || !roomCode) throw new Error('Invalid room code');
+    const cleanCode = roomCode.trim().toUpperCase();
+    const docRef = doc(db, 'listen_rooms', cleanCode);
+    const snap = await getDoc(docRef);
+    if (!snap.exists() || snap.data().isActive === false) {
+      throw new Error(`Room ${cleanCode} does not exist or has ended.`);
+    }
+
+    const currentData = snap.data();
+    let participants = currentData.participants || [];
+    // Deduplicate existing participant
+    participants = participants.filter(p => p.id !== participant.id);
+    participants.push({
+      id: participant.id,
+      name: participant.name || 'Friend',
+      avatar: participant.avatar || '',
+      isHost: false,
+      joinedAt: Date.now()
+    });
+
+    await updateDoc(docRef, {
+      participants: participants,
+      updatedAt: serverTimestamp()
+    });
+
+    return { ...currentData, participants };
+  },
+
+  async leaveListenRoom(roomCode, participantId) {
+    if (!db || !roomCode || !participantId) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+      let participants = data.participants || [];
+      const leavingParticipant = participants.find(p => p.id === participantId);
+
+      participants = participants.filter(p => p.id !== participantId);
+
+      // If host left and no one left, mark room inactive
+      if (participants.length === 0 || (leavingParticipant && leavingParticipant.isHost && participants.length === 0)) {
+        await updateDoc(docRef, {
+          isActive: false,
+          participants: [],
+          updatedAt: serverTimestamp()
+        });
+      } else if (leavingParticipant && leavingParticipant.isHost && participants.length > 0) {
+        // Pass host to next participant
+        participants[0].isHost = true;
+        await updateDoc(docRef, {
+          hostId: participants[0].id,
+          hostName: participants[0].name,
+          participants: participants,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await updateDoc(docRef, {
+          participants: participants,
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (e) {
+      console.warn('leaveListenRoom error:', e);
+    }
+  },
+
+  async updateRoomPlayback(roomCode, updateData) {
+    if (!db || !roomCode) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      await updateDoc(docRef, {
+        ...updateData,
+        clientTimestamp: Date.now(),
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn('updateRoomPlayback error:', e);
+    }
+  },
+
+  async sendRoomReaction(roomCode, reaction) {
+    if (!db || !roomCode) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      const reactionPayload = {
+        id: 'rx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        type: reaction.type, // 'fire' | 'heart' | 'music' | 'sparkle'
+        from: reaction.from || 'Friend',
+        timestamp: Date.now()
+      };
+
+      await updateDoc(docRef, {
+        reactions: arrayUnion(reactionPayload),
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn('sendRoomReaction error:', e);
+    }
+  },
+
+  subscribeListenRoom(roomCode, callback) {
+    if (!db || !roomCode) return () => {};
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          callback(docSnap.data());
+        } else {
+          callback(null);
+        }
+      }, (err) => {
+        console.warn('Listen room subscription error:', err);
+      });
+    } catch (e) {
+      console.warn('subscribeListenRoom error:', e);
       return () => {};
     }
   }

@@ -37,6 +37,15 @@ class LyricsApp {
     this.isSyncing = false;
     this._cloudSyncTimer = null;
 
+    // Listen Together (Party Room & Synced Playback) State
+    this.activeRoom = null;
+    this.isRoomHost = false;
+    this.roomUnsubscribe = null;
+    this.myParticipant = Storage.getParticipant(null);
+    this._lastReceivedPlaybackTimestamp = 0;
+    this._isApplyingRemoteSync = false;
+    this._seenReactionIds = new Set();
+
     // Track Form / Upload State
     this.editingTrackId = null;
     this.selectedCoverDataUrl = null;
@@ -113,6 +122,25 @@ class LyricsApp {
 
     // 4. Render Home Music Suggestion & Discovery View
     this.renderHomePage();
+
+    // 5. Check if user opened via Room Invite link (?room=ETHIO-XXXX or #room=ETHIO-XXXX)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      let roomCode = urlParams.get('room');
+      if (!roomCode && window.location.hash.includes('room=')) {
+        roomCode = window.location.hash.split('room=')[1];
+      }
+      if (roomCode) {
+        const cleanCode = roomCode.trim().toUpperCase();
+        if (this.inputJoinRoomCode) this.inputJoinRoomCode.value = cleanCode;
+        this.openListenTogetherModal();
+        setTimeout(() => {
+          this.handleJoinRoom(cleanCode);
+        }, 800);
+      }
+    } catch (e) {
+      console.warn('URL room check error:', e);
+    }
   }
 
   initDOMElements() {
@@ -145,6 +173,40 @@ class LyricsApp {
     this.syncStatusBadge = document.getElementById('syncStatusBadge');
     this.lastSyncedTimeLabel = document.getElementById('lastSyncedTimeLabel');
     this.syncNowIcon = document.getElementById('syncNowIcon');
+
+    // Listen Together Elements
+    this.btnOpenListenTogether = document.getElementById('btnOpenListenTogether');
+    this.listenTogetherBtnText = document.getElementById('listenTogetherBtnText');
+    this.liveRoomActiveIndicator = document.getElementById('liveRoomActiveIndicator');
+    this.listenTogetherModal = document.getElementById('listenTogetherModal');
+    this.roomLobbyView = document.getElementById('roomLobbyView');
+    this.roomActiveView = document.getElementById('roomActiveView');
+    this.btnCreateRoom = document.getElementById('btnCreateRoom');
+    this.inputJoinRoomCode = document.getElementById('inputJoinRoomCode');
+    this.btnJoinRoom = document.getElementById('btnJoinRoom');
+    this.joinRoomError = document.getElementById('joinRoomError');
+    this.currentParticipantNameLabel = document.getElementById('currentParticipantNameLabel');
+    this.btnEditParticipantName = document.getElementById('btnEditParticipantName');
+    this.activeRoomCodeTitle = document.getElementById('activeRoomCodeTitle');
+    this.activeRoomRoleText = document.getElementById('activeRoomRoleText');
+    this.btnCopyInviteLinkModal = document.getElementById('btnCopyInviteLinkModal');
+    this.copyInviteLinkModalLabel = document.getElementById('copyInviteLinkModalLabel');
+    this.activeRoomTrackArt = document.getElementById('activeRoomTrackArt');
+    this.activeRoomTrackTitle = document.getElementById('activeRoomTrackTitle');
+    this.activeRoomTrackArtist = document.getElementById('activeRoomTrackArtist');
+    this.activeRoomTrackStateBadge = document.getElementById('activeRoomTrackStateBadge');
+    this.activeRoomCountBadge = document.getElementById('activeRoomCountBadge');
+    this.activeRoomParticipantsList = document.getElementById('activeRoomParticipantsList');
+    this.btnLeaveRoomModal = document.getElementById('btnLeaveRoomModal');
+    this.activeListenRoomBar = document.getElementById('activeListenRoomBar');
+    this.roomBarCodeLabel = document.getElementById('roomBarCodeLabel');
+    this.roomBarRolePill = document.getElementById('roomBarRolePill');
+    this.roomBarListenersLabel = document.getElementById('roomBarListenersLabel');
+    this.btnCopyRoomLink = document.getElementById('btnCopyRoomLink');
+    this.copyLinkBtnText = document.getElementById('copyLinkBtnText');
+    this.btnManageActiveRoom = document.getElementById('btnManageActiveRoom');
+    this.btnLeaveRoom = document.getElementById('btnLeaveRoom');
+    this.reactionFloatingStage = document.getElementById('reactionFloatingStage');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -339,6 +401,10 @@ class LyricsApp {
         this.settingsAdminRow.style.display = isAdmin ? 'flex' : 'none';
       }
       this.initCloudSync(user.uid);
+      this.myParticipant = Storage.getParticipant(user);
+      if (this.currentParticipantNameLabel) {
+        this.currentParticipantNameLabel.textContent = this.myParticipant.name;
+      }
     } else {
       if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'inline-flex';
       if (this.userProfilePill) this.userProfilePill.style.display = 'none';
@@ -658,12 +724,24 @@ class LyricsApp {
     // Rewind / Forward 5s
     if (this.btnRewind) {
       this.btnRewind.addEventListener('click', () => {
-        if (this.currentTrack) this.player.seek(this.player.currentTime - 5);
+        if (this.currentTrack) {
+          const target = Math.max(0, this.player.currentTime - 5);
+          this.player.seek(target);
+          if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target });
+          }
+        }
       });
     }
     if (this.btnForward) {
       this.btnForward.addEventListener('click', () => {
-        if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
+        if (this.currentTrack) {
+          const target = this.player.currentTime + 5;
+          this.player.seek(target);
+          if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target });
+          }
+        }
       });
     }
 
@@ -694,6 +772,14 @@ class LyricsApp {
         if (this.vinylDisc) this.vinylDisc.classList.add('paused');
       }
       this.updateHeroState();
+
+      // Broadcast playback state if Host
+      if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+        FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
+          playbackState: state === 'playing' ? 'playing' : 'paused',
+          positionSec: this.player.currentTime || 0
+        });
+      }
     };
 
     this.player.onTimeUpdate = (currentTime, duration) => {
@@ -750,7 +836,13 @@ class LyricsApp {
         if (!this.currentTrack || !this.player.duration) return;
         const rect = this.scrubberTrack.getBoundingClientRect();
         const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        this.player.seek(pos * this.player.duration);
+        const newTime = pos * this.player.duration;
+        this.player.seek(newTime);
+        if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+          FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
+            positionSec: newTime
+          });
+        }
       };
 
       this.scrubberTrack.addEventListener('click', (e) => seekAtClientX(e.clientX));
@@ -851,11 +943,76 @@ class LyricsApp {
     });
 
     // Modal Backdrop Close
-    [this.themeModal, this.trackModal, this.adminModal].forEach(modal => {
+    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal].forEach(modal => {
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) modal.classList.remove('active');
         });
+      }
+    });
+
+    // Listen Together Event Bindings
+    if (this.btnOpenListenTogether) {
+      this.btnOpenListenTogether.addEventListener('click', () => this.openListenTogetherModal());
+    }
+    if (this.btnManageActiveRoom) {
+      this.btnManageActiveRoom.addEventListener('click', () => this.openListenTogetherModal());
+    }
+    if (this.btnCreateRoom) {
+      this.btnCreateRoom.addEventListener('click', () => this.handleCreateRoom());
+    }
+    if (this.btnJoinRoom) {
+      this.btnJoinRoom.addEventListener('click', () => this.handleJoinRoom());
+    }
+    if (this.inputJoinRoomCode) {
+      this.inputJoinRoomCode.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleJoinRoom();
+        }
+      });
+    }
+    if (this.btnEditParticipantName) {
+      this.btnEditParticipantName.addEventListener('click', () => {
+        const cur = this.myParticipant ? this.myParticipant.name : 'Music Lover';
+        const entered = prompt('Enter your display name:', cur);
+        if (entered && entered.trim()) {
+          Storage.setParticipantName(entered.trim());
+          this.myParticipant.name = entered.trim();
+          if (this.currentParticipantNameLabel) {
+            this.currentParticipantNameLabel.textContent = entered.trim();
+          }
+        }
+      });
+    }
+    if (this.btnCopyInviteLinkModal) {
+      this.btnCopyInviteLinkModal.addEventListener('click', () => {
+        this.copyRoomInviteLink(this.btnCopyInviteLinkModal, this.copyInviteLinkModalLabel);
+      });
+    }
+    if (this.btnCopyRoomLink) {
+      this.btnCopyRoomLink.addEventListener('click', () => {
+        this.copyRoomInviteLink(this.btnCopyRoomLink, this.copyLinkBtnText);
+      });
+    }
+    if (this.btnLeaveRoomModal) {
+      this.btnLeaveRoomModal.addEventListener('click', () => this.handleLeaveRoom(true));
+    }
+    if (this.btnLeaveRoom) {
+      this.btnLeaveRoom.addEventListener('click', () => this.handleLeaveRoom(true));
+    }
+
+    // Reaction buttons
+    document.querySelectorAll('.btn-reaction').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-reaction') || 'fire';
+        this.handleSendReaction(type);
+      });
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (this.activeRoom && this.myParticipant) {
+        FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
       }
     });
 
@@ -1303,6 +1460,24 @@ class LyricsApp {
     this.updateFavoriteButtonsState();
     if (this.currentUser) {
       this.pushCloudSyncDebounced();
+    }
+
+    // Broadcast track change if Host
+    if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+      FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
+        currentTrack: {
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          album: track.album || 'Single',
+          year: track.year || '2024',
+          cover: track.cover || 'assets/weleta_cover.jpg',
+          audioUrl: track.audioUrl || '',
+          lrc: track.lrc || ''
+        },
+        playbackState: autoPlay ? 'playing' : 'paused',
+        positionSec: 0
+      });
     }
 
     this.updateHeroState();
@@ -2688,6 +2863,333 @@ class LyricsApp {
 
     if (this.lyricsFavText) {
       this.lyricsFavText.textContent = isFav ? 'Favorited' : 'Favorite';
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Listen Together (Party Room Management & Synchronization)
+  // --------------------------------------------------------------------------
+  openListenTogetherModal() {
+    if (!this.listenTogetherModal) return;
+    this.myParticipant = Storage.getParticipant(this.currentUser);
+    if (this.currentParticipantNameLabel) {
+      this.currentParticipantNameLabel.textContent = this.myParticipant.name;
+    }
+
+    if (this.activeRoom) {
+      if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
+      if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
+      this.updateListenRoomUI(this.activeRoom);
+    } else {
+      if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
+      if (this.roomActiveView) this.roomActiveView.style.display = 'none';
+      if (this.joinRoomError) this.joinRoomError.style.display = 'none';
+    }
+    this.listenTogetherModal.classList.add('active');
+  }
+
+  async handleCreateRoom() {
+    try {
+      this.myParticipant = Storage.getParticipant(this.currentUser);
+      if (this.btnCreateRoom) {
+        this.btnCreateRoom.disabled = true;
+        this.btnCreateRoom.textContent = 'Starting...';
+      }
+
+      const currentTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+      const room = await FirebaseService.createListenRoom(
+        this.myParticipant,
+        currentTrack,
+        this.player.isPlaying ? 'playing' : 'paused',
+        this.player.currentTime || 0
+      );
+
+      this.activeRoom = room;
+      this.isRoomHost = true;
+      this.subscribeToRoom(room.roomCode);
+
+      this.updateListenRoomUI(room);
+      if (this.btnCreateRoom) {
+        this.btnCreateRoom.disabled = false;
+        this.btnCreateRoom.textContent = 'Start Session';
+      }
+    } catch (err) {
+      alert('Could not start live session: ' + err.message);
+      if (this.btnCreateRoom) {
+        this.btnCreateRoom.disabled = false;
+        this.btnCreateRoom.textContent = 'Start Session';
+      }
+    }
+  }
+
+  async handleJoinRoom(code = null) {
+    const rawCode = code || (this.inputJoinRoomCode ? this.inputJoinRoomCode.value : '');
+    const cleanCode = (rawCode || '').trim().toUpperCase();
+    if (!cleanCode) {
+      if (this.joinRoomError) {
+        this.joinRoomError.textContent = 'Please enter a 6-character room code.';
+        this.joinRoomError.style.display = 'block';
+      }
+      return;
+    }
+
+    if (this.btnJoinRoom) {
+      this.btnJoinRoom.disabled = true;
+      this.btnJoinRoom.textContent = 'Joining...';
+    }
+    if (this.joinRoomError) this.joinRoomError.style.display = 'none';
+
+    try {
+      this.myParticipant = Storage.getParticipant(this.currentUser);
+      const room = await FirebaseService.joinListenRoom(cleanCode, this.myParticipant);
+
+      this.activeRoom = room;
+      this.isRoomHost = room.hostId === this.myParticipant.id;
+      this.subscribeToRoom(room.roomCode);
+
+      this.updateListenRoomUI(room);
+
+      if (this.btnJoinRoom) {
+        this.btnJoinRoom.disabled = false;
+        this.btnJoinRoom.textContent = 'Join';
+      }
+      if (this.inputJoinRoomCode) this.inputJoinRoomCode.value = '';
+    } catch (err) {
+      if (this.joinRoomError) {
+        this.joinRoomError.textContent = err.message || 'Room not found or session has ended.';
+        this.joinRoomError.style.display = 'block';
+      }
+      if (this.btnJoinRoom) {
+        this.btnJoinRoom.disabled = false;
+        this.btnJoinRoom.textContent = 'Join';
+      }
+    }
+  }
+
+  subscribeToRoom(roomCode) {
+    if (this.roomUnsubscribe) {
+      this.roomUnsubscribe();
+      this.roomUnsubscribe = null;
+    }
+
+    this.roomUnsubscribe = FirebaseService.subscribeListenRoom(roomCode, async (room) => {
+      if (!room || room.isActive === false) {
+        alert('The host has ended this Listen Together session.');
+        this.handleLeaveRoom(false);
+        return;
+      }
+
+      this.activeRoom = room;
+      this.isRoomHost = room.hostId === this.myParticipant.id;
+      this.updateListenRoomUI(room);
+
+      // Handle live reactions
+      if (Array.isArray(room.reactions)) {
+        room.reactions.forEach(rx => {
+          if (!this._seenReactionIds.has(rx.id)) {
+            this._seenReactionIds.add(rx.id);
+            if (rx.from !== (this.myParticipant ? this.myParticipant.name : '')) {
+              this.renderFloatingReaction(rx.type, rx.from);
+            }
+          }
+        });
+      }
+
+      // Guest Playback Synchronization
+      if (!this.isRoomHost && room.currentTrack) {
+        // 1. Sync Track if different
+        if (!this.currentTrack || this.currentTrack.id !== room.currentTrack.id) {
+          this._isApplyingRemoteSync = true;
+          const existing = [...this.publicTracks, ...this.tracks].find(t => t.id === room.currentTrack.id);
+          const trackToLoad = existing || {
+            id: room.currentTrack.id,
+            title: room.currentTrack.title,
+            artist: room.currentTrack.artist,
+            album: room.currentTrack.album || 'Single',
+            year: room.currentTrack.year || '2024',
+            cover: room.currentTrack.cover || 'assets/weleta_cover.jpg',
+            audioUrl: room.currentTrack.audioUrl || '',
+            lrc: room.currentTrack.lrc || ''
+          };
+
+          await this.loadTrack(trackToLoad, false);
+          this._isApplyingRemoteSync = false;
+        }
+
+        // 2. Sync Playback State & Drift Compensation
+        const clientTimestamp = room.clientTimestamp || Date.now();
+        const elapsed = (Date.now() - clientTimestamp) / 1000;
+        const targetTime = room.playbackState === 'playing' ? (room.positionSec + Math.max(0, elapsed)) : room.positionSec;
+
+        if (room.playbackState === 'playing') {
+          if (!this.player.isPlaying) {
+            this._isApplyingRemoteSync = true;
+            this.player.seek(targetTime);
+            this.player.play();
+            this._isApplyingRemoteSync = false;
+          } else {
+            // Check drift threshold (0.6s)
+            const diff = Math.abs(this.player.currentTime - targetTime);
+            if (diff > 0.6) {
+              this._isApplyingRemoteSync = true;
+              this.player.seek(targetTime);
+              this._isApplyingRemoteSync = false;
+            }
+          }
+        } else if (room.playbackState === 'paused') {
+          if (this.player.isPlaying) {
+            this._isApplyingRemoteSync = true;
+            this.player.pause();
+            this.player.seek(targetTime);
+            this._isApplyingRemoteSync = false;
+          }
+        }
+      }
+    });
+  }
+
+  async handleLeaveRoom(notifyCloud = true) {
+    if (this.activeRoom && notifyCloud && this.myParticipant) {
+      await FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
+    }
+    if (this.roomUnsubscribe) {
+      this.roomUnsubscribe();
+      this.roomUnsubscribe = null;
+    }
+    this.activeRoom = null;
+    this.isRoomHost = false;
+    this._seenReactionIds.clear();
+
+    if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'none';
+    if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.remove('active');
+    if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'none';
+    if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
+    if (this.roomActiveView) this.roomActiveView.style.display = 'none';
+    if (this.listenTogetherModal) this.listenTogetherModal.classList.remove('active');
+  }
+
+  updateListenRoomUI(room) {
+    if (!room) return;
+
+    if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'flex';
+    if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.add('active');
+    if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'inline-block';
+
+    const pCount = (room.participants || []).length;
+    const isHost = room.hostId === this.myParticipant.id;
+
+    if (this.roomBarCodeLabel) this.roomBarCodeLabel.textContent = room.roomCode;
+    if (this.roomBarRolePill) {
+      this.roomBarRolePill.textContent = isHost ? 'Host' : 'Listener';
+      this.roomBarRolePill.style.background = isHost ? 'rgba(229,185,90,0.18)' : 'rgba(96,165,250,0.18)';
+      this.roomBarRolePill.style.color = isHost ? '#fce7b2' : '#93c5fd';
+      this.roomBarRolePill.style.borderColor = isHost ? 'rgba(229,185,90,0.4)' : 'rgba(96,165,250,0.4)';
+    }
+    if (this.roomBarListenersLabel) {
+      this.roomBarListenersLabel.textContent = `${pCount} listening together`;
+    }
+
+    if (this.activeRoomCodeTitle) this.activeRoomCodeTitle.textContent = room.roomCode;
+    if (this.activeRoomRoleText) {
+      this.activeRoomRoleText.textContent = isHost ? 'You are the Host (DJ)' : `Connected to DJ ${room.hostName || 'Host'}`;
+    }
+
+    if (room.currentTrack) {
+      if (this.activeRoomTrackArt) this.activeRoomTrackArt.src = room.currentTrack.cover || 'assets/weleta_cover.jpg';
+      if (this.activeRoomTrackTitle) this.activeRoomTrackTitle.textContent = room.currentTrack.title || 'Untitled';
+      if (this.activeRoomTrackArtist) this.activeRoomTrackArtist.textContent = room.currentTrack.artist || 'Unknown Artist';
+      if (this.activeRoomTrackStateBadge) {
+        this.activeRoomTrackStateBadge.textContent = room.playbackState === 'playing' ? 'Playing' : 'Paused';
+        this.activeRoomTrackStateBadge.style.color = room.playbackState === 'playing' ? '#6ee7b7' : 'var(--color-text-dim)';
+      }
+    }
+
+    if (this.activeRoomCountBadge) {
+      this.activeRoomCountBadge.textContent = `${pCount} in room`;
+    }
+    if (this.activeRoomParticipantsList) {
+      this.activeRoomParticipantsList.innerHTML = '';
+      (room.participants || []).forEach(p => {
+        const pEl = document.createElement('div');
+        pEl.className = 'participant-item';
+        pEl.innerHTML = `
+          <div class="participant-user-info">
+            ${p.avatar ? `<img src="${p.avatar}" alt="${p.name}" class="participant-avatar-img" crossorigin="anonymous">` : `<div class="participant-avatar-badge">${(p.name || 'M')[0].toUpperCase()}</div>`}
+            <div>
+              <div style="font-weight:600; font-size:0.88rem; color:#fff;">${p.name} ${p.id === this.myParticipant.id ? '<span style="color:var(--color-gold); font-size:0.75rem;">(You)</span>' : ''}</div>
+              <div style="font-size:0.7rem; color:var(--color-text-dim);">${p.isHost ? 'Session Host' : 'Listener'}</div>
+            </div>
+          </div>
+          ${p.isHost ? `<span class="room-role-pill" style="font-size:0.65rem;">DJ</span>` : ''}
+        `;
+        this.activeRoomParticipantsList.appendChild(pEl);
+      });
+    }
+
+    if (this.btnLeaveRoomModal) {
+      this.btnLeaveRoomModal.textContent = isHost ? 'End Session for All' : 'Leave Session';
+    }
+  }
+
+  handleSendReaction(type) {
+    if (!this.activeRoom) return;
+    const name = this.myParticipant ? this.myParticipant.name : 'Friend';
+    FirebaseService.sendRoomReaction(this.activeRoom.roomCode, {
+      type: type,
+      from: name
+    });
+    this.renderFloatingReaction(type, 'You');
+  }
+
+  renderFloatingReaction(type, fromName) {
+    if (!this.reactionFloatingStage) return;
+
+    const reactionEl = document.createElement('div');
+    reactionEl.className = 'reaction-floating-item';
+    
+    let iconSvg = '';
+    if (type === 'fire') {
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
+    } else if (type === 'heart') {
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    } else if (type === 'music') {
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+    } else {
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>';
+    }
+
+    reactionEl.innerHTML = `
+      ${iconSvg}
+      <span class="reaction-from-name">${fromName}</span>
+    `;
+
+    const randomLeft = 15 + Math.random() * 70;
+    reactionEl.style.left = `${randomLeft}%`;
+
+    this.reactionFloatingStage.appendChild(reactionEl);
+
+    setTimeout(() => {
+      if (reactionEl.parentNode) {
+        reactionEl.parentNode.removeChild(reactionEl);
+      }
+    }, 2300);
+  }
+
+  copyRoomInviteLink(buttonEl, labelEl) {
+    if (!this.activeRoom) return;
+    const url = `${window.location.origin}${window.location.pathname}?room=${this.activeRoom.roomCode}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        const origText = labelEl ? labelEl.textContent : 'Invite';
+        if (labelEl) labelEl.textContent = 'Copied!';
+        setTimeout(() => {
+          if (labelEl) labelEl.textContent = origText;
+        }, 2000);
+      }).catch(() => {
+        prompt('Copy Room Invite Link:', url);
+      });
+    } else {
+      prompt('Copy Room Invite Link:', url);
     }
   }
 }

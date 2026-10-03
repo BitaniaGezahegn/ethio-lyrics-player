@@ -249,5 +249,39 @@ export const Storage = {
     try {
       localStorage.setItem('ethio_lyrics_playlists', JSON.stringify(playlists || []));
     } catch (e) {}
+  },
+
+  // Participant Identity for Listen Together
+  getParticipant(currentUser = null) {
+    if (currentUser) {
+      return {
+        id: currentUser.uid,
+        name: currentUser.displayName || 'Google User',
+        avatar: currentUser.photoURL || ''
+      };
+    }
+    let pId = localStorage.getItem('ethio_lyrics_guest_id');
+    if (!pId) {
+      pId = 'guest_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('ethio_lyrics_guest_id', pId);
+    }
+    let pName = localStorage.getItem('ethio_lyrics_guest_name');
+    if (!pName) {
+      pName = 'Music Lover ' + Math.floor(100 + Math.random() * 900);
+      localStorage.setItem('ethio_lyrics_guest_name', pName);
+    }
+    return {
+      id: pId,
+      name: pName,
+      avatar: ''
+    };
+  },
+
+  setParticipantName(name) {
+    if (!name) return;
+    try {
+      localStorage.setItem('ethio_lyrics_guest_name', name.trim());
+    } catch (e) {}
   }
 };
+
