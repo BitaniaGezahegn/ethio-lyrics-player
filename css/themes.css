@@ -1,0 +1,663 @@
+/* ==========================================================================
+   Modular Theme Definitions - Performance Optimized for 60 FPS
+   Dynamic Artwork Canvas, Ambient Motion & Floating Particles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Shared Keyframe Animations
+   -------------------------------------------------------------------------- */
+@keyframes ambient-mesh-drift {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+    filter: blur(55px);
+  }
+  50% {
+    transform: scale(1.12) translate3d(24px, -18px, 0);
+    filter: blur(65px);
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+    filter: blur(55px);
+  }
+}
+
+@keyframes cinema-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes spin-disc-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes mesh-drift {
+  0% { transform: scale(1) translate3d(0, 0, 0); }
+  50% { transform: scale(1.12) translate3d(20px, -15px, 0); }
+  100% { transform: scale(1) translate3d(0, 0, 0); }
+}
+
+@keyframes spotlight-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+
+/* ==========================================================================
+   THEME 1: Dynamic Artwork Ambient (DEFAULT THEME)
+   Colors extracted dynamically from current track artwork in real time!
+   Features breathing ambient mesh motion & floating atmospheric particles
+   ========================================================================== */
+#app.theme-artwork-ambient .backdrop-gradient {
+  background: 
+    radial-gradient(ellipse at 18% 22%, var(--art-primary, #9b1d20) 0%, transparent 55%),
+    radial-gradient(ellipse at 82% 78%, var(--art-secondary, #2563eb) 0%, transparent 58%),
+    radial-gradient(ellipse at 50% 48%, var(--art-highlight, #e11d48) 0%, transparent 65%),
+    linear-gradient(180deg, var(--art-dark, #0a0206) 0%, #030104 100%);
+  animation: ambient-mesh-drift 20s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+  filter: blur(55px);
+  opacity: 1;
+  transition: background 1.2s ease;
+}
+
+#app.theme-artwork-ambient .song-header-section {
+  display: flex;
+}
+
+#app.theme-artwork-ambient .artist-amharic {
+  color: #ffffff;
+  text-shadow: 0 0 20px var(--art-glow, rgba(255, 255, 255, 0.4));
+}
+
+#app.theme-artwork-ambient .artist-english {
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.16em;
+}
+
+#app.theme-artwork-ambient .song-title-amharic {
+  color: #ffffff;
+  text-shadow: 0 4px 25px var(--art-glow, rgba(255, 255, 255, 0.5)), 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+#app.theme-artwork-ambient .stage-split {
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+}
+
+/* Base lyric line: plenty of padding so no letter is clipped */
+#app.theme-artwork-ambient .lyric-line {
+  font-family: var(--font-ethiopic);
+  font-size: 1.95rem;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  padding: 0.35rem 2rem;
+  transform-origin: left center;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.26s ease;
+  pointer-events: none;
+  contain: style;
+}
+
+#app.theme-artwork-ambient .lyric-line.prev,
+#app.theme-artwork-ambient .lyric-line.next,
+#app.theme-artwork-ambient .lyric-line.near {
+  color: rgba(255, 255, 255, 0.78);
+  opacity: 0.74;
+  transform: scale(0.97) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+/* Active line with ambient artwork glow */
+#app.theme-artwork-ambient .lyric-line.active {
+  color: #ffffff;
+  font-size: 2.38rem;
+  font-weight: 700;
+  opacity: 1;
+  transform: scale(1.04) translate3d(6px, 0, 0);
+  text-shadow: 
+    0 4px 20px rgba(255, 255, 255, 0.7),
+    0 0 30px var(--art-glow, rgba(255, 255, 255, 0.4)),
+    0 2px 10px rgba(0, 0, 0, 0.9);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-artwork-ambient .lyric-line.active::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #ffffff;
+  border-radius: 50%;
+  margin-right: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px #ffffff, 0 0 8px var(--art-primary, #ffffff);
+}
+
+#app.theme-artwork-ambient .lyric-line.distant {
+  opacity: 0 !important;
+  transform: scale(0.9) translate3d(0, 0, 0);
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Vinyl visualizer with ambient glow matching artwork */
+#app.theme-artwork-ambient .visualizer-container {
+  display: flex;
+}
+
+#app.theme-artwork-ambient .disc-wrapper {
+  width: 370px;
+  height: 370px;
+  border-radius: 50%;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.85),
+    0 0 50px var(--art-glow, rgba(255, 255, 255, 0.25));
+  transition: box-shadow 0.8s ease;
+}
+
+#app.theme-artwork-ambient .disc-outer-grooves {
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 20px var(--art-glow, rgba(255, 255, 255, 0.2));
+}
+
+#app.theme-artwork-ambient .vinyl-disc {
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+}
+
+#app.theme-artwork-ambient .disc-artwork-img {
+  border-radius: 50%;
+}
+
+#app.theme-artwork-ambient .album-meta-tag {
+  color: #ffffff;
+  font-family: var(--font-ethiopic);
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+
+/* ==========================================================================
+   THEME 2: 1999 Ethio Lyrics Video (Authentic Broadcast Replica)
+   ========================================================================== */
+#app.theme-ethio-classic .backdrop-gradient {
+  background: radial-gradient(
+    ellipse at 48% 45%, 
+    #7a1d26 0%, 
+    #53131a 35%, 
+    #2c070c 70%, 
+    #0c0204 100%
+  );
+  opacity: 1;
+}
+
+#app.theme-ethio-classic .song-header-section {
+  display: flex;
+}
+
+#app.theme-ethio-classic .stage-split {
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+}
+
+#app.theme-ethio-classic .lyric-line {
+  font-family: var(--font-ethiopic);
+  font-size: 1.95rem;
+  color: rgba(255, 235, 235, 0.65);
+  opacity: 0;
+  padding: 0.35rem 2rem;
+  transform-origin: left center;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  contain: style;
+}
+
+#app.theme-ethio-classic .lyric-line.prev,
+#app.theme-ethio-classic .lyric-line.next,
+#app.theme-ethio-classic .lyric-line.near {
+  color: rgba(255, 235, 235, 0.78);
+  opacity: 0.74;
+  transform: scale(0.97) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-ethio-classic .lyric-line.active {
+  color: #ffffff;
+  font-size: 2.35rem;
+  font-weight: 700;
+  opacity: 1;
+  transform: scale(1.03) translate3d(4px, 0, 0);
+  text-shadow:
+    0 4px 20px rgba(255, 255, 255, 0.6),
+    0 0 25px rgba(220, 50, 60, 0.45);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-ethio-classic .lyric-line.active::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  margin-right: 0.9rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px #ffffff, 0 0 8px rgba(220, 50, 60, 0.9);
+}
+
+#app.theme-ethio-classic .lyric-line.distant {
+  opacity: 0 !important;
+  transform: scale(0.9) translate3d(0, 0, 0);
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#app.theme-ethio-classic .disc-wrapper {
+  width: 370px;
+  height: 370px;
+  border-radius: 50%;
+  box-shadow: 
+    0 15px 45px rgba(0, 0, 0, 0.8),
+    0 0 40px rgba(180, 40, 50, 0.25);
+}
+
+#app.theme-ethio-classic .vinyl-disc {
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.4);
+}
+
+#app.theme-ethio-classic .disc-artwork-img {
+  border-radius: 50%;
+}
+
+#app.theme-ethio-classic .album-meta-tag {
+  display: flex;
+  color: #ffffff;
+  font-family: var(--font-ethiopic);
+  font-size: 2.2rem;
+  font-weight: 600;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+
+
+/* ==========================================================================
+   THEME 3: Apple Music Ambient Canvas (3D Vinyl Sleeve Showcase)
+   ========================================================================== */
+#app.theme-apple-kinetic .backdrop-gradient {
+  background: 
+    radial-gradient(circle at 18% 25%, rgba(225, 29, 72, 0.75) 0%, transparent 50%),
+    radial-gradient(circle at 82% 75%, rgba(59, 130, 246, 0.75) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #0f172a 0%, #030712 100%);
+  animation: mesh-drift 24s infinite alternate ease-in-out;
+  will-change: transform;
+}
+
+#app.theme-apple-kinetic .stage-split {
+  grid-template-columns: 1.25fr 0.75fr;
+  align-items: center;
+}
+
+#app.theme-apple-kinetic .lyric-line {
+  font-size: 1.95rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.35rem 2rem;
+  transform-origin: left center;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  filter: blur(2px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, filter 0.3s ease;
+  pointer-events: none;
+  contain: style;
+}
+
+#app.theme-apple-kinetic .lyric-line.prev,
+#app.theme-apple-kinetic .lyric-line.next,
+#app.theme-apple-kinetic .lyric-line.near {
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.74;
+  transform: scale(0.97) translate3d(0, 0, 0);
+  filter: blur(1px);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-apple-kinetic .lyric-line.active {
+  color: #ffffff;
+  font-size: 2.5rem;
+  font-weight: 700;
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1.04) translate3d(12px, 0, 0);
+  text-shadow: 0 8px 30px rgba(255, 255, 255, 0.6), 0 2px 10px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-apple-kinetic .lyric-line.distant {
+  opacity: 0 !important;
+  filter: blur(4px);
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#app.theme-apple-kinetic .disc-wrapper {
+  width: 320px;
+  height: 320px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.75),
+    0 0 40px rgba(255, 255, 255, 0.1);
+  transform: perspective(900px) rotateY(-8deg) rotateX(4deg);
+  transition: transform 0.4s ease;
+  position: relative;
+  overflow: visible;
+}
+
+#app.theme-apple-kinetic .disc-wrapper:hover {
+  transform: perspective(900px) rotateY(-3deg) rotateX(2deg) translateY(-5px);
+}
+
+#app.theme-apple-kinetic .disc-outer-grooves {
+  display: none;
+}
+
+#app.theme-apple-kinetic .vinyl-disc {
+  width: 290px;
+  height: 290px;
+  border-radius: 50% !important;
+  position: absolute;
+  top: 15px;
+  left: 65px;
+  z-index: -1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#app.theme-apple-kinetic .disc-artwork-img {
+  border-radius: 50% !important;
+}
+
+#app.theme-apple-kinetic .album-meta-tag {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.5rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 1.35rem;
+  font-family: var(--font-sans);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ==========================================================================
+   THEME 4: Cinema Concert Horizon (21:9 Letterbox Widescreen)
+   ========================================================================== */
+#app.theme-cinema-horizon .backdrop-gradient {
+  background: 
+    radial-gradient(ellipse at 50% 10%, rgba(255, 215, 0, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, #020617 0%, #0a0f1d 50%, #01040a 100%);
+  opacity: 1;
+}
+
+#app.theme-cinema-horizon .stage-content {
+  box-shadow: 
+    inset 0 35px 50px rgba(0, 0, 0, 0.95),
+    inset 0 -35px 50px rgba(0, 0, 0, 0.95);
+}
+
+#app.theme-cinema-horizon .song-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.18);
+  padding-bottom: 1rem;
+}
+
+#app.theme-cinema-horizon .artist-amharic {
+  font-size: 2.1rem;
+  color: #facc15;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+}
+
+#app.theme-cinema-horizon .artist-english {
+  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+#app.theme-cinema-horizon .song-title-amharic {
+  font-size: 3rem;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow: 0 4px 25px rgba(250, 204, 21, 0.35);
+}
+
+#app.theme-cinema-horizon .stage-split {
+  grid-template-columns: 1.35fr 0.65fr;
+  align-items: center;
+}
+
+#app.theme-cinema-horizon .lyric-line {
+  font-family: var(--font-ethiopic);
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.4rem 2rem;
+  transform-origin: left center;
+  transform: scale(0.94) translate3d(0, 0, 0);
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.26s ease;
+  contain: style;
+}
+
+#app.theme-cinema-horizon .lyric-line.prev,
+#app.theme-cinema-horizon .lyric-line.next,
+#app.theme-cinema-horizon .lyric-line.near {
+  color: rgba(255, 245, 210, 0.78);
+  opacity: 0.74;
+  transform: scale(0.98) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-cinema-horizon .lyric-line.active {
+  font-size: 2.45rem;
+  font-weight: 700;
+  color: #fff9db;
+  opacity: 1;
+  transform: scale(1.03) translate3d(8px, 0, 0);
+  background: linear-gradient(90deg, #ffffff 0%, #fef08a 40%, #ffffff 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: cinema-shimmer 4s ease-in-out infinite alternate;
+  text-shadow: 0 0 30px rgba(250, 204, 21, 0.5);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-cinema-horizon .lyric-line.distant {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#app.theme-cinema-horizon .visualizer-container {
+  position: relative;
+  display: flex;
+}
+
+#app.theme-cinema-horizon .visualizer-container::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  width: 260px;
+  height: 480px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(250, 204, 21, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+  animation: spotlight-flicker 5s infinite ease-in-out;
+}
+
+#app.theme-cinema-horizon .disc-wrapper {
+  width: 330px;
+  height: 330px;
+  border-radius: 50%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 40px rgba(250, 204, 21, 0.25);
+}
+
+#app.theme-cinema-horizon .disc-outer-grooves {
+  border-color: rgba(250, 204, 21, 0.4);
+}
+
+#app.theme-cinema-horizon .vinyl-disc {
+  border-radius: 50% !important;
+  border: 3px solid rgba(250, 204, 21, 0.6);
+}
+
+#app.theme-cinema-horizon .disc-artwork-img {
+  border-radius: 50% !important;
+}
+
+#app.theme-cinema-horizon .album-meta-tag {
+  color: #fef08a;
+  font-family: var(--font-cinzel), serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 15px rgba(250, 204, 21, 0.6);
+}
+
+
+/* ==========================================================================
+   THEME 5: Cyber Neon Club (Counter-Rotating Groove Laser Stage)
+   ========================================================================== */
+#app.theme-karaoke-neon .backdrop-gradient {
+  background: 
+    radial-gradient(ellipse at 50% 50%, #170424 0%, #0c0114 60%, #020005 100%),
+    linear-gradient(rgba(0, 242, 254, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 254, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+#app.theme-karaoke-neon .artist-amharic {
+  color: #00f2fe;
+  text-shadow: 0 0 15px rgba(0, 242, 254, 0.8), 0 0 30px rgba(0, 242, 254, 0.4);
+}
+
+#app.theme-karaoke-neon .song-title-amharic {
+  color: #ff007f;
+  text-shadow: 0 0 20px rgba(255, 0, 127, 0.85), 0 0 40px rgba(255, 0, 127, 0.45);
+}
+
+#app.theme-karaoke-neon .stage-split {
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+}
+
+#app.theme-karaoke-neon .lyric-line {
+  font-size: 1.95rem;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0.35rem 2rem;
+  transform-origin: left center;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease;
+  pointer-events: none;
+  contain: style;
+}
+
+#app.theme-karaoke-neon .lyric-line.prev,
+#app.theme-karaoke-neon .lyric-line.next,
+#app.theme-karaoke-neon .lyric-line.near {
+  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.74;
+  transform: scale(0.97) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-karaoke-neon .lyric-line.active {
+  color: #ffffff;
+  font-size: 2.35rem;
+  font-weight: 700;
+  opacity: 1;
+  transform: scale(1.04) translate3d(6px, 0, 0);
+  text-shadow: 
+    0 0 10px #00f2fe, 
+    0 0 25px #00f2fe, 
+    0 0 45px #ff007f;
+  border-left: 3px solid #00f2fe;
+  padding-left: 1.6rem;
+  box-shadow: inset 10px 0 20px -10px rgba(0, 242, 254, 0.4);
+  pointer-events: auto;
+  visibility: visible !important;
+}
+
+#app.theme-karaoke-neon .lyric-line.distant {
+  opacity: 0 !important;
+  transform: scale(0.9) translate3d(0, 0, 0);
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+#app.theme-karaoke-neon .disc-wrapper {
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(255, 0, 127, 0.4), 0 0 70px rgba(0, 242, 254, 0.25);
+}
+
+#app.theme-karaoke-neon .disc-outer-grooves {
+  inset: -22px;
+  border: 2px dashed #00f2fe;
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+  animation: spin-disc-reverse 16s linear infinite !important;
+}
+
+#app.theme-karaoke-neon .vinyl-disc {
+  border-radius: 50% !important;
+  border: 3px solid #ff007f;
+}
+
+#app.theme-karaoke-neon .disc-artwork-img {
+  border-radius: 50% !important;
+}
+
+#app.theme-karaoke-neon .album-meta-tag {
+  color: #00f2fe;
+  text-shadow: 0 0 14px rgba(0, 242, 254, 0.85);
+  font-family: var(--font-sans);
+  font-size: 1.4rem;
+}
+
+
+/* ==========================================================================
+   Mobile Theme Responsive Overrides
+   ========================================================================== */
+@media (max-width: 680px) {
+  #app .stage-split {
+    grid-template-columns: 1fr !important;
+  }
+  #app .lyric-line {
+    font-size: 1.1rem !important;
+    padding: 0.3rem 1rem !important;
+  }
+  #app .lyric-line.active {
+    font-size: 1.45rem !important;
+    transform: scale(1.02) translate3d(0, 0, 0) !important;
+  }
+  #app .lyric-line.prev,
+  #app .lyric-line.next,
+  #app .lyric-line.near {
+    font-size: 1.1rem !important;
+  }
+}

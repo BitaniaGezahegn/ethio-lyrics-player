@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethio Lyrics Player | Synced Lyrics</title>
+  <meta name="description" content="Synchronized Ethiopian Music Lyrics Player featuring customizable themes, tap-sync LRC editor, and visualizer design.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127925;</text></svg>">
+
+  <!-- Preconnect for Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/themes.css">
+</head>
+<body>
+
+  <div id="app" class="theme-artwork-ambient">
+
+    <!-- Top Utility Bar -->
+    <header class="top-bar">
+      <div class="brand-badge">
+        <span class="brand-icon">&#127925;</span>
+        <span class="brand-title">Ethio Lyrics Player</span>
+      </div>
+
+      <div class="top-actions">
+        <button id="btnOpenThemeModal" class="btn-pill" title="Switch Display Style">
+          <span>&#127912;</span>
+          <span>Change Design</span>
+        </button>
+        <button id="btnOpenTrackModal" class="btn-pill" title="Choose Track or Upload MP3">
+          <span>&#128194;</span>
+          <span>Tracks &amp; Upload</span>
+        </button>
+        <button id="btnOpenLrcEditor" class="btn-pill" title="Open LRC Editor">
+          <span>&#127925;</span>
+          <span>LRC Editor</span>
+        </button>
+        <button id="btnToggleFullscreen" class="btn-pill" title="Toggle Fullscreen">
+          <span id="fullscreenIcon">&#9974;</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Visual Stage -->
+    <main class="main-stage">
+      <!-- Ambient Visual Backdrop -->
+      <div class="stage-backdrop">
+        <div class="backdrop-gradient"></div>
+        <div class="backdrop-vignette"></div>
+        <div class="backdrop-particles">
+          <canvas id="ambientParticlesCanvas" class="ambient-particles-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="stage-content">
+        <!-- Song Header Metadata -->
+        <section class="song-header-section">
+          <div class="artist-heading">
+            <h1 id="artistAmharic" class="artist-amharic">አቢነት አጎናፍር</h1>
+            <h2 id="artistEnglish" class="artist-english">ABINET AGONAFIR</h2>
+          </div>
+          <div class="song-title-box">
+            <h1 id="songTitleAmharic" class="song-title-amharic">አትሒጅብኝ</h1>
+          </div>
+        </section>
+
+        <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
+        <section class="stage-split">
+          <!-- Lyrics Viewport -->
+          <div class="lyrics-container" id="lyricsViewport">
+            <div class="lyrics-scroll-wrap" id="lyricsScrollWrap">
+              <!-- Dynamically populated lyrics lines or empty state -->
+            </div>
+            <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
+          </div>
+
+          <!-- Circular Vinyl Disc / Album Badge -->
+          <div class="visualizer-container">
+            <div class="disc-wrapper">
+              <div class="disc-outer-grooves"></div>
+              <div class="vinyl-disc" id="vinylDisc">
+                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc">
+                <div class="disc-center-hole"></div>
+              </div>
+            </div>
+
+            <!-- Album Title and Year -->
+            <div class="album-meta-tag">
+              <span id="albumTitle">Album</span>
+              <span class="album-meta-divider">|</span>
+              <span id="albumYear">2024</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Docked Playback Bar -->
+    <footer class="player-bar-dock">
+      <!-- Left Track Info -->
+      <div class="track-pill-info">
+        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art">
+        <div class="track-text-meta">
+          <div id="playerMiniTitle" class="track-mini-title">Loading...</div>
+          <div id="playerMiniArtist" class="track-mini-artist">...</div>
+        </div>
+      </div>
+
+      <!-- Center Audio Controls & Scrubber -->
+      <div class="playback-controls-center">
+        <div class="buttons-row">
+          <button id="btnRewind" class="ctrl-btn" title="Rewind 5 seconds">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+            </svg>
+          </button>
+
+          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause">
+            <svg id="playIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg id="pauseIcon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          </button>
+
+          <button id="btnForward" class="ctrl-btn" title="Fast Forward 5 seconds">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="timeline-container">
+          <span id="currentTimeLabel" class="time-label">0:00</span>
+          <div id="scrubberTrack" class="scrubber-track">
+            <div id="scrubberFill" class="scrubber-fill">
+              <div class="scrubber-thumb"></div>
+            </div>
+          </div>
+          <span id="durationLabel" class="time-label">0:00</span>
+        </div>
+      </div>
+
+      <!-- Right Controls: Speed & Volume -->
+      <div class="player-controls-right">
+        <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">
+          1.0x
+        </button>
+
+        <div class="volume-container">
+          <button id="btnMute" class="ctrl-btn" title="Mute/Unmute">
+            <svg id="volumeIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          </button>
+          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.8">
+        </div>
+      </div>
+    </footer>
+
+    <!-- Modal 1: Theme / Design Picker -->
+    <div id="themeModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Select Lyrics Display Design</h2>
+          <button class="modal-close-btn" data-close="themeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: var(--color-text-dim); font-size: 0.9rem;">
+            Choose a visual presentation theme. All themes dynamically synchronize lyrics with audio in real time.
+          </p>
+          <div class="theme-grid" id="themeOptionsList">
+            <!-- Dynamically populated theme cards -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 2: Track & Custom Song / LRC Upload & Edit -->
+    <div id="trackModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 id="trackModalTitle">Music Library</h2>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <button id="btnShowUploadForm" class="btn-pill btn-primary-action" style="font-size:0.8rem; padding:0.4rem 0.9rem;">
+              <span>+ Upload Song</span>
+            </button>
+            <button class="modal-close-btn" data-close="trackModal">&times;</button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <!-- View 1: Track List View -->
+          <div id="trackListView">
+            <div id="presetTracksList" style="display:flex; flex-direction:column; gap:0.6rem;">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- View 2: Track Upload / Edit Form View -->
+          <div id="trackFormView" style="display:none; flex-direction:column; gap:1.1rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:0.75rem; border-bottom:1px solid rgba(255,255,255,0.08);">
+              <button id="btnBackToLibrary" class="btn-pill" style="font-size:0.8rem; padding:0.35rem 0.8rem;">
+                &larr; Back to Library
+              </button>
+              <h3 id="trackFormModeTitle" style="font-size:1rem; font-weight:600; margin:0;">Upload New Song</h3>
+            </div>
+
+            <!-- Form Validation Error Banner -->
+            <div id="trackFormError" style="display:none; padding:0.65rem 0.9rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; color:#fca5a5; font-size:0.82rem;"></div>
+
+            <!-- Audio File Dropzone -->
+            <div class="form-group">
+              <label>Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
+              <div class="dropzone" id="audioDropzone">
+                <span style="font-size:1.6rem;">&#128193;</span>
+                <p style="margin-top:0.4rem; font-size:0.85rem;" id="audioDropzoneLabel">Click or Drag &amp; Drop Audio File (MP3, WAV, AAC, M4A)</p>
+                <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
+              </div>
+            </div>
+
+            <!-- Cover Artwork / Image Picker -->
+            <div class="form-group">
+              <label>Cover / Artwork Image <span class="optional-badge">(Optional)</span></label>
+              <div class="cover-picker-container">
+                <div class="cover-preview-box" id="coverPreviewBox" title="Click to upload custom cover image">
+                  <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img">
+                  <div class="cover-preview-overlay">
+                    <span>&#128247; Change</span>
+                  </div>
+                </div>
+                <div class="cover-picker-info">
+                  <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0;">
+                    Select custom album cover or artwork (JPG, PNG, WebP).
+                  </p>
+                  <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.4rem;">
+                    <button type="button" id="btnUploadCoverFile" class="btn-pill" style="font-size:0.75rem;">
+                      Select Image
+                    </button>
+                    <button type="button" id="btnRemoveCover" class="btn-pill" style="font-size:0.75rem; color:#ff7b7b;">
+                      Reset Image
+                    </button>
+                    <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mandatory Fields: Artist Name & Song Title -->
+            <div class="form-grid-2col">
+              <div class="form-group">
+                <label for="inputCustomArtist">Artist Name <span class="required-badge">* Required</span></label>
+                <input type="text" id="inputCustomArtist" class="form-input" placeholder="e.g. አቢነት አጎናፍር / Abinet" required>
+              </div>
+              <div class="form-group">
+                <label for="inputCustomTitle">Song Title <span class="required-badge">* Required</span></label>
+                <input type="text" id="inputCustomTitle" class="form-input" placeholder="e.g. አትሒጅብኝ / Athijibegn" required>
+              </div>
+            </div>
+
+            <!-- Optional Fields: Album Name & Year -->
+            <div class="form-grid-2col">
+              <div class="form-group">
+                <label for="inputCustomAlbum">Album Name <span class="optional-badge">(Optional)</span></label>
+                <input type="text" id="inputCustomAlbum" class="form-input" placeholder="e.g. ውለታ / Weleta">
+              </div>
+              <div class="form-group">
+                <label for="inputCustomYear">Year <span class="optional-badge">(Optional)</span></label>
+                <input type="text" id="inputCustomYear" class="form-input" placeholder="e.g. 2024">
+              </div>
+            </div>
+
+            <!-- Optional Field: LRC Lyrics -->
+            <div class="form-group">
+              <label>Synchronized LRC Lyrics <span class="optional-badge">(Optional)</span></label>
+              <div style="display:flex; gap:0.5rem; margin-bottom:0.4rem;">
+                <button type="button" id="btnUploadLrc" class="btn-pill" style="font-size:0.75rem;">Upload .lrc File</button>
+                <input type="file" id="lrcFileInput" accept=".lrc,.txt" style="display:none;">
+              </div>
+              <textarea id="inputCustomLrc" class="form-textarea" placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; margin-top:0.4rem;">
+              <button id="btnApplyCustomTrack" class="btn-primary" style="flex:1;">
+                Save &amp; Play Song
+              </button>
+              <button id="btnCancelTrackForm" class="btn-pill" style="padding:0.8rem 1.2rem;">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
