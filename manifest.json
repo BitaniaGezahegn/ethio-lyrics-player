@@ -1,0 +1,17 @@
+{
+  "name": "Ethio Lyrics Player",
+  "short_name": "EthioLyrics",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b0507",
+  "theme_color": "#160910",
+  "description": "Synchronized Ethiopian Music Lyrics Player with real-time dynamic artwork ambient themes and offline library.",
+  "icons": [
+    {
+      "src": "assets/weleta_cover.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

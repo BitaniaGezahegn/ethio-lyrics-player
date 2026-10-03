@@ -1857,3 +1857,281 @@ html, body {
   background: rgba(0,0,0,0.35);
   line-height: 1.7;
 }
+
+/* ==========================================================================
+   Phase 2: Auth, Global Cloud Catalog, Offline Badges & Admin Panel
+   ========================================================================== */
+
+/* Admin Badge & Counter */
+.btn-admin-badge {
+  background: linear-gradient(135deg, rgba(229, 185, 90, 0.2), rgba(244, 162, 97, 0.15)) !important;
+  border-color: rgba(229, 185, 90, 0.5) !important;
+  color: #fce7b2 !important;
+  font-weight: 600 !important;
+}
+
+.btn-admin-badge:hover {
+  background: linear-gradient(135deg, rgba(229, 185, 90, 0.35), rgba(244, 162, 97, 0.25)) !important;
+  border-color: rgba(229, 185, 90, 0.8) !important;
+  box-shadow: 0 0 15px rgba(229, 185, 90, 0.3);
+}
+
+.badge-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e63946;
+  color: #fff;
+  border-radius: 9999px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Auth Profile Pill */
+.auth-bar-item {
+  display: flex;
+  align-items: center;
+}
+
+.btn-auth-pill {
+  padding: 0.45rem 0.9rem !important;
+}
+
+.user-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  padding: 0.3rem 0.65rem 0.3rem 0.35rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  color: #fff;
+}
+
+.user-avatar-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.user-name-label {
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.btn-sign-out-icon {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 50%;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.btn-sign-out-icon:hover {
+  color: #ff6b6b;
+}
+
+/* Library Tabs Nav */
+.library-tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.3rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.library-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-dim);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.library-tab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.library-tab.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+
+/* Search bar */
+.library-search-bar {
+  margin-top: -0.25rem;
+}
+
+.library-search-bar input {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+}
+
+.library-search-bar input:focus {
+  border-color: var(--color-gold);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Download Offline Buttons */
+.btn-download-offline {
+  font-size: 0.72rem !important;
+  padding: 0.35rem 0.65rem !important;
+  color: #a7f3d0 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.btn-download-offline:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+}
+
+.btn-download-offline.downloaded {
+  color: #6ee7b7 !important;
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+/* Public Submission Card in Upload Form */
+.public-submit-card {
+  background: rgba(244, 162, 97, 0.08);
+  border: 1px dashed rgba(244, 162, 97, 0.4);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #f4a261;
+  cursor: pointer;
+}
+
+.checkbox-label-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fce7b2;
+}
+
+/* Admin Studio Modal */
+.admin-modal-card {
+  max-width: 680px !important;
+}
+
+.r2-info-banner {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(244, 162, 97, 0.25);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+}
+
+.r2-info-banner code {
+  color: #f4a261;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.admin-submission-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: var(--transition-fast);
+}
+
+.admin-submission-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(229, 185, 90, 0.3);
+}
+
+.submission-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.submission-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.submission-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+
+.btn-approve-submission {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  font-weight: 600 !important;
+  font-size: 0.78rem !important;
+  padding: 0.4rem 0.9rem !important;
+}
+
+.btn-approve-submission:hover {
+  background: rgba(16, 185, 129, 0.35) !important;
+}
+
+.btn-reject-submission {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  font-size: 0.78rem !important;
+  padding: 0.4rem 0.8rem !important;
+}
+
+.btn-reject-submission:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+

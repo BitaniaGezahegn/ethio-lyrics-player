@@ -6,6 +6,12 @@
   <title>Ethio Lyrics Player | Synced Lyrics</title>
   <meta name="description" content="Synchronized Ethiopian Music Lyrics Player featuring customizable themes, tap-sync LRC editor, and visualizer design.">
 
+  <!-- PWA & Mobile Web Meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#160910">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127925;</text></svg>">
 
@@ -30,13 +36,33 @@
       </div>
 
       <div class="top-actions">
+        <!-- Admin Dashboard Badge (Appears for Admin) -->
+        <button id="btnOpenAdminModal" class="btn-pill btn-admin-badge" style="display:none;" title="Admin Moderation & R2 Catalog">
+          <span>🛡️</span>
+          <span>Admin</span>
+          <span id="adminPendingBadge" class="badge-counter" style="display:none;">0</span>
+        </button>
+
+        <!-- Google Auth Profile Pill -->
+        <div id="authContainer" class="auth-bar-item">
+          <button id="btnGoogleSignIn" class="btn-pill btn-auth-pill" title="Sign in with Google">
+            <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span>Sign In</span>
+          </button>
+          <div id="userProfilePill" class="user-profile-pill" style="display:none;">
+            <img id="userAvatarImg" src="" alt="Avatar" class="user-avatar-mini">
+            <span id="userNameLabel" class="user-name-label">User</span>
+            <button id="btnSignOut" class="btn-sign-out-icon" title="Sign Out">✕</button>
+          </div>
+        </div>
+
         <button id="btnOpenThemeModal" class="btn-pill" title="Switch Display Style">
           <span>&#127912;</span>
           <span>Change Design</span>
         </button>
         <button id="btnOpenTrackModal" class="btn-pill" title="Choose Track or Upload MP3">
           <span>&#128194;</span>
-          <span>Tracks &amp; Upload</span>
+          <span>Music Library</span>
         </button>
         <button id="btnOpenLrcEditor" class="btn-pill" title="Open LRC Editor">
           <span>&#127925;</span>
@@ -184,7 +210,7 @@
       </div>
     </div>
 
-    <!-- Modal 2: Track & Custom Song / LRC Upload & Edit -->
+    <!-- Modal 2: Track Library & Upload -->
     <div id="trackModal" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
@@ -197,9 +223,33 @@
           </div>
         </div>
         <div class="modal-body">
-          <!-- View 1: Track List View -->
+          <!-- View 1: Track List View with Tabs -->
           <div id="trackListView">
-            <div id="presetTracksList" style="display:flex; flex-direction:column; gap:0.6rem;">
+            <!-- Library Tabs -->
+            <div class="library-tabs-nav">
+              <button id="tabGlobalCatalog" class="library-tab active">
+                <span>🌐</span> <span>Global Catalog</span>
+              </button>
+              <button id="tabOfflineLibrary" class="library-tab">
+                <span>💾</span> <span>My Offline Music</span>
+              </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="library-search-bar" id="catalogSearchWrap">
+              <input type="text" id="inputCatalogSearch" class="form-input" placeholder="🔍 Search songs, artists, or albums...">
+            </div>
+
+            <!-- Global Public Catalog Container -->
+            <div id="globalCatalogList" style="display:flex; flex-direction:column; gap:0.6rem;">
+              <div class="loading-catalog-spinner" style="text-align:center; padding:2rem; color:var(--color-text-dim);">
+                <div style="font-size:1.5rem; animation: pulse-glow 1.5s infinite;">⏳</div>
+                <div style="margin-top:0.5rem; font-size:0.85rem;">Loading Global Catalog...</div>
+              </div>
+            </div>
+
+            <!-- Local Offline Library Container -->
+            <div id="localTracksList" style="display:none; flex-direction:column; gap:0.6rem;">
               <!-- Populated via JS -->
             </div>
           </div>
@@ -220,7 +270,7 @@
             <div class="form-group">
               <label>Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
               <div class="dropzone" id="audioDropzone">
-                <span style="font-size:1.6rem;">&#128193;</span>
+                <span style="font-size:1.6rem;">📁</span>
                 <p style="margin-top:0.4rem; font-size:0.85rem;" id="audioDropzoneLabel">Click or Drag &amp; Drop Audio File (MP3, WAV, AAC, M4A)</p>
                 <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
               </div>
@@ -233,7 +283,7 @@
                 <div class="cover-preview-box" id="coverPreviewBox" title="Click to upload custom cover image">
                   <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img">
                   <div class="cover-preview-overlay">
-                    <span>&#128247; Change</span>
+                    <span>📷 Change</span>
                   </div>
                 </div>
                 <div class="cover-picker-info">
@@ -287,6 +337,22 @@
               <textarea id="inputCustomLrc" class="form-textarea" placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
             </div>
 
+            <!-- Public Submission / Publishing Options -->
+            <div class="public-submit-card" id="publicSubmissionGroup">
+              <label class="checkbox-container">
+                <input type="checkbox" id="checkSubmitToPublic">
+                <span class="checkmark"></span>
+                <span class="checkbox-label-text" id="publicSubmitCheckLabel">🚀 Submit for Public Catalog (Admin Review)</span>
+              </label>
+              <p style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
+                Share your music with the community. When approved by the admin, it will be published to the global catalog for everyone!
+              </p>
+              <div id="publicAudioUrlField" style="display:none; margin-top:0.6rem; padding-left:1.6rem;">
+                <label style="font-size:0.78rem; color:var(--color-gold);">Public Audio URL or Cloudflare R2 Filename (Optional):</label>
+                <input type="text" id="inputPublicAudioUrl" class="form-input" placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3" style="font-size:0.8rem; margin-top:0.25rem;">
+              </div>
+            </div>
+
             <div style="display:flex; gap:0.75rem; margin-top:0.4rem;">
               <button id="btnApplyCustomTrack" class="btn-primary" style="flex:1;">
                 Save &amp; Play Song
@@ -295,6 +361,103 @@
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 3: Admin Review & Moderation Panel -->
+    <div id="adminModal" class="modal-overlay">
+      <div class="modal-card admin-modal-card">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span style="font-size:1.3rem;">🛡️</span>
+            <div>
+              <h2 style="font-size:1.15rem; margin:0;">Admin Studio</h2>
+              <div style="font-size:0.75rem; color:var(--color-gold);">Review Submissions &amp; Manage Global Catalog</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close="adminModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- R2 Bucket Info Banner -->
+          <div class="r2-info-banner">
+            <div style="font-weight:600; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
+              <span>⚡ Cloudflare R2 Bucket:</span>
+              <span style="color:#f4a261;">ethio-lyrics-media</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--color-text-dim); margin-top:0.2rem; word-break:break-all;">
+              Public Base: <code>https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/</code>
+            </div>
+          </div>
+
+          <!-- Admin Tabs -->
+          <div class="library-tabs-nav">
+            <button id="adminTabSubmissions" class="library-tab active">
+              <span>📥</span> <span>Pending Submissions</span>
+              <span id="adminSubmissionsBadge" class="badge-counter" style="display:none;">0</span>
+            </button>
+            <button id="adminTabDirectPublish" class="library-tab">
+              <span>⚡</span> <span>Quick Publish to R2 / Catalog</span>
+            </button>
+          </div>
+
+          <!-- Section A: Pending Submissions Queue -->
+          <div id="adminSubmissionsSection">
+            <div id="adminSubmissionsList" style="display:flex; flex-direction:column; gap:0.8rem;">
+              <div style="text-align:center; padding:2rem; color:var(--color-text-dim); font-size:0.88rem;">
+                No pending submissions.
+              </div>
+            </div>
+          </div>
+
+          <!-- Section B: Direct Quick Publish Form for Admin -->
+          <div id="adminDirectPublishSection" style="display:none; flex-direction:column; gap:0.9rem;">
+            <div class="form-grid-2col">
+              <div class="form-group">
+                <label>Artist Name <span class="required-badge">* Required</span></label>
+                <input type="text" id="adminNewArtist" class="form-input" placeholder="e.g. ጥላሁን ገሠሠ">
+              </div>
+              <div class="form-group">
+                <label>Song Title <span class="required-badge">* Required</span></label>
+                <input type="text" id="adminNewTitle" class="form-input" placeholder="e.g. ትዝታ">
+              </div>
+            </div>
+
+            <div class="form-grid-2col">
+              <div class="form-group">
+                <label>Album Name</label>
+                <input type="text" id="adminNewAlbum" class="form-input" placeholder="e.g. ትውስታዎች">
+              </div>
+              <div class="form-group">
+                <label>Year</label>
+                <input type="text" id="adminNewYear" class="form-input" placeholder="2024">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Audio URL (Cloudflare R2 or direct MP3) <span class="required-badge">* Required</span></label>
+              <input type="url" id="adminNewAudioUrl" class="form-input" placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3">
+              <div style="display:flex; gap:0.4rem; margin-top:0.35rem;">
+                <button type="button" id="btnAdminAppendR2" class="btn-pill" style="font-size:0.72rem;">
+                  Paste R2 Domain
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Cover Artwork URL (or upload local file)</label>
+              <input type="text" id="adminNewCoverUrl" class="form-input" placeholder="assets/weleta_cover.jpg or https://...">
+            </div>
+
+            <div class="form-group">
+              <label>Synchronized LRC Lyrics</label>
+              <textarea id="adminNewLrc" class="form-textarea" rows="4" placeholder="[00:00.00] Lyrics line here..."></textarea>
+            </div>
+
+            <button id="btnAdminPublishDirect" class="btn-primary" style="margin-top:0.5rem;">
+              🚀 Publish Directly to Global Catalog
+            </button>
           </div>
         </div>
       </div>

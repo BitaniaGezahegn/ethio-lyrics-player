@@ -100,6 +100,60 @@ export const Storage = {
     }
   },
 
+  async hasTrack(id) {
+    const item = await this.getTrack(id);
+    return !!item;
+  },
+
+  async downloadTrackForOffline(track, onProgress = null) {
+    try {
+      if (onProgress) onProgress('downloading_audio');
+      let audioBlob = null;
+      if (track.audioUrl) {
+        const res = await fetch(track.audioUrl);
+        if (!res.ok) throw new Error(`HTTP error ${res.status} fetching audio`);
+        audioBlob = await res.blob();
+      }
+
+      if (onProgress) onProgress('downloading_cover');
+      let cover = track.cover || 'assets/weleta_cover.jpg';
+      let discCenter = track.discCenter || cover;
+
+      // Convert remote cover to blob data if remote
+      if (cover.startsWith('http')) {
+        try {
+          const cRes = await fetch(cover);
+          const cBlob = await cRes.blob();
+          cover = await new Promise((res) => {
+            const reader = new FileReader();
+            reader.onloadend = () => res(reader.result);
+            reader.readAsDataURL(cBlob);
+          });
+          discCenter = cover;
+        } catch (imgErr) {
+          console.warn('Cover image fetch fallback:', imgErr);
+        }
+      }
+
+      const offlineTrack = {
+        ...track,
+        audioBlob: audioBlob,
+        cover: cover,
+        discCenter: discCenter,
+        isDownloaded: true,
+        downloadedAt: Date.now()
+      };
+
+      await this.saveTrack(offlineTrack);
+      if (onProgress) onProgress('complete');
+      return offlineTrack;
+    } catch (err) {
+      console.error('downloadTrackForOffline error:', err);
+      if (onProgress) onProgress('error');
+      throw err;
+    }
+  },
+
   getLastTrackId() {
     try {
       return localStorage.getItem('ethio_lyrics_active_track_id') || null;
