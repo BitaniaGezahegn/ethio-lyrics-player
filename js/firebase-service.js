@@ -7,6 +7,7 @@ import {
   getAuth, 
   signInWithPopup, 
   signInWithRedirect, 
+  getRedirectResult,
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged 
@@ -76,6 +77,17 @@ export const FirebaseService = {
       const admin = this.isAdmin(user);
       callback(user, admin);
     });
+  },
+
+  async checkRedirectResult() {
+    if (!auth) return null;
+    try {
+      const result = await getRedirectResult(auth);
+      return result ? result.user : null;
+    } catch (err) {
+      console.warn('Firebase redirect result check error:', err);
+      return null;
+    }
   },
 
   async loginWithGoogle() {

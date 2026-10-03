@@ -36,12 +36,8 @@ class LyricsApp {
     this.selectedAudioFile = null;
 
     this.initDOMElements();
-    this.initEvents();
-    this.initThemeSystem();
-    this.initAuth();
-    this.initServiceWorker();
 
-    // LRC Editor
+    // LRC Editor - instantiated early so it is immediately accessible to settings & buttons
     this.lrcEditor = new LrcEditor(this.player, async (lrcString) => {
       if (!this.currentTrack) return;
       this.currentTrack.lrc = lrcString;
@@ -53,6 +49,10 @@ class LyricsApp {
       this.player.play();
     });
 
+    this.initThemeSystem();
+    this.initAuth();
+    this.initEvents();
+    this.initServiceWorker();
     this.initLibrary();
   }
 
@@ -271,16 +271,18 @@ class LyricsApp {
     this.btnAdminPublishDirect = document.getElementById('btnAdminPublishDirect');
   }
 
-  initAuth() {
-    FirebaseService.onAuthChanged(async (user, isAdmin) => {
-      this.currentUser = user;
-      this.isAdmin = isAdmin;
+  handleUserAuthenticated(user, isAdmin) {
+    this.currentUser = user;
+    this.isAdmin = isAdmin;
 
-      if (user) {
-        if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'none';
-        if (this.userProfilePill) {
-          this.userProfilePill.style.display = 'inline-flex';
+    if (user) {
+      if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'none';
+      if (this.userProfilePill) {
+        this.userProfilePill.style.display = 'inline-flex';
+        if (this.userNameLabel) {
           this.userNameLabel.textContent = user.displayName ? user.displayName.split(' ')[0] : 'User';
+        }
+        if (this.userAvatarImg) {
           if (user.photoURL) {
             this.userAvatarImg.src = user.photoURL;
             this.userAvatarImg.style.display = 'block';
@@ -288,28 +290,67 @@ class LyricsApp {
             this.userAvatarImg.style.display = 'none';
           }
         }
-      } else {
-        if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'inline-flex';
-        if (this.userProfilePill) this.userProfilePill.style.display = 'none';
       }
-
-      // Show Admin Badge if Admin
-      if (isAdmin) {
-        if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'inline-flex';
-        if (this.publicSubmitCheckLabel) {
-          this.publicSubmitCheckLabel.textContent = 'Directly publish to Global Catalog (Admin)';
-        }
-        this.checkPendingSubmissionsCount();
-      } else {
-        if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'none';
-        if (this.publicSubmitCheckLabel) {
-          this.publicSubmitCheckLabel.textContent = 'Submit for Public Catalog (Admin Review)';
+      if (this.settingsAuthSignedOut) this.settingsAuthSignedOut.style.display = 'none';
+      if (this.settingsAuthSignedIn) this.settingsAuthSignedIn.style.display = 'flex';
+      if (this.settingsUserName) this.settingsUserName.textContent = user.displayName || 'Google User';
+      if (this.settingsUserEmail) this.settingsUserEmail.textContent = user.email || '';
+      if (this.settingsUserAvatar) {
+        if (user.photoURL) {
+          this.settingsUserAvatar.src = user.photoURL;
+          this.settingsUserAvatar.style.display = 'block';
+        } else {
+          this.settingsUserAvatar.style.display = 'none';
         }
       }
+      if (this.settingsAdminRow) {
+        this.settingsAdminRow.style.display = isAdmin ? 'flex' : 'none';
+      }
+    } else {
+      if (this.btnGoogleSignIn) this.btnGoogleSignIn.style.display = 'inline-flex';
+      if (this.userProfilePill) this.userProfilePill.style.display = 'none';
+      if (this.settingsAuthSignedOut) this.settingsAuthSignedOut.style.display = 'flex';
+      if (this.settingsAuthSignedIn) this.settingsAuthSignedIn.style.display = 'none';
+      if (this.settingsAdminRow) this.settingsAdminRow.style.display = 'none';
+    }
 
-      this.renderHomePage();
-      this.renderSettingsView();
-    });
+    // Show Admin Badge if Admin
+    if (isAdmin) {
+      if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'inline-flex';
+      if (this.publicSubmitCheckLabel) {
+        this.publicSubmitCheckLabel.textContent = 'Directly publish to Global Catalog (Admin)';
+      }
+      this.checkPendingSubmissionsCount();
+    } else {
+      if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'none';
+      if (this.publicSubmitCheckLabel) {
+        this.publicSubmitCheckLabel.textContent = 'Submit for Public Catalog (Admin Review)';
+      }
+    }
+
+    this.renderHomePage();
+    if (this.currentView === 'library') {
+      this.renderLibraryView();
+    }
+  }
+
+  initAuth() {
+    try {
+      // Check redirect result on mobile devices
+      if (FirebaseService.checkRedirectResult) {
+        FirebaseService.checkRedirectResult().then(user => {
+          if (user) {
+            this.handleUserAuthenticated(user, FirebaseService.isAdmin(user));
+          }
+        }).catch(err => console.warn('Redirect check error:', err));
+      }
+
+      FirebaseService.onAuthChanged(async (user, isAdmin) => {
+        this.handleUserAuthenticated(user, isAdmin);
+      });
+    } catch (e) {
+      console.warn('initAuth initialization error:', e);
+    }
   }
 
   async checkPendingSubmissionsCount() {
@@ -459,7 +500,10 @@ class LyricsApp {
     if (this.btnSettingsGoogleSignIn) {
       this.btnSettingsGoogleSignIn.addEventListener('click', async () => {
         try {
-          await FirebaseService.loginWithGoogle();
+          const user = await FirebaseService.loginWithGoogle();
+          if (user) {
+            this.handleUserAuthenticated(user, FirebaseService.isAdmin(user));
+          }
         } catch (err) {
           alert('Google Sign-In: ' + (err.message || 'Please check your internet connection'));
         }
@@ -468,6 +512,7 @@ class LyricsApp {
     if (this.btnSettingsSignOut) {
       this.btnSettingsSignOut.addEventListener('click', async () => {
         await FirebaseService.logout();
+        this.handleUserAuthenticated(null, false);
       });
     }
     if (this.btnOpenAdminStudioFromSettings) {
@@ -477,7 +522,26 @@ class LyricsApp {
     }
     if (this.btnOpenLrcEditorFromSettings) {
       this.btnOpenLrcEditorFromSettings.addEventListener('click', () => {
-        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+        if (this.lrcEditor) {
+          this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+        }
+      });
+    }
+
+    // Settings Themes Accordion Toggle
+    const btnToggleThemes = document.getElementById('btnToggleThemesAccordion');
+    const themesCollapseBody = document.getElementById('themesCollapseBody');
+    const themesChevron = document.getElementById('themesChevronIcon');
+    if (btnToggleThemes && themesCollapseBody) {
+      btnToggleThemes.addEventListener('click', () => {
+        const isCollapsed = themesCollapseBody.style.display === 'none' || !themesCollapseBody.style.display;
+        if (isCollapsed) {
+          themesCollapseBody.style.display = 'block';
+          if (themesChevron) themesChevron.style.transform = 'rotate(180deg)';
+        } else {
+          themesCollapseBody.style.display = 'none';
+          if (themesChevron) themesChevron.style.transform = 'rotate(0deg)';
+        }
       });
     }
 
@@ -493,9 +557,6 @@ class LyricsApp {
 
     if (this.btnHeroPlay) this.btnHeroPlay.addEventListener('click', handleHeroPlay);
     if (this.btnHeroPlayBadge) this.btnHeroPlayBadge.addEventListener('click', handleHeroPlay);
-    if (this.btnHeroOpenLyrics) {
-      this.btnHeroOpenLyrics.addEventListener('click', () => this.switchView('stage'));
-    }
 
     // Filter Chips
     if (this.homeFilterRow) {
@@ -518,48 +579,58 @@ class LyricsApp {
     }
 
     // Play / Pause
-    this.btnPlayPause.addEventListener('click', () => {
-      if (!this.currentTrack) {
-        if (this.publicTracks.length > 0) {
-          this.loadTrack(this.publicTracks[0], true);
-        } else {
-          this.trackModal.classList.add('active');
+    if (this.btnPlayPause) {
+      this.btnPlayPause.addEventListener('click', () => {
+        if (!this.currentTrack) {
+          if (this.publicTracks.length > 0) {
+            this.loadTrack(this.publicTracks[0], true);
+          } else {
+            this.switchTab('library');
+          }
+          return;
         }
-        return;
-      }
-      this.player.togglePlay();
-      this.updateHeroState();
-    });
+        this.player.togglePlay();
+        this.updateHeroState();
+      });
+    }
 
     // Rewind / Forward 5s
-    this.btnRewind.addEventListener('click', () => {
-      if (this.currentTrack) this.player.seek(this.player.currentTime - 5);
-    });
-    this.btnForward.addEventListener('click', () => {
-      if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
-    });
+    if (this.btnRewind) {
+      this.btnRewind.addEventListener('click', () => {
+        if (this.currentTrack) this.player.seek(this.player.currentTime - 5);
+      });
+    }
+    if (this.btnForward) {
+      this.btnForward.addEventListener('click', () => {
+        if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
+      });
+    }
 
     // Playback Speed Toggle
-    const speeds = [1.0, 1.25, 1.5, 0.75];
-    let speedIdx = 0;
-    this.btnSpeed.addEventListener('click', () => {
-      speedIdx = (speedIdx + 1) % speeds.length;
-      const spd = speeds[speedIdx];
-      this.player.setPlaybackRate(spd);
-      this.btnSpeed.textContent = `${spd}x`;
-    });
+    if (this.btnSpeed) {
+      const speeds = [1.0, 1.25, 1.5, 0.75];
+      let speedIdx = 0;
+      this.btnSpeed.addEventListener('click', () => {
+        speedIdx = (speedIdx + 1) % speeds.length;
+        const spd = speeds[speedIdx];
+        this.player.setPlaybackRate(spd);
+        this.btnSpeed.textContent = `${spd}x`;
+      });
+    }
 
     // Audio Player State Listeners
     this.player.onStateChange = (state) => {
       if (state === 'playing') {
-        this.playIcon.style.display = 'none';
-        this.pauseIcon.style.display = 'block';
-        this.vinylDisc.classList.remove('paused');
-        this.vinylDisc.classList.add('spinning');
+        if (this.playIcon) this.playIcon.style.display = 'none';
+        if (this.pauseIcon) this.pauseIcon.style.display = 'block';
+        if (this.vinylDisc) {
+          this.vinylDisc.classList.remove('paused');
+          this.vinylDisc.classList.add('spinning');
+        }
       } else {
-        this.playIcon.style.display = 'block';
-        this.pauseIcon.style.display = 'none';
-        this.vinylDisc.classList.add('paused');
+        if (this.playIcon) this.playIcon.style.display = 'block';
+        if (this.pauseIcon) this.pauseIcon.style.display = 'none';
+        if (this.vinylDisc) this.vinylDisc.classList.add('paused');
       }
       this.updateHeroState();
     };
@@ -568,16 +639,16 @@ class LyricsApp {
       if (!this.isScrubbing) {
         this.updateTimeline(currentTime, duration);
       }
-      if (this.currentView === 'stage') {
+      if (this.currentView === 'stage' || this.currentView === 'lyrics') {
         this.syncLyrics(currentTime);
       }
     };
 
     // Smart Queue: When a song ends, play the next suggested track
     this.player.onEnded = async () => {
-      this.playIcon.style.display = 'block';
-      this.pauseIcon.style.display = 'none';
-      this.vinylDisc.classList.remove('spinning');
+      if (this.playIcon) this.playIcon.style.display = 'block';
+      if (this.pauseIcon) this.pauseIcon.style.display = 'none';
+      if (this.vinylDisc) this.vinylDisc.classList.remove('spinning');
       this.syncLyrics(0);
 
       const allTracks = [...this.publicTracks, ...this.tracks];
@@ -591,55 +662,63 @@ class LyricsApp {
     };
 
     // Volume & Mute
-    let lastVolume = 0.8;
-    this.volumeSlider.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      this.player.setVolume(val);
-      if (val > 0) lastVolume = val;
-    });
+    if (this.volumeSlider) {
+      let lastVolume = 0.8;
+      this.volumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.player.setVolume(val);
+        if (val > 0) lastVolume = val;
+      });
 
-    this.btnMute.addEventListener('click', () => {
-      if (this.player.volume > 0) {
-        this.player.setVolume(0);
-        this.volumeSlider.value = 0;
-      } else {
-        this.player.setVolume(lastVolume);
-        this.volumeSlider.value = lastVolume;
+      if (this.btnMute) {
+        this.btnMute.addEventListener('click', () => {
+          if (this.player.volume > 0) {
+            this.player.setVolume(0);
+            this.volumeSlider.value = 0;
+          } else {
+            this.player.setVolume(lastVolume);
+            this.volumeSlider.value = lastVolume;
+          }
+        });
       }
-    });
+    }
 
     // Timeline Scrubber
-    const seekAtClientX = (clientX) => {
-      if (!this.currentTrack || !this.player.duration) return;
-      const rect = this.scrubberTrack.getBoundingClientRect();
-      const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      this.player.seek(pos * this.player.duration);
-    };
+    if (this.scrubberTrack) {
+      const seekAtClientX = (clientX) => {
+        if (!this.currentTrack || !this.player.duration) return;
+        const rect = this.scrubberTrack.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        this.player.seek(pos * this.player.duration);
+      };
 
-    this.scrubberTrack.addEventListener('click', (e) => seekAtClientX(e.clientX));
-    this.scrubberTrack.addEventListener('touchstart', (e) => {
-      if (e.touches && e.touches[0]) {
-        this.isScrubbing = true;
-        seekAtClientX(e.touches[0].clientX);
-      }
-    }, { passive: true });
-    this.scrubberTrack.addEventListener('touchmove', (e) => {
-      if (this.isScrubbing && e.touches && e.touches[0]) {
-        seekAtClientX(e.touches[0].clientX);
-      }
-    }, { passive: true });
-    this.scrubberTrack.addEventListener('touchend', () => {
-      this.isScrubbing = false;
-    });
+      this.scrubberTrack.addEventListener('click', (e) => seekAtClientX(e.clientX));
+      this.scrubberTrack.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          this.isScrubbing = true;
+          seekAtClientX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+      this.scrubberTrack.addEventListener('touchmove', (e) => {
+        if (this.isScrubbing && e.touches && e.touches[0]) {
+          seekAtClientX(e.touches[0].clientX);
+        }
+      }, { passive: true });
+      this.scrubberTrack.addEventListener('touchend', () => {
+        this.isScrubbing = false;
+      });
+    }
 
     // Fullscreen Toggle
-    this.btnToggleFullscreen.addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    });
+    if (this.btnToggleFullscreen) {
+      this.btnToggleFullscreen.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+    }
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
@@ -654,15 +733,18 @@ class LyricsApp {
         e.preventDefault();
         if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
       } else if (e.code === 'KeyF') {
-        this.btnToggleFullscreen.click();
+        if (this.btnToggleFullscreen) this.btnToggleFullscreen.click();
       }
     });
 
-    // Auth Buttons
+    // Auth Buttons (Top Bar)
     if (this.btnGoogleSignIn) {
       this.btnGoogleSignIn.addEventListener('click', async () => {
         try {
-          await FirebaseService.loginWithGoogle();
+          const user = await FirebaseService.loginWithGoogle();
+          if (user) {
+            this.handleUserAuthenticated(user, FirebaseService.isAdmin(user));
+          }
         } catch (err) {
           alert('Sign In: ' + (err.message || 'Please check your internet connection'));
         }
@@ -672,25 +754,31 @@ class LyricsApp {
     if (this.btnSignOut) {
       this.btnSignOut.addEventListener('click', async () => {
         await FirebaseService.logout();
+        this.handleUserAuthenticated(null, false);
       });
     }
 
     if (this.btnOpenAdminModal) {
       this.btnOpenAdminModal.addEventListener('click', () => {
-        this.adminModal.classList.add('active');
-        this.loadAdminSubmissions();
+        this.openAdminModal();
       });
     }
 
-    // Modal Triggers
-    this.btnOpenThemeModal.addEventListener('click', () => this.themeModal.classList.add('active'));
-    this.btnOpenTrackModal.addEventListener('click', () => {
-      this.trackModal.classList.add('active');
-      this.showTrackList();
-    });
-    this.btnOpenLrcEditor.addEventListener('click', () => {
-      this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
-    });
+    // Modal Triggers (Legacy / Safe guards)
+    if (this.btnOpenThemeModal && this.themeModal) {
+      this.btnOpenThemeModal.addEventListener('click', () => this.themeModal.classList.add('active'));
+    }
+    if (this.btnOpenTrackModal && this.trackModal) {
+      this.btnOpenTrackModal.addEventListener('click', () => {
+        this.trackModal.classList.add('active');
+        this.showTrackList();
+      });
+    }
+    if (this.btnOpenLrcEditor && this.lrcEditor) {
+      this.btnOpenLrcEditor.addEventListener('click', () => {
+        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+      });
+    }
 
     // Generic Modal Close Buttons
     document.querySelectorAll('.modal-close-btn').forEach(btn => {
@@ -710,7 +798,7 @@ class LyricsApp {
       }
     });
 
-    // Library Tab Switchers in Modal
+    // Library Tab Switchers in Library View
     if (this.tabGlobalCatalog) {
       this.tabGlobalCatalog.addEventListener('click', () => this.switchLibraryTab('global'));
     }
@@ -730,9 +818,15 @@ class LyricsApp {
     }
 
     // Upload Form View Switchers
-    this.btnShowUploadForm.addEventListener('click', () => this.showTrackForm());
-    this.btnBackToLibrary.addEventListener('click', () => this.showTrackList());
-    this.btnCancelTrackForm.addEventListener('click', () => this.showTrackList());
+    if (this.btnShowUploadForm) {
+      this.btnShowUploadForm.addEventListener('click', () => this.showTrackForm());
+    }
+    if (this.btnBackToLibrary) {
+      this.btnBackToLibrary.addEventListener('click', () => this.showTrackList());
+    }
+    if (this.btnCancelTrackForm) {
+      this.btnCancelTrackForm.addEventListener('click', () => this.showTrackList());
+    }
 
     if (this.checkSubmitToPublic) {
       this.checkSubmitToPublic.addEventListener('change', () => {
@@ -743,82 +837,97 @@ class LyricsApp {
     }
 
     // Cover Artwork Picker
-    this.coverPreviewBox.addEventListener('click', () => this.coverFileInput.click());
-    this.btnUploadCoverFile.addEventListener('click', () => this.coverFileInput.click());
-    this.coverFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          this.selectedCoverDataUrl = evt.target.result;
-          this.coverPreviewImg.src = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    if (this.coverPreviewBox && this.coverFileInput) {
+      this.coverPreviewBox.addEventListener('click', () => this.coverFileInput.click());
+    }
+    if (this.btnUploadCoverFile && this.coverFileInput) {
+      this.btnUploadCoverFile.addEventListener('click', () => this.coverFileInput.click());
+    }
+    if (this.coverFileInput) {
+      this.coverFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            this.selectedCoverDataUrl = evt.target.result;
+            if (this.coverPreviewImg) this.coverPreviewImg.src = evt.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
 
-    this.btnRemoveCover.addEventListener('click', () => {
-      this.selectedCoverDataUrl = '';
-      this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
-      this.coverFileInput.value = '';
-    });
+    if (this.btnRemoveCover) {
+      this.btnRemoveCover.addEventListener('click', () => {
+        this.selectedCoverDataUrl = '';
+        if (this.coverPreviewImg) this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
+        if (this.coverFileInput) this.coverFileInput.value = '';
+      });
+    }
 
     // Audio Dropzone & File Pick
-    this.audioDropzone.addEventListener('click', () => this.audioFileInput.click());
-    this.audioFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
-        this.selectedAudioFile = file;
-        if (!this.inputCustomTitle.value) {
-          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-          this.inputCustomTitle.value = nameWithoutExt;
+    if (this.audioDropzone && this.audioFileInput) {
+      this.audioDropzone.addEventListener('click', () => this.audioFileInput.click());
+      ['dragenter', 'dragover'].forEach(name => {
+        this.audioDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          this.audioDropzone.style.borderColor = 'rgba(255,255,255,0.7)';
+          this.audioDropzone.style.background = 'rgba(255,255,255,0.08)';
+        });
+      });
+      ['dragleave', 'drop'].forEach(name => {
+        this.audioDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          this.audioDropzone.style.borderColor = '';
+          this.audioDropzone.style.background = '';
+        });
+      });
+
+      this.audioDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const file = e.dataTransfer.files[0];
+          if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
+            this.selectedAudioFile = file;
+            if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
+            if (this.inputCustomTitle && !this.inputCustomTitle.value) {
+              const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+              this.inputCustomTitle.value = nameWithoutExt;
+            }
+          }
         }
-      }
-    });
-
-    // Drag & Drop
-    ['dragenter', 'dragover'].forEach(name => {
-      this.audioDropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        this.audioDropzone.style.borderColor = 'rgba(255,255,255,0.7)';
-        this.audioDropzone.style.background = 'rgba(255,255,255,0.08)';
       });
-    });
-    ['dragleave', 'drop'].forEach(name => {
-      this.audioDropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        this.audioDropzone.style.borderColor = '';
-        this.audioDropzone.style.background = '';
-      });
-    });
+    }
 
-    this.audioDropzone.addEventListener('drop', (e) => {
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const file = e.dataTransfer.files[0];
-        if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
+    if (this.audioFileInput) {
+      this.audioFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
           this.selectedAudioFile = file;
-          this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
-          if (!this.inputCustomTitle.value) {
+          if (this.inputCustomTitle && !this.inputCustomTitle.value) {
             const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
             this.inputCustomTitle.value = nameWithoutExt;
           }
         }
-      }
-    });
+      });
+    }
 
     // LRC File Pick
-    this.btnUploadLrc.addEventListener('click', () => this.lrcFileInput.click());
-    this.lrcFileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          this.inputCustomLrc.value = evt.target.result;
-        };
-        reader.readAsText(file);
-      }
-    });
+    if (this.btnUploadLrc && this.lrcFileInput) {
+      this.btnUploadLrc.addEventListener('click', () => this.lrcFileInput.click());
+    }
+    if (this.lrcFileInput) {
+      this.lrcFileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            if (this.inputCustomLrc) this.inputCustomLrc.value = evt.target.result;
+          };
+          reader.readAsText(file);
+        }
+      });
+    }
 
     // Viewport LRC Upload
     if (this.noLyricsFileInput) {
@@ -836,7 +945,9 @@ class LyricsApp {
     }
 
     // Apply Track Form Button
-    this.btnApplyCustomTrack.addEventListener('click', () => this.applyCustomTrack());
+    if (this.btnApplyCustomTrack) {
+      this.btnApplyCustomTrack.addEventListener('click', () => this.applyCustomTrack());
+    }
 
     // Admin Modal Tabs
     if (this.adminTabSubmissions) {
@@ -1881,7 +1992,15 @@ class LyricsApp {
   }
 
   initThemeSystem() {
+    if (!this.themeOptionsList) return;
     this.themeOptionsList.innerHTML = '';
+
+    const curTheme = THEMES.find(t => t.id === this.themeManager.currentTheme);
+    const badgeLabel = document.getElementById('activeThemeBadgeLabel');
+    if (badgeLabel && curTheme) {
+      badgeLabel.textContent = curTheme.name;
+    }
+
     THEMES.forEach(t => {
       const card = document.createElement('div');
       card.className = `theme-card-option ${this.themeManager.currentTheme === t.id ? 'active' : ''}`;
@@ -1896,9 +2015,10 @@ class LyricsApp {
         this.themeManager.applyTheme(t.id);
         document.querySelectorAll('.theme-card-option').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
-        this.themeModal.classList.remove('active');
+        if (badgeLabel) badgeLabel.textContent = t.name;
+        if (this.themeModal) this.themeModal.classList.remove('active');
         requestAnimationFrame(() => {
-          if (this.currentView === 'stage') {
+          if (this.currentView === 'stage' || this.currentView === 'lyrics') {
             this.syncLyrics(this.player.currentTime);
           }
         });
