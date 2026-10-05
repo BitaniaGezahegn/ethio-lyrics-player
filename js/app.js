@@ -1923,15 +1923,17 @@ class LyricsApp {
     if (!this.homeExploreView) return;
 
     // 1. Live Greeting & Listening DNA Stats
-    const greetingData = RecommendationEngine.getGreetingData();
-    if (this.greetingMoodBadge) this.greetingMoodBadge.textContent = greetingData.badge;
-    if (this.greetingMoodText) this.greetingMoodText.textContent = greetingData.amharicPeriod;
-    if (this.greetingHeadingText) {
-      const userFirstName = this.currentUser && this.currentUser.displayName ? this.currentUser.displayName.split(' ')[0] : 'Music Lover';
-      this.greetingHeadingText.textContent = `${greetingData.greeting}, ${userFirstName}`;
+    const userFirstName = this.currentUser && this.currentUser.displayName ? this.currentUser.displayName.split(' ')[0] : '';
+    const greetingData = RecommendationEngine.getGreetingData(userFirstName);
+    if (this.greetingMoodText) {
+      this.greetingMoodText.textContent = `${greetingData.moodTag} • ${greetingData.moodTagAm}`;
     }
-    if (this.greetingHeadingAmharic) this.greetingHeadingAmharic.textContent = greetingData.amharicGreeting;
-    if (this.greetingSubtext) this.greetingSubtext.textContent = greetingData.subtitle;
+    if (this.greetingHeadingText) {
+      this.greetingHeadingText.innerHTML = `${greetingData.greetingEn} <span class="greeting-amharic-sub" id="greetingHeadingAmharic">${greetingData.greetingAm}</span>`;
+    }
+    if (this.greetingSubtext) {
+      this.greetingSubtext.textContent = greetingData.moodSubtitle;
+    }
 
     const allTracks = [...this.publicTracks, ...this.tracks];
     // Deduplicate by ID
@@ -2066,8 +2068,8 @@ class LyricsApp {
       const card = document.createElement('div');
       card.className = `jump-card ${isCurrent ? 'playing' : ''}`;
       card.innerHTML = `
-        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="jump-card-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
-        <div class="jump-card-info">
+        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="jump-card-art jump-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <div class="jump-card-info jump-card-meta">
           <div class="jump-card-title" title="${track.title}">${track.title}</div>
           <div class="jump-card-artist" title="${track.artist}">${track.artist}</div>
         </div>
@@ -2110,10 +2112,10 @@ class LyricsApp {
       card.className = 'artist-circle-card';
       card.innerHTML = `
         <div class="artist-circle-avatar">
-          <img src="${artist.cover || 'assets/weleta_cover.jpg'}" alt="${artist.name}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${artist.cover || 'assets/weleta_cover.jpg'}" alt="${artist.name}" class="artist-circle-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         </div>
         <div class="artist-circle-name" title="${artist.name}">${artist.name}</div>
-        <div class="artist-circle-tracks">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
+        <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
       `;
 
       card.addEventListener('click', () => {
