@@ -542,6 +542,10 @@ export class WebRtcGuestClient {
     }
   }
 
+  getAudioBlob(trackId) {
+    return this.audioBlobs.get(trackId) || null;
+  }
+
   _waitForIceGathering(pc) {
     if (pc.iceGatheringState === 'complete') return Promise.resolve();
     return new Promise((resolve) => {

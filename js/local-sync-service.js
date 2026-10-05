@@ -509,6 +509,14 @@ export const LocalSyncService = {
         playback: activeRoomData.playback,
         currentTrack: activeRoomData.currentTrack,
       }));
+
+      // Stream current track audio to newly joined friend if audio is available
+      if (typeof this.p2pAudioBlobGetter === 'function' && activeRoomData.currentTrack) {
+        const currentBlob = this.p2pAudioBlobGetter(activeRoomData.currentTrack.id);
+        if (currentBlob) {
+          this.broadcastP2pAudio(activeRoomData.currentTrack.id, currentBlob);
+        }
+      }
     };
 
     webrtcHost.callbacks.onGuestLeft = (guestId) => {
@@ -545,11 +553,20 @@ export const LocalSyncService = {
 
     webrtcGuest = new WebRtcGuestClient({ participant: participantInfo });
 
+    webrtcGuest.callbacks.onConnected = () => {
+      console.log('[LocalSyncService] Direct P2P Link open!');
+      if (typeof this.onP2pGuestConnected === 'function') {
+        this.onP2pGuestConnected();
+      }
+    };
+
     webrtcGuest.callbacks.onAnchor = (playback, currentTrack) => {
       if (!activeRoomData) {
         activeRoomData = {
           schemaVersion: 2,
           roomCode: 'P2P-PARTY',
+          hostId: 'dj_host',
+          hostName: 'DJ Host',
           isActive: true,
           currentTrack,
           playback,
@@ -562,6 +579,12 @@ export const LocalSyncService = {
       activeRoomData.playback = playback;
       if (currentTrack) activeRoomData.currentTrack = currentTrack;
       roomListeners.forEach(cb => cb(activeRoomData));
+    };
+
+    webrtcGuest.callbacks.onTrackReceived = (trackId, blob) => {
+      if (typeof this.onP2pTrackReceived === 'function') {
+        this.onP2pTrackReceived(trackId, blob);
+      }
     };
 
     webrtcGuest.callbacks.onReaction = (rx) => {

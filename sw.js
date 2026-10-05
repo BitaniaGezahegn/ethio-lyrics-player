@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v23';
+const CACHE_NAME = 'ethio-lyrics-cache-v24';
 
 const STATIC_ASSETS = [
   './',

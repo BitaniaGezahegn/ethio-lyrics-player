@@ -4397,6 +4397,8 @@ class LyricsApp {
   // --------------------------------------------------------------------------
   async handleStartP2pHost() {
     try {
+      this.syncMode = 'local';
+      this.localSubmode = 'p2p';
       this.myParticipant = Storage.getParticipant(this.currentUser);
       const currentTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
 
@@ -4407,6 +4409,13 @@ class LyricsApp {
         this.player.currentTime || 0,
         this.player.getEffectivePlaybackRate ? this.player.getEffectivePlaybackRate() : 1.0
       );
+
+      LocalSyncService.p2pAudioBlobGetter = (trackId) => {
+        if (this.currentTrack && this.currentTrack.id === trackId) {
+          return this.currentTrack.audioBlob || this.currentTrack._audioFile || null;
+        }
+        return null;
+      };
 
       this.activeRoom = room;
       this.isRoomHost = true;
@@ -4473,8 +4482,26 @@ class LyricsApp {
   handleScanJoinP2p(rawOfferCode = null) {
     const processOffer = async (offerCode) => {
       try {
+        this.syncMode = 'local';
+        this.localSubmode = 'p2p';
         this.myParticipant = Storage.getParticipant(this.currentUser);
         this.showToast('Connecting to Host DJ...');
+
+        LocalSyncService.onP2pGuestConnected = () => {
+          if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
+          this.showToast('Connected to Host DJ! 🎧');
+          if (this.activeRoom) this.updateListenRoomUI(this.activeRoom);
+        };
+
+        LocalSyncService.onP2pTrackReceived = (trackId, blob) => {
+          if (this.currentTrack && this.currentTrack.id === trackId) {
+            this.currentTrack.audioBlob = blob;
+            this.player.loadAudioFile(blob);
+            if (this.guestSync) this.guestSync.setTrackReady(true);
+            this.showToast('Song audio ready! 🎵');
+          }
+        };
+
         const result = await LocalSyncService.joinP2pRoom(offerCode.trim(), this.myParticipant);
 
         // Show Guest Answer QR to Host
@@ -4563,6 +4590,10 @@ class LyricsApp {
 
   async renderLocalPairingQr(roomCode) {
     if (!this.localRoomPairingCard || !this.localQrContainer) return;
+    if (LocalSyncService.isP2pActive || this.localSubmode === 'p2p') {
+      this.localRoomPairingCard.style.display = 'none';
+      return;
+    }
     this.localRoomPairingCard.style.display = 'flex';
 
     let baseUrl = this.localLanUrl;
@@ -5243,6 +5274,18 @@ class LyricsApp {
         this.activeRoomTrackStateBadge.textContent = isPlaying ? 'Playing' : 'Paused';
         this.activeRoomTrackStateBadge.style.color = isPlaying ? '#6ee7b7' : 'var(--color-text-dim)';
       }
+    }
+
+    // Local / P2P pairing cards visibility
+    if (this.syncMode === 'local' && (LocalSyncService.isP2pActive || this.localSubmode === 'p2p')) {
+      if (this.localRoomPairingCard) this.localRoomPairingCard.style.display = 'none';
+      if (this.p2pPeersManagerCard) this.p2pPeersManagerCard.style.display = isHost ? 'flex' : 'none';
+    } else if (this.syncMode === 'local') {
+      if (this.p2pPeersManagerCard) this.p2pPeersManagerCard.style.display = 'none';
+      if (isHost) this.renderLocalPairingQr(room.roomCode);
+    } else {
+      if (this.localRoomPairingCard) this.localRoomPairingCard.style.display = 'none';
+      if (this.p2pPeersManagerCard) this.p2pPeersManagerCard.style.display = 'none';
     }
 
     this.renderParticipantsList(this.presenceParticipants);

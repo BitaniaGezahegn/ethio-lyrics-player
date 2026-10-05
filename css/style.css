@@ -1650,14 +1650,24 @@ html, body {
     padding: 0.5rem;
   }
   .modal-card {
-    width: 96vw !important;
-    max-width: 96vw !important;
+    width: 94vw !important;
+    max-width: 500px !important;
     max-height: 88vh;
-    padding: 1.25rem 0.85rem;
-    border-radius: 16px;
+    padding: 0 !important;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 1rem 1.2rem;
+    flex-shrink: 0;
   }
   .modal-header h2 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+  }
+  .modal-body {
+    padding: 1rem 1.2rem;
   }
   #themeOptionsList {
     grid-template-columns: 1fr !important;
