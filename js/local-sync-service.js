@@ -73,15 +73,27 @@ export const LocalSyncService = {
    */
   async checkServerAvailable() {
     try {
+      const base = getHttpApiBase();
+      // If we are on a remote host (e.g. pages.dev) and not on a LAN IP/localhost, don't check relative /api/time
+      const host = window.location.hostname || '';
+      const isRemoteHost = host && !host.match(/^(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.)/);
+      if (isRemoteHost && base.includes('pages.dev')) {
+        return false;
+      }
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200);
-      const res = await fetch(`${getHttpApiBase()}/api/time`, {
+      const timeoutId = setTimeout(() => controller.abort(), 800);
+      const res = await fetch(`${base}/api/time`, {
         method: 'GET',
         cache: 'no-store',
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      return res.ok;
+      if (!res.ok) return false;
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) return false;
+      const data = await res.json();
+      return Boolean(data && data.serverTime);
     } catch (e) {
       return false;
     }
@@ -94,6 +106,8 @@ export const LocalSyncService = {
     try {
       const res = await fetch(`${getHttpApiBase()}/api/lan-info`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch LAN info');
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) throw new Error('Not JSON');
       return await res.json();
     } catch (e) {
       return { port: 3000, addresses: [{ interface: 'local', address: 'localhost' }], rooms: [] };

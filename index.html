@@ -1560,7 +1560,7 @@
           <button class="modal-close-btn" data-close="listenTogetherModal">&times;</button>
         </div>
 
-        <div class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem;">
+        <div class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:calc(85vh - 75px);">
 
           <!-- Sync Mode Switcher: Cloud vs Local (Offline) -->
           <div id="syncModeSelectorBar" class="sync-mode-selector-bar">
@@ -1899,9 +1899,18 @@
           <div id="p2pPairingStepText" style="font-size:0.78rem; color:#fff; text-align:center; font-weight:600;">
             Friend: scan this QR code with their phone
           </div>
-          <button type="button" id="btnP2pCopyCode" class="btn-pill btn-sm" style="font-size:0.72rem; padding:0.25rem 0.6rem;">Copy Code</button>
-          <button type="button" id="btnP2pScanFriendAnswer" class="btn-primary" style="width:100%; padding:0.55rem; font-size:0.82rem; margin-top:0.4rem;">
+          <button type="button" id="btnP2pCopyCode" class="btn-pill btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem; color:var(--color-gold); border-color:var(--color-gold);">📋 Copy Invite Code</button>
+          <button type="button" id="btnP2pScanFriendAnswer" class="btn-primary" style="width:100%; padding:0.6rem; font-size:0.85rem; margin-top:0.4rem;">
             📸 Next: Scan Friend's Answer QR
+          </button>
+          <!-- Host Direct Answer Paste Fallback -->
+          <div id="p2pHostPasteAnswerBox" style="width:100%; display:none; flex-direction:column; gap:0.4rem; margin-top:0.4rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Or paste friend's answer code directly:</div>
+            <textarea id="p2pHostAnswerInput" class="form-input" rows="2" placeholder="Paste friend's answer code here..." style="font-family:monospace; font-size:0.72rem; width:100%; border-radius:8px;"></textarea>
+            <button type="button" id="btnP2pSubmitHostAnswer" class="btn-primary" style="padding:0.45rem; font-size:0.8rem;">Connect via Code</button>
+          </div>
+          <button type="button" id="btnToggleHostPasteBox" class="btn-pill btn-sm" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--color-text-dim); background:transparent; border:none; cursor:pointer;">
+            Enter answer code manually ▾
           </button>
         </div>
       </div>

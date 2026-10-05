@@ -6,94 +6,134 @@
  * Supports up to 8 simultaneous phones joined to 1 host DJ phone (Star Topology).
  *
  * Key Capabilities:
- *   1. Compact SDP serialization (< 180 chars) for instant, effortless camera QR scanning.
- *   2. Multi-guest hub for Host phone (manages up to 8 WebRTC DataChannels).
- *   3. Direct peer-to-peer audio blob chunking & transfer over WebRTC.
- *   4. Sub-millisecond peer ping/pong clock offset calibration.
- *   5. Built-in Camera QR scanner with manual code fallback.
+ *   1. Lossless SDP compression via standard CompressionStream ('deflate-raw')
+ *   2. Hotspot candidate fallback (192.168.43.1 / 172.20.10.1) for mDNS IP leak bypass
+ *   3. Multi-guest hub for Host phone (manages up to 8 WebRTC DataChannels)
+ *   4. Direct peer-to-peer audio blob chunking & transfer over WebRTC
+ *   5. Sub-millisecond peer ping/pong clock offset calibration
  */
 
 import { QRCodeGenerator } from './qr-code.js';
 
+// Standard public STUN servers for when Internet/Wi-Fi is available
+const DEFAULT_ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+];
+
+/**
+ * Injects known hotspot gateway IP candidates into SDP so mobile browsers that
+ * mask private IPs behind .local mDNS can still connect directly over phone hotspots.
+ */
+function injectHotspotCandidates(sdp) {
+  if (!sdp) return sdp;
+  const match = sdp.match(/a=candidate:\S+\s+1\s+udp\s+\d+\s+\S+\s+(\d+)\s+typ host/i);
+  const port = match ? match[1] : '54321';
+  let result = sdp;
+  if (!result.includes('192.168.43.1')) {
+    result += `a=candidate:99 1 udp 2122260200 192.168.43.1 ${port} typ host\r\n`;
+  }
+  if (!result.includes('172.20.10.1')) {
+    result += `a=candidate:98 1 udp 2122260200 172.20.10.1 ${port} typ host\r\n`;
+  }
+  return result;
+}
+
 // ---------------------------------------------------------------------------
-// Compact SDP Serializer / De-serializer (< 180 characters)
+// Lossless SDP Serializer / De-serializer via CompressionStream ('deflate-raw')
 // ---------------------------------------------------------------------------
 
 export const SdpCompressor = {
   /**
-   * Compresses an SDP into a tiny JSON string.
+   * Compresses an SDP into a compact Base64URL string.
    */
-  compress(sdp) {
-    const lines = sdp.split('\r\n');
-    let ufrag = '';
-    let pwd = '';
-    let fingerprint = '';
-    let sctpPort = 5000;
-    const candidates = [];
-
-    for (const line of lines) {
-      if (line.startsWith('a=ice-ufrag:')) ufrag = line.slice(12);
-      else if (line.startsWith('a=ice-pwd:')) pwd = line.slice(10);
-      else if (line.startsWith('a=fingerprint:sha-256 ')) fingerprint = line.slice(22);
-      else if (line.startsWith('a=sctp-port:')) sctpPort = parseInt(line.slice(12), 10);
-      else if (line.startsWith('a=candidate:')) {
-        const parts = line.split(' ');
-        if (parts.length >= 8 && parts[7] === 'host') {
-          // IP and port
-          candidates.push([parts[4], parseInt(parts[5], 10)]);
+  async compress(sdp) {
+    if (!sdp) return '';
+    try {
+      if (typeof CompressionStream !== 'undefined') {
+        const stream = new CompressionStream('deflate-raw');
+        const writer = stream.writable.getWriter();
+        writer.write(new TextEncoder().encode(sdp));
+        writer.close();
+        const reader = stream.readable.getReader();
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
         }
+        const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+        const merged = new Uint8Array(totalLen);
+        let offset = 0;
+        for (const chunk of chunks) {
+          merged.set(chunk, offset);
+          offset += chunk.length;
+        }
+        let binary = '';
+        for (let i = 0; i < merged.length; i++) {
+          binary += String.fromCharCode(merged[i]);
+        }
+        return 'D_' + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       }
+    } catch (e) {
+      console.warn('[SdpCompressor] Deflate failed, using base64 fallback:', e);
     }
-
-    const payload = {
-      u: ufrag,
-      p: pwd,
-      f: fingerprint,
-      c: candidates.slice(0, 3), // Keep top 3 local candidates
-      s: sctpPort,
-    };
-
-    const json = JSON.stringify(payload);
-    // Base64URL encode
-    return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    // Fallback: simple base64
+    return 'B_' + btoa(unescape(encodeURIComponent(sdp))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   },
 
   /**
-   * Reconstitutes a valid SDP from a compact string.
+   * Reconstitutes the original browser SDP from a compact string.
    */
-  decompress(compactStr, type = 'offer') {
-    let base64 = compactStr.replace(/-/g, '+').replace(/_/g, '/');
-    while (base64.length % 4 !== 0) base64 += '=';
-    const json = atob(base64);
-    const data = JSON.parse(json);
+  async decompress(code) {
+    if (!code) return '';
+    const clean = code.trim();
 
-    const setup = type === 'offer' ? 'actpass' : 'active';
-    const lines = [
-      'v=0',
-      'o=- 4242424242 2 IN IP4 127.0.0.1',
-      's=-',
-      't=0 0',
-      'a=group:BUNDLE 0',
-      'a=msid-semantic: WMS',
-      'm=application 9 UDP/DTLS/SCTP webrtc-datachannel',
-      'c=IN IP4 0.0.0.0',
-      `a=ice-ufrag:${data.u}`,
-      `a=ice-pwd:${data.p}`,
-      'a=ice-options:trickle',
-      `a=fingerprint:sha-256 ${data.f}`,
-      `a=setup:${setup}`,
-      'a=mid:0',
-      `a=sctp-port:${data.s || 5000}`,
-      'a=max-message-size:262144',
-    ];
+    if (clean.startsWith('D_')) {
+      try {
+        let base64 = clean.slice(2).replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4 !== 0) base64 += '=';
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
 
-    if (Array.isArray(data.c)) {
-      data.c.forEach((c, idx) => {
-        lines.push(`a=candidate:1 ${idx + 1} UDP 2122260223 ${c[0]} ${c[1]} typ host`);
-      });
+        const stream = new DecompressionStream('deflate-raw');
+        const writer = stream.writable.getWriter();
+        writer.write(bytes);
+        writer.close();
+        const reader = stream.readable.getReader();
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const totalLen = chunks.reduce((acc, c) => acc + c.length, 0);
+        const merged = new Uint8Array(totalLen);
+        let offset = 0;
+        for (const chunk of chunks) {
+          merged.set(chunk, offset);
+          offset += chunk.length;
+        }
+        return new TextDecoder().decode(merged);
+      } catch (err) {
+        console.error('[SdpCompressor] Decompress deflate error:', err);
+      }
     }
 
-    return lines.join('\r\n') + '\r\n';
+    if (clean.startsWith('B_')) {
+      try {
+        let base64 = clean.slice(2).replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4 !== 0) base64 += '=';
+        return decodeURIComponent(escape(atob(base64)));
+      } catch (err) {
+        console.error('[SdpCompressor] Decompress base64 error:', err);
+      }
+    }
+
+    // Direct SDP fallback
+    return clean;
   },
 };
 
@@ -137,22 +177,25 @@ export class WebRtcHostHub {
     }
 
     const guestId = 'guest_' + Math.random().toString(36).slice(2, 8);
-    const pc = new RTCPeerConnection({ iceServers: [] });
+    const pc = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
     const dc = pc.createDataChannel('ethio_sync', { ordered: true });
 
     this.pendingGuestId = guestId;
     this.pendingPc = pc;
 
-    this._setupDataChannel(dc, guestId);
+    this._setupDataChannel(dc, guestId, pc);
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // Wait for ICE gathering to complete (local candidates only, takes ~100ms)
+    // Wait for ICE gathering to complete (local + STUN candidates, up to 1000ms)
     await this._waitForIceGathering(pc);
 
-    const compactCode = SdpCompressor.compress(pc.localDescription.sdp);
-    const qrSvg = QRCodeGenerator.generateSVG(compactCode, 200, '#000000', '#ffffff');
+    let sdp = pc.localDescription.sdp;
+    sdp = injectHotspotCandidates(sdp);
+
+    const compactCode = await SdpCompressor.compress(sdp);
+    const qrSvg = QRCodeGenerator.generateSVG(compactCode, 220, '#000000', '#ffffff');
 
     return {
       guestId,
@@ -167,27 +210,33 @@ export class WebRtcHostHub {
   async acceptGuestAnswer(answerCompactCode) {
     if (!this.pendingPc) throw new Error('No pending guest invitation found.');
 
-    const sdp = SdpCompressor.decompress(answerCompactCode, 'answer');
-    await this.pendingPc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+    const sdp = await SdpCompressor.decompress(answerCompactCode);
+    if (!sdp || !sdp.includes('v=0')) {
+      throw new Error('Invalid answer code provided.');
+    }
 
+    await this.pendingPc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
     console.log(`[WebRTC-P2P] Accepted answer for guest "${this.pendingGuestId}"`);
     return this.pendingGuestId;
   }
 
-  _setupDataChannel(dc, guestId) {
+  _setupDataChannel(dc, guestId, pc) {
     dc.onopen = () => {
       console.log(`[WebRTC-P2P] Direct DataChannel OPEN with guest: ${guestId}`);
       const peer = {
         id: guestId,
         name: 'Friend',
-        pc: this.pendingPc,
+        pc,
         dc,
         lastSeen: Date.now(),
         rtt: 2,
       };
       this.peers.set(guestId, peer);
-      this.pendingPc = null;
-      this.pendingGuestId = null;
+
+      if (this.pendingGuestId === guestId) {
+        this.pendingPc = null;
+        this.pendingGuestId = null;
+      }
 
       if (this.callbacks.onGuestJoined) {
         this.callbacks.onGuestJoined(peer);
@@ -220,11 +269,9 @@ export class WebRtcHostHub {
       peer.name = msg.name || 'Friend';
       if (this.callbacks.onPresence) this.callbacks.onPresence(this.activeGuests);
     } else if (msg.type === 'ping') {
-      // Respond to NTP ping
       peer.dc.send(JSON.stringify({ type: 'pong', clientTime: msg.clientTime, serverTime: Date.now() }));
     } else if (msg.type === 'reaction') {
       if (this.callbacks.onReaction) this.callbacks.onReaction(msg.reaction);
-      // Re-broadcast reaction to other connected phones
       this.broadcast(msg, guestId);
     }
   }
@@ -239,8 +286,10 @@ export class WebRtcHostHub {
         }
       };
       pc.addEventListener('icegatheringstatechange', checkState);
-      // Fallback timeout in case gathering hangs
-      setTimeout(resolve, 800);
+      setTimeout(() => {
+        pc.removeEventListener('icegatheringstatechange', checkState);
+        resolve();
+      }, 1000);
     });
   }
 
@@ -280,7 +329,6 @@ export class WebRtcHostHub {
     const chunkSize = 16 * 1024; // 16KB chunks
     const totalChunks = Math.ceil(totalBytes / chunkSize);
 
-    // 1. Send Audio Header
     this.broadcast({
       type: 'audio_header',
       trackId,
@@ -289,7 +337,6 @@ export class WebRtcHostHub {
       totalChunks,
     });
 
-    // 2. Transmit chunks
     for (let i = 0; i < totalChunks; i++) {
       const start = i * chunkSize;
       const end = Math.min(start + chunkSize, totalBytes);
@@ -307,7 +354,6 @@ export class WebRtcHostHub {
         onProgress(Math.round(((i + 1) / totalChunks) * 100));
       }
 
-      // Small 2ms yield to prevent saturating mobile WebRTC socket buffer
       if (i % 8 === 0) {
         await new Promise(r => setTimeout(r, 4));
       }
@@ -360,7 +406,7 @@ export class WebRtcGuestClient {
   async joinWithOffer(offerCompactCode) {
     this.destroy();
 
-    const pc = new RTCPeerConnection({ iceServers: [] });
+    const pc = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
     this.pc = pc;
 
     pc.ondatachannel = (e) => {
@@ -368,7 +414,11 @@ export class WebRtcGuestClient {
       this._setupDataChannel(this.dc);
     };
 
-    const offerSdp = SdpCompressor.decompress(offerCompactCode, 'offer');
+    const offerSdp = await SdpCompressor.decompress(offerCompactCode);
+    if (!offerSdp || !offerSdp.includes('v=0')) {
+      throw new Error('Invalid invite code provided.');
+    }
+
     await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: offerSdp }));
 
     const answer = await pc.createAnswer();
@@ -376,8 +426,11 @@ export class WebRtcGuestClient {
 
     await this._waitForIceGathering(pc);
 
-    const compactAnswer = SdpCompressor.compress(pc.localDescription.sdp);
-    const qrSvg = QRCodeGenerator.generateSVG(compactAnswer, 200, '#000000', '#ffffff');
+    let answerSdp = pc.localDescription.sdp;
+    answerSdp = injectHotspotCandidates(answerSdp);
+
+    const compactAnswer = await SdpCompressor.compress(answerSdp);
+    const qrSvg = QRCodeGenerator.generateSVG(compactAnswer, 220, '#000000', '#ffffff');
 
     return {
       answerCode: compactAnswer,
@@ -394,7 +447,6 @@ export class WebRtcGuestClient {
         name: this.participant.name,
       }));
 
-      // Start periodic NTP ping-pong clock calibration
       this._calibrateClock();
 
       if (this.callbacks.onConnected) {
@@ -440,41 +492,31 @@ export class WebRtcGuestClient {
         }
         break;
 
-      case 'audio_header': {
-        this.audioBufferChunks.set(msg.trackId, {
-          mime: msg.mime,
-          totalBytes: msg.totalBytes,
-          totalChunks: msg.totalChunks,
-          received: 0,
-          chunks: new Array(msg.totalChunks),
-        });
+      case 'audio_header':
+        this.audioBufferChunks.set(msg.trackId, new Array(msg.totalChunks));
         break;
-      }
 
       case 'audio_chunk': {
-        const item = this.audioBufferChunks.get(msg.trackId);
-        if (item) {
-          // Decode base64 chunk
-          const binaryStr = atob(msg.data);
-          const len = binaryStr.length;
-          const bytes = new Uint8Array(len);
-          for (let i = 0; i < len; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const chunks = this.audioBufferChunks.get(msg.trackId);
+        if (chunks) {
+          const binary = atob(msg.data);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          chunks[msg.index] = bytes.buffer;
 
-          item.chunks[msg.index] = bytes.buffer;
-          item.received++;
+          const receivedCount = chunks.filter(Boolean).length;
+          const progress = Math.round((receivedCount / chunks.length) * 100);
 
-          const percent = Math.round((item.received / item.totalChunks) * 100);
           if (this.callbacks.onAudioProgress) {
-            this.callbacks.onAudioProgress(msg.trackId, percent);
+            this.callbacks.onAudioProgress(progress);
           }
 
-          if (item.received >= item.totalChunks) {
-            // Reassemble full Audio Blob
-            const fullBlob = new Blob(item.chunks, { type: item.mime });
-            this.audioBlobs.set(msg.trackId, fullBlob);
-            console.log(`[WebRTC-P2P] Audio track "${msg.trackId}" fully received (${(fullBlob.size / (1024 * 1024)).toFixed(2)} MB)!`);
+          if (receivedCount === chunks.length) {
+            const blob = new Blob(chunks, { type: 'audio/mpeg' });
+            this.audioBlobs.set(msg.trackId, blob);
+            console.log(`[WebRTC-P2P] Complete audio blob reassembled for "${msg.trackId}"!`);
             if (this.callbacks.onTrackReceived) {
-              this.callbacks.onTrackReceived(msg.trackId, fullBlob);
+              this.callbacks.onTrackReceived(msg.trackId, blob);
             }
           }
         }
@@ -485,22 +527,18 @@ export class WebRtcGuestClient {
 
   _calibrateClock() {
     if (!this.isConnected) return;
-    this.dc.send(JSON.stringify({ type: 'ping', clientTime: Date.now() }));
-    // Calibrate every 5 seconds
-    setTimeout(() => this._calibrateClock(), 5000);
+    const sendPing = () => {
+      if (this.isConnected) {
+        this.dc.send(JSON.stringify({ type: 'ping', clientTime: Date.now() }));
+      }
+    };
+    sendPing();
+    setInterval(sendPing, 5000);
   }
 
-  getServerNow() {
-    return Date.now() + this.clockOffsetMs;
-  }
-
-  getAudioBlob(trackId) {
-    return this.audioBlobs.get(trackId) || null;
-  }
-
-  sendReaction(reaction) {
+  sendReaction(rx) {
     if (this.isConnected) {
-      this.dc.send(JSON.stringify({ type: 'reaction', reaction }));
+      this.dc.send(JSON.stringify({ type: 'reaction', reaction: rx }));
     }
   }
 
@@ -514,12 +552,21 @@ export class WebRtcGuestClient {
         }
       };
       pc.addEventListener('icegatheringstatechange', checkState);
-      setTimeout(resolve, 800);
+      setTimeout(() => {
+        pc.removeEventListener('icegatheringstatechange', checkState);
+        resolve();
+      }, 1000);
     });
   }
 
   destroy() {
-    if (this.dc) { try { this.dc.close(); } catch (e) {} this.dc = null; }
-    if (this.pc) { try { this.pc.close(); } catch (e) {} this.pc = null; }
+    if (this.dc) {
+      try { this.dc.close(); } catch (e) {}
+      this.dc = null;
+    }
+    if (this.pc) {
+      try { this.pc.close(); } catch (e) {}
+      this.pc = null;
+    }
   }
 }

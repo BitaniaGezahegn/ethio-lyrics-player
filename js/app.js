@@ -312,6 +312,10 @@ class LyricsApp {
     this.p2pPairingStepText = document.getElementById('p2pPairingStepText');
     this.btnP2pCopyCode = document.getElementById('btnP2pCopyCode');
     this.btnP2pScanFriendAnswer = document.getElementById('btnP2pScanFriendAnswer');
+    this.btnToggleHostPasteBox = document.getElementById('btnToggleHostPasteBox');
+    this.p2pHostPasteAnswerBox = document.getElementById('p2pHostPasteAnswerBox');
+    this.p2pHostAnswerInput = document.getElementById('p2pHostAnswerInput');
+    this.btnP2pSubmitHostAnswer = document.getElementById('btnP2pSubmitHostAnswer');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -1783,6 +1787,24 @@ class LyricsApp {
         if (!code) return;
         this.closeP2pCameraScanner();
         if (this.onP2pScanSuccess) this.onP2pScanSuccess(code);
+      });
+    }
+
+    if (this.btnToggleHostPasteBox) {
+      this.btnToggleHostPasteBox.addEventListener('click', () => {
+        if (this.p2pHostPasteAnswerBox) {
+          const isHidden = this.p2pHostPasteAnswerBox.style.display === 'none';
+          this.p2pHostPasteAnswerBox.style.display = isHidden ? 'flex' : 'none';
+          this.btnToggleHostPasteBox.textContent = isHidden ? 'Hide manual code input ▴' : 'Enter answer code manually ▾';
+        }
+      });
+    }
+
+    if (this.btnP2pSubmitHostAnswer) {
+      this.btnP2pSubmitHostAnswer.addEventListener('click', () => {
+        const code = this.p2pHostAnswerInput ? this.p2pHostAnswerInput.value.trim() : '';
+        if (!code) return;
+        this.submitHostAnswerCode(code);
       });
     }
 
@@ -4291,9 +4313,12 @@ class LyricsApp {
       this.btnSyncModeLocal.classList.toggle('active', this.syncMode === 'local');
     }
 
+    this.updateLobbyViews();
+
     if (this.syncMode === 'local') {
       if (this.localHubInfoBanner) this.localHubInfoBanner.style.display = 'flex';
-      this.updateLocalSubmodeUI();
+      if (this.btnSubmodeP2p) this.btnSubmodeP2p.classList.toggle('active', this.localSubmode === 'p2p');
+      if (this.btnSubmodeServer) this.btnSubmodeServer.classList.toggle('active', this.localSubmode === 'server');
 
       const isServerOnline = await LocalSyncService.checkServerAvailable();
       if (isServerOnline) {
@@ -4314,13 +4339,13 @@ class LyricsApp {
         this.localLanUrl = `http://${hostIp}:${port}`;
       } else {
         if (this.localHubStatusBadge) {
-          this.localHubStatusBadge.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-right:4px;"></span> Multi-Tab Offline Mode`;
+          this.localHubStatusBadge.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981; margin-right:4px;"></span> Hotspot Direct Mode`;
         }
         if (this.localTransportBadge) {
-          this.localTransportBadge.textContent = 'Multi-Window';
+          this.localTransportBadge.textContent = '📱 Mobile P2P';
         }
         if (this.localHubAddressText) {
-          this.localHubAddressText.textContent = `Tip: Run 'npm run local-sync' or double-click start-local-sync.bat for phone Wi-Fi sync`;
+          this.localHubAddressText.textContent = `Zero PC needed! Connect friends to host's hotspot`;
         }
         this.localLanUrl = window.location.origin;
       }
@@ -4334,25 +4359,36 @@ class LyricsApp {
 
   setLocalSubmode(submode) {
     this.localSubmode = submode;
-    this.updateLocalSubmodeUI();
+    if (this.btnSubmodeP2p) this.btnSubmodeP2p.classList.toggle('active', this.localSubmode === 'p2p');
+    if (this.btnSubmodeServer) this.btnSubmodeServer.classList.toggle('active', this.localSubmode === 'server');
+    this.updateLobbyViews();
   }
 
   updateLocalSubmodeUI() {
-    if (this.btnSubmodeP2p) {
-      this.btnSubmodeP2p.classList.toggle('active', this.localSubmode === 'p2p');
-    }
-    if (this.btnSubmodeServer) {
-      this.btnSubmodeServer.classList.toggle('active', this.localSubmode === 'server');
+    this.updateLobbyViews();
+  }
+
+  updateLobbyViews() {
+    if (this.activeRoom) {
+      if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
+      if (this.p2pLobbyView) this.p2pLobbyView.style.display = 'none';
+      if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
+      return;
     }
 
-    if (this.p2pLobbyView && this.roomLobbyView) {
-      if (this.syncMode === 'local' && this.localSubmode === 'p2p' && !this.activeRoom) {
-        this.p2pLobbyView.style.display = 'flex';
-        this.roomLobbyView.style.display = 'none';
-      } else if (!this.activeRoom) {
-        this.p2pLobbyView.style.display = 'none';
-        this.roomLobbyView.style.display = 'flex';
+    if (this.roomActiveView) this.roomActiveView.style.display = 'none';
+
+    if (this.syncMode === 'local') {
+      if (this.localSubmode === 'p2p') {
+        if (this.p2pLobbyView) this.p2pLobbyView.style.display = 'flex';
+        if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
+      } else {
+        if (this.p2pLobbyView) this.p2pLobbyView.style.display = 'none';
+        if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
       }
+    } else {
+      if (this.p2pLobbyView) this.p2pLobbyView.style.display = 'none';
+      if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
     }
   }
 
@@ -4405,6 +4441,9 @@ class LyricsApp {
         if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Friend: tap <strong>"Join Friend's Party"</strong> and scan this QR code:`;
         if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = invite.qrSvg;
         if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'block';
+        if (this.btnToggleHostPasteBox) this.btnToggleHostPasteBox.style.display = 'block';
+        if (this.p2pHostPasteAnswerBox) this.p2pHostPasteAnswerBox.style.display = 'none';
+        if (this.p2pHostAnswerInput) this.p2pHostAnswerInput.value = '';
         this.p2pPairingModal.classList.add('active');
       }
     } catch (err) {
@@ -4415,23 +4454,28 @@ class LyricsApp {
   handleScanFriendAnswer() {
     if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
     this.openP2pCameraScanner('host_answer', 'Scan Friend\'s Answer QR Code', (answerCode) => {
-      LocalSyncService.acceptP2pAnswer(answerCode).then(() => {
-        this.showToast('Friend joined the party! 🎧');
-        if (this.p2pPeersManagerCard) {
-          this.renderP2pPeersList(this.activeRoom.participants || []);
-        }
-      }).catch(err => {
-        alert('Pairing failed: ' + err.message);
-      });
+      this.submitHostAnswerCode(answerCode);
     });
   }
 
-  handleScanJoinP2p() {
-    this.openP2pCameraScanner('join_offer', 'Scan Host DJ\'s QR Code', async (offerCode) => {
+  submitHostAnswerCode(answerCode) {
+    if (!answerCode || !answerCode.trim()) return;
+    this.showToast('Connecting to friend... ⏳');
+    LocalSyncService.acceptP2pAnswer(answerCode.trim()).then(() => {
+      this.showToast('Answer verified! Establishing direct link... 🎧');
+      if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
+      this.closeP2pCameraScanner();
+    }).catch(err => {
+      alert('Pairing failed: ' + (err.message || 'Invalid code'));
+    });
+  }
+
+  handleScanJoinP2p(rawOfferCode = null) {
+    const processOffer = async (offerCode) => {
       try {
         this.myParticipant = Storage.getParticipant(this.currentUser);
-        this.showToast('Generating answer QR code...');
-        const result = await LocalSyncService.joinP2pRoom(offerCode, this.myParticipant);
+        this.showToast('Connecting to Host DJ...');
+        const result = await LocalSyncService.joinP2pRoom(offerCode.trim(), this.myParticipant);
 
         // Show Guest Answer QR to Host
         if (this.p2pPairingModal) {
@@ -4440,6 +4484,8 @@ class LyricsApp {
           if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = result.qrSvg;
           this.pendingP2pCode = result.answerCode;
           if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'none';
+          if (this.btnToggleHostPasteBox) this.btnToggleHostPasteBox.style.display = 'none';
+          if (this.p2pHostPasteAnswerBox) this.p2pHostPasteAnswerBox.style.display = 'none';
           this.p2pPairingModal.classList.add('active');
         }
 
@@ -4451,7 +4497,15 @@ class LyricsApp {
       } catch (err) {
         alert('Could not join P2P party: ' + err.message);
       }
-    });
+    };
+
+    if (rawOfferCode) {
+      processOffer(rawOfferCode);
+    } else {
+      this.openP2pCameraScanner('join_offer', 'Scan Host DJ\'s QR Code', (offerCode) => {
+        processOffer(offerCode);
+      });
+    }
   }
 
   openP2pCameraScanner(role, title, onCodeReceived) {
@@ -4537,18 +4591,15 @@ class LyricsApp {
       this.currentParticipantNameLabel.textContent = this.myParticipant.name;
     }
 
+    this.updateLobbyViews();
     this.updateSyncModeUI();
 
     if (this.activeRoom) {
-      if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
-      if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
       this.updateListenRoomUI(this.activeRoom);
       if (this.syncMode === 'local' && this.isRoomHost) {
         this.renderLocalPairingQr(this.activeRoom.roomCode);
       }
     } else {
-      if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
-      if (this.roomActiveView) this.roomActiveView.style.display = 'none';
       if (this.joinRoomError) this.joinRoomError.style.display = 'none';
     }
     this.listenTogetherModal.classList.add('active');

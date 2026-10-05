@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v22';
+const CACHE_NAME = 'ethio-lyrics-cache-v23';
 
 const STATIC_ASSETS = [
   './',
@@ -13,6 +13,8 @@ const STATIC_ASSETS = [
   './js/webrtc-p2p.js',
   './js/camera-scanner.js',
   './js/qr-code.js',
+  './js/libs/qrcode.min.js',
+  './js/libs/jsqr.min.js',
   './js/player.js',
   './js/lyrics-parser.js',
   './js/palette.js',
