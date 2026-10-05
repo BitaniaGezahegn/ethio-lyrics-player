@@ -1022,6 +1022,16 @@ class LyricsApp {
       }
     };
 
+    this.player.onDurationChange = (duration) => {
+      if (this.currentTrack && duration > 0) {
+        this.currentTrack.duration = Math.round(duration);
+        Storage.updateTrackDuration(this.currentTrack.id, this.currentTrack.duration);
+      }
+      if (!this.isScrubbing) {
+        this.updateTimeline(this.player.currentTime, duration);
+      }
+    };
+
     // Smart Queue: When a song ends, respect repeat mode & play next
     this.player.onEnded = async () => {
       this.stopHostHeartbeat();
@@ -1746,7 +1756,7 @@ class LyricsApp {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               </button>
               <button class="card-btn-action btn-card-fav ${isFav ? 'is-favorite' : ''}" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#f43f5e' : 'none'}" stroke="${isFav ? '#f43f5e' : 'currentColor'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#ffffff' : 'none'}" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </button>
               <button class="card-btn-action btn-card-download" title="Save for Offline" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
             </div>
@@ -1875,7 +1885,8 @@ class LyricsApp {
     this.parsedLyrics = LyricsParser.parse(track.lrc || '');
     this.renderLyrics();
     this.syncLyrics(0);
-    this.updateTimeline(0, track.duration || 180);
+    const initialDur = this.getTrackDuration(track);
+    this.updateTimeline(0, initialDur);
 
     if (autoPlay) {
       this.player.play();
@@ -2076,19 +2087,39 @@ class LyricsApp {
     });
   }
 
+  getTrackDuration(track) {
+    if (!track) return 0;
+    if (this.currentTrack && this.currentTrack.id === track.id && this.player && this.player.duration && isFinite(this.player.duration) && this.player.duration > 0) {
+      return this.player.duration;
+    }
+    if (track.duration && isFinite(track.duration) && track.duration > 0 && track.duration !== 180) {
+      return track.duration;
+    }
+    if (track.lrc) {
+      const est = LyricsParser.estimateDurationFromLrc(track.lrc);
+      if (est > 0) return est;
+    }
+    if (track.duration && isFinite(track.duration) && track.duration > 0) {
+      return track.duration;
+    }
+    return 0;
+  }
+
   updateTimeline(currentTime, duration) {
     if (!this.currentTimeLabel || !this.durationLabel || !this.scrubberFill) return;
-    const formattedCurrent = LyricsParser.formatTime(currentTime);
+    const formattedCurrent = LyricsParser.formatTime(currentTime, '0:00');
     if (this.currentTimeLabel.textContent !== formattedCurrent) {
       this.currentTimeLabel.textContent = formattedCurrent;
     }
-    const formattedDuration = LyricsParser.formatTime(duration);
+    const formattedDuration = (duration && duration > 0) ? LyricsParser.formatTime(duration, '--:--') : '--:--';
     if (this.durationLabel.textContent !== formattedDuration) {
       this.durationLabel.textContent = formattedDuration;
     }
     if (duration > 0) {
       const percent = Math.min(100, Math.max(0, (currentTime / duration) * 100));
       this.scrubberFill.style.width = `${percent}%`;
+    } else {
+      this.scrubberFill.style.width = '0%';
     }
   }
 
@@ -4344,10 +4375,10 @@ class LyricsApp {
       }
     }
 
-    const totalDurSec = playlistTracks.reduce((acc, t) => acc + (t.duration || 180), 0);
+    const totalDurSec = playlistTracks.reduce((acc, t) => acc + (this.getTrackDuration(t) || 0), 0);
     const totalMin = Math.round(totalDurSec / 60);
     if (this.playlistBannerMeta) {
-      this.playlistBannerMeta.textContent = `${playlistTracks.length} songs • ~${totalMin} min`;
+      this.playlistBannerMeta.textContent = `${playlistTracks.length} songs ${totalMin > 0 ? `• ~${totalMin} min` : ''}`;
     }
 
     if (this.btnPlaylistDelete) {
@@ -4376,6 +4407,7 @@ class LyricsApp {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const row = document.createElement('div');
       row.className = `playlist-track-row ${isCurrent ? 'playing' : ''}`;
+      const trackDur = this.getTrackDuration(track);
       row.innerHTML = `
         <span class="playlist-track-idx">${idx + 1}</span>
         <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="playlist-track-thumb" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
@@ -4383,7 +4415,7 @@ class LyricsApp {
           <div class="playlist-track-title">${track.title}</div>
           <div class="playlist-track-artist">${track.artist}</div>
         </div>
-        <span class="playlist-track-duration">${LyricsParser.formatTime(track.duration || 180)}</span>
+        <span class="playlist-track-duration">${LyricsParser.formatTime(trackDur, '--:--')}</span>
         <button class="btn-pill btn-sm btn-play-row" style="padding:0.3rem 0.65rem; font-size:0.75rem;" type="button">Play</button>
         ${!playlist.isSmart ? `<button class="btn-remove-from-playlist btn-remove-track-from-pl" title="Remove from playlist" type="button">&times;</button>` : ''}
       `;

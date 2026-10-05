@@ -103,12 +103,26 @@ export class LyricsParser {
   }
 
   /**
+   * Estimate song duration in seconds from the last timestamp in LRC content
+   * @param {string} lrcContent
+   * @returns {number} duration in seconds (or 0 if undetermined)
+   */
+  static estimateDurationFromLrc(lrcContent) {
+    if (!lrcContent || typeof lrcContent !== 'string') return 0;
+    const parsed = this.parse(lrcContent);
+    if (!parsed || parsed.length === 0) return 0;
+    const maxTime = Math.max(...parsed.map(p => p.time));
+    return maxTime > 0 ? Math.ceil(maxTime + 5) : 0;
+  }
+
+  /**
    * Format seconds to mm:ss display
    * @param {number} sec
+   * @param {string} fallback
    * @returns {string}
    */
-  static formatTime(sec) {
-    if (isNaN(sec) || sec < 0) sec = 0;
+  static formatTime(sec, fallback = '0:00') {
+    if (isNaN(sec) || sec === null || sec === undefined || sec <= 0) return fallback;
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;

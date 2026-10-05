@@ -1,3 +1,5 @@
+import { LyricsParser } from './lyrics-parser.js';
+
 /**
  * Audio Engine: Handles HTML5 Audio playback + Web Audio API synthesizer fallback
  */
@@ -11,7 +13,7 @@ export class AudioPlayer {
     
     this.isPlaying = false;
     this.currentTime = 0;
-    this.duration = 180;
+    this.duration = 0;
     this.volume = 0.8;
     this.playbackRate = 1.0;
     this.isSynthetic = true; // Use synth if no external audio file loaded
@@ -19,6 +21,7 @@ export class AudioPlayer {
 
     // Callbacks
     this.onTimeUpdate = null;
+    this.onDurationChange = null;
     this.onStateChange = null;
     this.onEnded = null;
 
@@ -37,7 +40,9 @@ export class AudioPlayer {
     this.audioElement.addEventListener('timeupdate', () => {
       if (!this.isSynthetic) {
         this.currentTime = this.audioElement.currentTime;
-        this.duration = this.audioElement.duration || this.duration || 180;
+        if (this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0) {
+          this.duration = this.audioElement.duration;
+        }
         if (this.onTimeUpdate) {
           this.onTimeUpdate(this.currentTime, this.duration);
         }
@@ -63,11 +68,20 @@ export class AudioPlayer {
       if (this.onStateChange) this.onStateChange('ended');
     });
 
-    this.audioElement.addEventListener('loadedmetadata', () => {
-      if (!this.isSynthetic && this.audioElement.duration) {
+    const handleDurationMeta = () => {
+      if (!this.isSynthetic && this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0) {
         this.duration = this.audioElement.duration;
+        if (this.onTimeUpdate) {
+          this.onTimeUpdate(this.currentTime, this.duration);
+        }
+        if (this.onDurationChange) {
+          this.onDurationChange(this.duration);
+        }
       }
-    });
+    };
+
+    this.audioElement.addEventListener('loadedmetadata', handleDurationMeta);
+    this.audioElement.addEventListener('durationchange', handleDurationMeta);
   }
 
   initWebAudio() {
@@ -83,7 +97,17 @@ export class AudioPlayer {
   loadTrack(track) {
     this.pause();
     this.currentTime = 0;
-    this.duration = track.duration || 180;
+
+    // Resolve real duration: from track.duration (if valid and not default 180), or LRC timestamp estimate, or 0
+    let initialDuration = 0;
+    if (track.duration && isFinite(track.duration) && track.duration > 0 && track.duration !== 180) {
+      initialDuration = track.duration;
+    } else if (track.lrc) {
+      initialDuration = LyricsParser.estimateDurationFromLrc(track.lrc);
+    } else if (track.duration && isFinite(track.duration) && track.duration > 0) {
+      initialDuration = track.duration;
+    }
+    this.duration = initialDuration;
 
     if (track.audioBlob) {
       this.loadAudioFile(track.audioBlob);

@@ -69,7 +69,7 @@ export const Storage = {
           year: track.year || new Date().getFullYear().toString(),
           cover: track.cover || 'assets/weleta_cover.jpg',
           discCenter: track.discCenter || 'assets/abinet_portrait.jpg',
-          duration: track.duration || 180,
+          duration: (track.duration && track.duration !== 180) ? track.duration : 0,
           lrc: track.lrc || '',
           audioBlob: track.audioBlob || null,
           updatedAt: Date.now()
@@ -81,6 +81,19 @@ export const Storage = {
     } catch (e) {
       console.warn('IndexedDB saveTrack error:', e);
       return null;
+    }
+  },
+
+  async updateTrackDuration(id, duration) {
+    if (!id || !duration || duration <= 0) return;
+    try {
+      const track = await this.getTrack(id);
+      if (track) {
+        track.duration = Math.round(duration);
+        await this.saveTrack(track);
+      }
+    } catch (e) {
+      console.warn('Failed to update track duration:', e);
     }
   },
 

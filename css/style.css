@@ -1363,106 +1363,169 @@ html, body {
   .no-lyrics-subtitle { font-size: 0.85rem; margin-bottom: 1rem; }
   .no-lyrics-actions { justify-content: center; }
 
-  /* 4. Docked Bottom Audio Bar (Native Mobile 2-Row Grid Layout) */
+  /* 4. Docked Bottom Audio Bar (Spacious Native Mobile 3-Row Layout) */
   .player-bar-dock {
     display: grid !important;
     grid-template-areas:
-      "track buttons speed"
-      "timeline timeline timeline";
-    grid-template-columns: 1fr auto auto;
-    grid-template-rows: auto auto;
-    gap: 0.35rem 0.5rem;
+      "track rightctrl"
+      "buttons buttons"
+      "timeline timeline";
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 0.45rem 0.5rem;
     height: auto !important;
-    min-height: 82px;
+    min-height: auto;
     bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px) !important;
     z-index: 55 !important;
     width: calc(100% - 1rem);
-    padding: 0.5rem 0.75rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65);
+    padding: 0.6rem 0.85rem;
+    border-radius: 18px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75);
   }
 
+  /* Row 1 - Left: Track Thumbnail, Title, Artist & Quick Favorite */
   .track-pill-info {
     grid-area: track;
-    width: auto !important;
-    max-width: 140px;
-    gap: 0.5rem;
+    width: 100% !important;
+    max-width: none !important;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
   }
   .track-mini-art {
-    width: 34px;
-    height: 34px;
-    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .track-text-meta {
+    flex: 1;
+    min-width: 0;
   }
   .track-mini-title {
-    font-size: 0.82rem;
-    max-width: 95px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #fff;
   }
   .track-mini-artist {
-    font-size: 0.7rem;
-    max-width: 95px;
+    font-size: 0.72rem;
+    color: var(--color-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
-  .playback-controls-center {
-    display: contents !important; /* Promotes buttons-row & timeline-container to grid items */
-  }
-
-  .buttons-row {
-    grid-area: buttons;
+  .dock-track-quick-actions {
+    display: flex;
+    align-items: center;
     gap: 0.35rem;
+    flex-shrink: 0;
+  }
+  .dock-track-quick-actions .btn-fav-toggle,
+  .dock-track-quick-actions .btn-dock-action {
+    width: 30px;
+    height: 30px;
+    padding: 4px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  .buttons-row .ctrl-btn {
-    padding: 5px;
-  }
-  .buttons-row .ctrl-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-  .ctrl-btn-seek {
-    display: none !important; /* Hide 5s jump on mobile to comfortably fit Shuffle, Prev, Play, Next, Repeat */
-  }
-  .btn-play-pause {
-    width: 38px !important;
-    height: 38px !important;
-  }
-  .btn-play-pause svg {
-    width: 18px !important;
-    height: 18px !important;
-  }
 
+  /* Row 1 - Right: Sleep Timer, Queue & Speed */
   .player-controls-right {
-    grid-area: speed;
+    grid-area: rightctrl;
     width: auto !important;
-    gap: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     justify-content: flex-end;
   }
   .player-controls-right .ctrl-btn {
-    padding: 4px;
+    padding: 5px;
+    min-width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .player-controls-right .ctrl-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
   }
   #btnSpeed {
-    padding: 0.25rem 0.45rem;
-    font-size: 0.7rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.72rem;
+    height: 28px;
+    border-radius: 6px;
   }
   .volume-container {
     display: none !important;
   }
 
+  /* Promote center children to direct grid items */
+  .playback-controls-center {
+    display: contents !important;
+  }
+
+  /* Row 2: Spacious, Centered Primary Playback Buttons (No overlap) */
+  .buttons-row {
+    grid-area: buttons;
+    display: flex !important;
+    width: 100% !important;
+    align-items: center;
+    justify-content: space-evenly !important;
+    gap: 0.4rem;
+    padding: 0.15rem 0;
+  }
+  .buttons-row .ctrl-btn {
+    padding: 6px;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+  .buttons-row .ctrl-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .ctrl-btn-seek {
+    display: none !important; /* Hide 5s jump on mobile so Shuffle, Prev, Play, Next, Repeat have full room */
+  }
+  .btn-play-pause {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25) !important;
+  }
+  .btn-play-pause svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Row 3: Full-width Scrubber Timeline */
   .timeline-container {
     grid-area: timeline;
     width: 100% !important;
-    gap: 0.45rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.1rem;
   }
   .time-label {
-    font-size: 0.7rem;
-    min-width: 28px;
+    font-size: 0.72rem;
+    min-width: 30px;
+    color: var(--color-text-dim);
   }
   .scrubber-track {
     height: 4px;
+    flex: 1;
   }
 
   /* 5. Modals on Mobile */
@@ -3420,24 +3483,30 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-dim);
+  color: #ffffff;
   cursor: pointer;
   transition: var(--transition-fast);
 }
 
-.card-btn-action.btn-card-fav:hover {
-  background: rgba(244, 63, 94, 0.15);
-  border-color: rgba(244, 63, 94, 0.4);
-  color: #f43f5e;
+.card-btn-action.btn-card-fav:hover,
+.btn-fav-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
-/* Active Favorite State */
+/* Active Favorite State - Pure White Theme Everywhere */
 .btn-fav-toggle.is-favorite,
 .card-btn-action.btn-card-fav.is-favorite {
-  color: #f43f5e !important;
-  background: rgba(244, 63, 94, 0.18) !important;
-  border-color: rgba(244, 63, 94, 0.5) !important;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.25);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+}
+
+.btn-fav-toggle .heart-icon-outline {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
 }
 
 .btn-fav-toggle.is-favorite .heart-icon-outline {
@@ -3446,12 +3515,20 @@ html, body {
 
 .btn-fav-toggle.is-favorite .heart-icon-filled {
   display: block !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
   animation: heart-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.card-btn-action.btn-card-fav svg {
+  stroke: #ffffff;
+}
+
 .card-btn-action.btn-card-fav.is-favorite svg {
-  fill: #f43f5e;
-  stroke: #f43f5e;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  color: #ffffff !important;
   animation: heart-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
