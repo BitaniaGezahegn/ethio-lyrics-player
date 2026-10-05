@@ -223,6 +223,7 @@ class LyricsApp {
     this.heroPlayLabel = document.getElementById('heroPlayLabel');
     this.btnHeroPlay = document.getElementById('btnHeroPlay');
     this.btnHeroOpenLyrics = document.getElementById('btnHeroOpenLyrics');
+    this.btnHeroDetails = document.getElementById('btnHeroDetails');
     this.btnHeroFavorite = document.getElementById('btnHeroFavorite');
 
     // Home Discovery Grids & Filters
@@ -369,6 +370,26 @@ class LyricsApp {
     this.adminNewLrc = document.getElementById('adminNewLrc');
     this.btnAdminAppendR2 = document.getElementById('btnAdminAppendR2');
     this.btnAdminPublishDirect = document.getElementById('btnAdminPublishDirect');
+
+    // Song Details Modal Elements
+    this.songDetailsModal = document.getElementById('songDetailsModal');
+    this.detailModalCover = document.getElementById('detailModalCover');
+    this.detailModalTitle = document.getElementById('detailModalTitle');
+    this.detailModalArtist = document.getElementById('detailModalArtist');
+    this.detailModalArtistEn = document.getElementById('detailModalArtistEn');
+    this.detailModalAlbum = document.getElementById('detailModalAlbum');
+    this.detailModalLrcChip = document.getElementById('detailModalLrcChip');
+    this.detailModalOfflineChip = document.getElementById('detailModalOfflineChip');
+    this.detailModalLyricsSnippet = document.getElementById('detailModalLyricsSnippet');
+    this.btnDetailModalPlay = document.getElementById('btnDetailModalPlay');
+    this.btnDetailPlayNow = document.getElementById('btnDetailPlayNow');
+    this.detailPlayNowLabel = document.getElementById('detailPlayNowLabel');
+    this.btnDetailViewLyrics = document.getElementById('btnDetailViewLyrics');
+    this.btnDetailToggleFavorite = document.getElementById('btnDetailToggleFavorite');
+    this.detailFavLabel = document.getElementById('detailFavLabel');
+    this.btnDetailSaveOffline = document.getElementById('btnDetailSaveOffline');
+    this.detailSaveLabel = document.getElementById('detailSaveLabel');
+    this.btnDetailOpenLyricsEditor = document.getElementById('btnDetailOpenLyricsEditor');
   }
 
   handleUserAuthenticated(user, isAdmin) {
@@ -600,6 +621,12 @@ class LyricsApp {
     }
     if (this.btnHeroOpenLyrics) {
       this.btnHeroOpenLyrics.addEventListener('click', () => this.switchTab('lyrics'));
+    }
+    if (this.btnHeroDetails) {
+      this.btnHeroDetails.addEventListener('click', () => {
+        const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+        if (track) this.openSongDetails(track);
+      });
     }
     if (this.btnHeroFavorite) {
       this.btnHeroFavorite.addEventListener('click', (e) => {
@@ -874,7 +901,7 @@ class LyricsApp {
       });
     }
 
-    // Fullscreen Toggle
+    // Fullscreen Toggle & Punchhole Protection
     if (this.btnToggleFullscreen) {
       this.btnToggleFullscreen.addEventListener('click', () => {
         if (!document.fullscreenElement) {
@@ -884,6 +911,14 @@ class LyricsApp {
         }
       });
     }
+
+    const updateFullscreenState = () => {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (this.appEl) this.appEl.classList.toggle('is-fullscreen', isFs);
+      document.body.classList.toggle('is-fullscreen', isFs);
+    };
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenState);
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
@@ -955,13 +990,93 @@ class LyricsApp {
     });
 
     // Modal Backdrop Close
-    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal].forEach(modal => {
+    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal, this.songDetailsModal].forEach(modal => {
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) modal.classList.remove('active');
         });
       }
     });
+
+    // Song Details Modal Action Bindings
+    if (this.btnDetailModalPlay) {
+      this.btnDetailModalPlay.addEventListener('click', async () => {
+        if (this._detailTrack) {
+          if (this.currentTrack && this.currentTrack.id === this._detailTrack.id) {
+            this.player.togglePlay();
+          } else {
+            await this.loadTrack(this._detailTrack, true);
+          }
+          if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+          this.renderHomePage();
+        }
+      });
+    }
+    if (this.btnDetailPlayNow) {
+      this.btnDetailPlayNow.addEventListener('click', async () => {
+        if (this._detailTrack) {
+          if (this.currentTrack && this.currentTrack.id === this._detailTrack.id) {
+            this.player.togglePlay();
+          } else {
+            await this.loadTrack(this._detailTrack, true);
+          }
+          if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+          this.renderHomePage();
+        }
+      });
+    }
+    if (this.btnDetailViewLyrics) {
+      this.btnDetailViewLyrics.addEventListener('click', async () => {
+        if (this._detailTrack) {
+          if (!this.currentTrack || this.currentTrack.id !== this._detailTrack.id) {
+            await this.loadTrack(this._detailTrack, true);
+          }
+          if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+          this.switchTab('lyrics');
+        }
+      });
+    }
+    if (this.btnDetailToggleFavorite) {
+      this.btnDetailToggleFavorite.addEventListener('click', () => {
+        if (this._detailTrack) {
+          const isFav = this.toggleTrackFavorite(this._detailTrack.id);
+          this.btnDetailToggleFavorite.classList.toggle('is-favorite', isFav);
+          if (this.detailFavLabel) this.detailFavLabel.textContent = isFav ? 'Favorited' : 'Favorite';
+        }
+      });
+    }
+    if (this.btnDetailSaveOffline) {
+      this.btnDetailSaveOffline.addEventListener('click', async () => {
+        if (this._detailTrack) {
+          try {
+            if (this.detailSaveLabel) this.detailSaveLabel.textContent = 'Saving...';
+            await Storage.downloadTrackForOffline(this._detailTrack);
+            this.tracks = await Storage.getAllTracks();
+            if (this.detailSaveLabel) this.detailSaveLabel.textContent = 'Saved';
+            this.btnDetailSaveOffline.classList.add('downloaded');
+            if (this.detailModalOfflineChip) {
+              this.detailModalOfflineChip.textContent = 'Saved Offline';
+              this.detailModalOfflineChip.className = 'detail-badge detail-badge-lrc';
+            }
+            this.renderHomePage();
+          } catch (e) {
+            if (this.detailSaveLabel) this.detailSaveLabel.textContent = 'Failed';
+            setTimeout(() => { if (this.detailSaveLabel) this.detailSaveLabel.textContent = 'Download'; }, 2000);
+          }
+        }
+      });
+    }
+    if (this.btnDetailOpenLyricsEditor) {
+      this.btnDetailOpenLyricsEditor.addEventListener('click', async () => {
+        if (this._detailTrack) {
+          if (!this.currentTrack || this.currentTrack.id !== this._detailTrack.id) {
+            await this.loadTrack(this._detailTrack, false);
+          }
+          if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+          if (this.lrcEditor) this.lrcEditor.open();
+        }
+      });
+    }
 
     // Listen Together Event Bindings
     if (this.btnOpenListenTogether) {
@@ -1405,6 +1520,9 @@ class LyricsApp {
           <div class="card-tag-row">
             <span class="card-tag">${track.lrc ? 'Synced' : 'Audio'}</span>
             <div class="card-actions-row">
+              <button class="card-btn-action btn-card-info" title="Preview Song Details" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </button>
               <button class="card-btn-action btn-card-fav ${isFav ? 'is-favorite' : ''}" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}" type="button">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#f43f5e' : 'none'}" stroke="${isFav ? '#f43f5e' : 'currentColor'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </button>
@@ -1414,15 +1532,39 @@ class LyricsApp {
         </div>
       `;
 
-      // Play on card click
-      card.addEventListener('click', async () => {
-        if (isCurrent) {
-          this.player.togglePlay();
-        } else {
-          await this.loadTrack(track, true);
-        }
-        this.renderHomePage();
-      });
+      // Play on card artwork click
+      const artWrap = card.querySelector('.card-art-wrap');
+      if (artWrap) {
+        artWrap.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (isCurrent) {
+            this.player.togglePlay();
+          } else {
+            await this.loadTrack(track, true);
+          }
+          this.renderHomePage();
+        });
+      }
+
+      // Open details on clicking the card title or meta
+      const cardMeta = card.querySelector('.card-meta');
+      if (cardMeta) {
+        cardMeta.addEventListener('click', (e) => {
+          // If clicked inside action buttons, let them handle it
+          if (e.target.closest('.card-btn-action')) return;
+          e.stopPropagation();
+          this.openSongDetails(track);
+        });
+      }
+
+      // Info button
+      const infoBtn = card.querySelector('.btn-card-info');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openSongDetails(track);
+        });
+      }
 
       // Favorite button
       const favBtn = card.querySelector('.btn-card-fav');
@@ -1449,6 +1591,10 @@ class LyricsApp {
         }
       });
 
+      card.addEventListener('click', () => {
+        this.openSongDetails(track);
+      });
+
       container.appendChild(card);
     });
   }
@@ -1460,9 +1606,19 @@ class LyricsApp {
     this.currentTrack = track;
     Storage.setLastTrackId(track.id);
 
-    // Update Header Display on Lyrics Stage
+    // Update Header Display on Lyrics Stage (Fix duplicate artist names)
     if (this.artistAmharic) this.artistAmharic.textContent = track.artist || 'Unknown Artist';
-    if (this.artistEnglish) this.artistEnglish.textContent = track.artistEn || track.artist || 'Unknown Artist';
+    if (this.artistEnglish) {
+      // Only display transliteration if distinct from primary artist name
+      const hasDistinctEn = track.artistEn && track.artistEn.trim().toLowerCase() !== (track.artist || '').trim().toLowerCase();
+      if (hasDistinctEn) {
+        this.artistEnglish.textContent = track.artistEn;
+        this.artistEnglish.style.display = 'block';
+      } else {
+        this.artistEnglish.textContent = '';
+        this.artistEnglish.style.display = 'none';
+      }
+    }
     if (this.songTitleAmharic) this.songTitleAmharic.textContent = track.title || 'Untitled Track';
     if (this.albumTitle) this.albumTitle.textContent = track.album || 'My Album';
     if (this.albumYear) this.albumYear.textContent = track.year || '2024';
@@ -1529,7 +1685,10 @@ class LyricsApp {
     PaletteExtractor.applyToElement(this.appEl, PaletteExtractor.getDefaultPalette());
 
     if (this.artistAmharic) this.artistAmharic.textContent = 'የሙዚቃ ማጫወቻ';
-    if (this.artistEnglish) this.artistEnglish.textContent = 'ETHIO LYRICS PLAYER';
+    if (this.artistEnglish) {
+      this.artistEnglish.textContent = 'ETHIO LYRICS PLAYER';
+      this.artistEnglish.style.display = 'block';
+    }
     if (this.songTitleAmharic) this.songTitleAmharic.textContent = 'ሙዚቃ ይምረጡ';
     if (this.albumTitle) this.albumTitle.textContent = 'Library';
     if (this.albumYear) this.albumYear.textContent = new Date().getFullYear().toString();
@@ -1733,6 +1892,9 @@ class LyricsApp {
 
   async renderPublicCatalog(filterText = '') {
     if (!this.globalCatalogList) return;
+    this._catalogRenderToken = (this._catalogRenderToken || 0) + 1;
+    const currentToken = this._catalogRenderToken;
+
     this.globalCatalogList.innerHTML = '';
 
     let tracksToDisplay = this.publicTracks;
@@ -1755,14 +1917,16 @@ class LyricsApp {
     }
 
     for (const song of tracksToDisplay) {
+      if (this._catalogRenderToken !== currentToken) return;
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
       const isOfflineReady = await Storage.hasTrack(song.id);
+      if (this._catalogRenderToken !== currentToken) return;
 
       const card = document.createElement('div');
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0;">
+        <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
           <img src="${song.cover || 'assets/weleta_cover.jpg'}" class="track-thumb-img" alt="${song.title}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -1777,12 +1941,28 @@ class LyricsApp {
           <button class="btn-pill btn-play-public" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
             ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
           </button>
+          <button class="btn-track-info btn-pill" style="font-size:0.75rem; padding:0.35rem 0.55rem;" title="Song Details">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </button>
           <button class="btn-pill btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${song.id}">
             ${isOfflineReady ? 'Saved' : 'Download'}
           </button>
           ${this.isAdmin ? `<button class="btn-pill btn-delete-public" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete from Global Catalog">&times;</button>` : ''}
         </div>
       `;
+
+      card.querySelector('.track-info-clickable').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openSongDetails(song);
+      });
+
+      const infoBtn = card.querySelector('.btn-track-info');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openSongDetails(song);
+        });
+      }
 
       card.querySelector('.btn-play-public').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -1823,10 +2003,8 @@ class LyricsApp {
         }
       }
 
-      card.addEventListener('click', async () => {
-        await this.loadTrack(song, true);
-        this.trackModal.classList.remove('active');
-        this.renderHomePage();
+      card.addEventListener('click', () => {
+        this.openSongDetails(song);
       });
 
       this.globalCatalogList.appendChild(card);
@@ -1873,7 +2051,7 @@ class LyricsApp {
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0;">
+        <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
           <img src="${song.cover || 'assets/weleta_cover.jpg'}" class="track-thumb-img" alt="${song.title}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -1890,10 +2068,26 @@ class LyricsApp {
           <button class="btn-pill btn-play-custom" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
             ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
           </button>
+          <button class="btn-track-info btn-pill" style="font-size:0.75rem; padding:0.35rem 0.55rem;" title="Song Details">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </button>
           <button class="btn-pill btn-edit-custom" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Edit Metadata & Artwork">Edit</button>
           <button class="btn-pill btn-delete-custom" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete Song">&times;</button>
         </div>
       `;
+
+      card.querySelector('.track-info-clickable').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openSongDetails(song);
+      });
+
+      const infoBtn = card.querySelector('.btn-track-info');
+      if (infoBtn) {
+        infoBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openSongDetails(song);
+        });
+      }
 
       card.querySelector('.btn-play-custom').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -1912,10 +2106,8 @@ class LyricsApp {
         await this.deleteTrack(song.id);
       });
 
-      card.addEventListener('click', async () => {
-        await this.loadTrack(song, true);
-        this.trackModal.classList.remove('active');
-        this.renderHomePage();
+      card.addEventListener('click', () => {
+        this.openSongDetails(song);
       });
 
       this.localTracksList.appendChild(card);
@@ -1936,7 +2128,6 @@ class LyricsApp {
     if (this.trackListView) this.trackListView.style.display = 'block';
     if (this.trackFormView) this.trackFormView.style.display = 'none';
     if (this.btnShowUploadForm) this.btnShowUploadForm.style.display = 'inline-flex';
-    this.populateTracksModal();
   }
 
   showTrackForm(trackToEdit = null) {
@@ -2670,27 +2861,36 @@ class LyricsApp {
     if (!this.themeOptionsList) return;
     this.themeOptionsList.innerHTML = '';
 
-    const curTheme = THEMES.find(t => t.id === this.themeManager.currentTheme);
+    // Apply the saved theme to app element immediately on startup
+    this.themeManager.applyTheme(this.themeManager.currentTheme);
+
+    const curTheme = THEMES.find(t => t.id === this.themeManager.currentTheme) || THEMES[0];
     const badgeLabel = document.getElementById('activeThemeBadgeLabel');
+    const descText = document.getElementById('themeDescText');
     if (badgeLabel && curTheme) {
       badgeLabel.textContent = curTheme.name;
+    }
+    if (descText && curTheme) {
+      descText.textContent = curTheme.description;
     }
 
     THEMES.forEach(t => {
       const card = document.createElement('div');
-      card.className = `theme-card-option ${this.themeManager.currentTheme === t.id ? 'active' : ''}`;
+      const isActive = this.themeManager.currentTheme === t.id;
+      card.className = `theme-compact-card ${isActive ? 'active' : ''}`;
       card.innerHTML = `
-        <div class="theme-card-info">
-          <h3>${t.name}</h3>
-          <p>${t.description}</p>
-        </div>
-        <span class="theme-badge">${t.badge}</span>
+        <div class="theme-swatch-circle" style="background: ${t.previewGradient || 'var(--color-primary)'};"></div>
+        <div class="theme-compact-name">${t.name}</div>
+        <span class="theme-compact-badge">${t.badge}</span>
       `;
+      card.title = `${t.name}: ${t.description}`;
+
       card.addEventListener('click', () => {
         this.themeManager.applyTheme(t.id);
-        document.querySelectorAll('.theme-card-option').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.theme-compact-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
         if (badgeLabel) badgeLabel.textContent = t.name;
+        if (descText) descText.textContent = t.description;
         if (this.themeModal) this.themeModal.classList.remove('active');
         if (this.currentUser) {
           this.pushCloudSyncDebounced();
@@ -2702,6 +2902,16 @@ class LyricsApp {
         });
       });
       this.themeOptionsList.appendChild(card);
+    });
+
+    // Keep active theme state in sync if cloud sync or anything else changes theme
+    this.themeManager.onThemeChange((theme) => {
+      document.querySelectorAll('.theme-compact-card').forEach(c => {
+        const isMatch = c.querySelector('.theme-compact-name')?.textContent === theme.name;
+        c.classList.toggle('active', isMatch);
+      });
+      if (badgeLabel) badgeLabel.textContent = theme.name;
+      if (descText) descText.textContent = theme.description;
     });
   }
 
@@ -2903,6 +3113,93 @@ class LyricsApp {
     if (this.lyricsFavText) {
       this.lyricsFavText.textContent = isFav ? 'Favorited' : 'Favorite';
     }
+
+    if (this._detailTrack && this.btnDetailToggleFavorite) {
+      const isDetailFav = Storage.isFavorite(this._detailTrack.id);
+      this.btnDetailToggleFavorite.classList.toggle('is-favorite', isDetailFav);
+      if (this.detailFavLabel) this.detailFavLabel.textContent = isDetailFav ? 'Favorited' : 'Favorite';
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Song Details Modal & Lyric Excerpt Preview
+  // --------------------------------------------------------------------------
+  async openSongDetails(track) {
+    if (!track || !this.songDetailsModal) return;
+    this._detailTrack = track;
+
+    if (this.detailModalCover) {
+      this.detailModalCover.src = track.cover || 'assets/weleta_cover.jpg';
+    }
+    if (this.detailModalTitle) {
+      this.detailModalTitle.textContent = track.title || 'Untitled Track';
+    }
+    if (this.detailModalArtist) {
+      this.detailModalArtist.textContent = track.artist || 'Unknown Artist';
+    }
+    if (this.detailModalArtistEn) {
+      const hasDistinctEn = track.artistEn && track.artistEn.trim().toLowerCase() !== (track.artist || '').trim().toLowerCase();
+      if (hasDistinctEn) {
+        this.detailModalArtistEn.textContent = track.artistEn;
+        this.detailModalArtistEn.style.display = 'block';
+      } else {
+        this.detailModalArtistEn.textContent = '';
+        this.detailModalArtistEn.style.display = 'none';
+      }
+    }
+    if (this.detailModalAlbum) {
+      this.detailModalAlbum.textContent = `${track.album || 'Single'} • ${track.year || '2024'}`;
+    }
+
+    // LRC status & lyrics preview snippet
+    const hasLrc = !!(track.lrc && track.lrc.trim());
+    if (this.detailModalLrcChip) {
+      this.detailModalLrcChip.textContent = hasLrc ? 'Synced LRC Lyrics' : 'Audio Track';
+      this.detailModalLrcChip.className = `detail-badge ${hasLrc ? 'detail-badge-lrc' : 'detail-badge-offline'}`;
+    }
+
+    if (this.detailModalLyricsSnippet) {
+      if (hasLrc) {
+        // Strip timestamps for a clean text preview
+        const lines = track.lrc.split('\n')
+          .map(l => l.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').trim())
+          .filter(l => l.length > 0)
+          .slice(0, 5);
+        this.detailModalLyricsSnippet.textContent = lines.join('\n') || 'No readable lyrics lines.';
+      } else {
+        this.detailModalLyricsSnippet.innerHTML = '<span style="color:var(--color-text-dim); font-style:italic;">No synchronized lyrics for this song yet. Tap "Edit LRC" to add lyrics.</span>';
+      }
+    }
+
+    // Offline status
+    const isOffline = await Storage.hasTrack(track.id);
+    if (this.detailModalOfflineChip) {
+      this.detailModalOfflineChip.textContent = isOffline ? 'Saved Offline' : 'Cloud Stream';
+      this.detailModalOfflineChip.className = `detail-badge ${isOffline ? 'detail-badge-lrc' : 'detail-badge-offline'}`;
+    }
+    if (this.detailSaveLabel) {
+      this.detailSaveLabel.textContent = isOffline ? 'Saved' : 'Download';
+    }
+    if (this.btnDetailSaveOffline) {
+      this.btnDetailSaveOffline.classList.toggle('downloaded', isOffline);
+    }
+
+    // Favorite status
+    const isFav = Storage.isFavorite(track.id);
+    if (this.btnDetailToggleFavorite) {
+      this.btnDetailToggleFavorite.classList.toggle('is-favorite', isFav);
+    }
+    if (this.detailFavLabel) {
+      this.detailFavLabel.textContent = isFav ? 'Favorited' : 'Favorite';
+    }
+
+    // Playing state
+    const isPlayingThis = this.currentTrack && this.currentTrack.id === track.id && this.player.isPlaying;
+    if (this.detailPlayNowLabel) {
+      this.detailPlayNowLabel.textContent = isPlayingThis ? 'Pause' : 'Play Now';
+    }
+
+    this.songDetailsModal.classList.add('active');
   }
 
   // --------------------------------------------------------------------------

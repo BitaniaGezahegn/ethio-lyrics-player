@@ -70,28 +70,6 @@ export class LyricsParser {
     // Sort chronologically
     parsed.sort((a, b) => a.time - b.time);
 
-    // AUTO-REPAIR: If line 0 is a title/artist header and was stamped late (>2.5s)
-    // (Happens when the user pastes Artist - Title at top and taps Enter when singer begins singing line 1)
-    if (parsed.length >= 2 && this.isTitleHeader(parsed[0].text) && parsed[0].time > 2.5) {
-      const shifted = [];
-      // Set line 0 as the intro title at 0:00
-      const titleClean = parsed[0].text.replace(/^♪\s*|\s*♪$/g, '').trim();
-      shifted.push({
-        time: 0.0,
-        text: `♪ ${titleClean} ♪`,
-        rawTime: '[00:00.00]'
-      });
-      // Shift timestamps: line 1 gets line 0's time, line 2 gets line 1's time, etc.
-      for (let i = 1; i < parsed.length; i++) {
-        shifted.push({
-          time: parsed[i - 1].time,
-          text: parsed[i].text,
-          rawTime: parsed[i - 1].rawTime
-        });
-      }
-      return shifted;
-    }
-
     return parsed;
   }
 
@@ -99,21 +77,25 @@ export class LyricsParser {
    * Find index of active line for given current timestamp
    * @param {Array} lyrics
    * @param {number} currentTime
+   * @param {number} [offsetSeconds=0] Optional sync compensation / lead time in seconds
    * @returns {number} index of current line or -1
    */
-  static getActiveIndex(lyrics, currentTime) {
+  static getActiveIndex(lyrics, currentTime, offsetSeconds = 0) {
     if (!lyrics || lyrics.length === 0) return -1;
 
+    // Compensate for hardware / perception latency
+    const effectiveTime = currentTime + offsetSeconds;
+
     // If before first line timestamp:
-    if (currentTime < lyrics[0].time) {
+    if (effectiveTime < lyrics[0].time) {
       // If line 0 is at or near 0:00 (e.g. title card), it is active
-      if (lyrics[0].time <= 1.0) return 0;
+      if (lyrics[0].time <= 0.8) return 0;
       // Otherwise, instrumental intro before the first lyric
       return -1;
     }
 
     for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (currentTime >= lyrics[i].time) {
+      if (effectiveTime >= lyrics[i].time) {
         return i;
       }
     }

@@ -183,6 +183,10 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
                     <span>View Lyrics</span>
                   </button>
+                  <button id="btnHeroDetails" class="btn-pill hero-btn-details" title="Song Details">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>Details</span>
+                  </button>
                   <button id="btnHeroFavorite" class="btn-pill btn-fav-toggle btn-hero-fav" title="Toggle Favorite" type="button">
                     <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -386,18 +390,6 @@
            TAB 3: LYRICS (Now Playing Synced Lyrics Stage & Vinyl Visualizer)
            ==================================================================== -->
       <section id="tabViewLyrics" class="tab-view stage-content" style="display:none;">
-        <div class="stage-top-bar-row">
-          <button id="btnStageBackToHome" class="btn-pill btn-stage-back">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-            <span>Back</span>
-          </button>
-          <button id="btnLyricsFavorite" class="btn-pill btn-fav-toggle btn-lyrics-fav" title="Toggle Favorite" type="button">
-            <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span id="lyricsFavText">Favorite</span>
-          </button>
-        </div>
-
         <!-- Song Header Metadata -->
         <div class="song-header-section">
           <div class="artist-heading">
@@ -511,7 +503,7 @@
             </div>
           </div>
 
-          <!-- Setting Card 2: Themes & Display Styles (Collapsed by Default) -->
+          <!-- Setting Card 2: Themes & Display Styles (Compact Modern Makeover) -->
           <div class="settings-card" id="settingsThemesCard">
             <div class="settings-card-header" id="btnToggleThemesAccordion" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <div style="display: flex; align-items: center; gap: 0.65rem;">
@@ -519,15 +511,16 @@
                 <h2>Display Themes</h2>
               </div>
               <div style="display: flex; align-items: center; gap: 0.65rem;">
-                <span class="badge-status-active" id="activeThemeBadgeLabel">Dynamic Art</span>
+                <span class="badge-status-active" id="activeThemeBadgeLabel">Dynamic Ambient</span>
                 <svg id="themesChevronIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
-            <div class="settings-card-body" id="themesCollapseBody" style="display: none; padding-top: 0.75rem;">
-              <p style="color:var(--color-text-dim); font-size:0.85rem; margin:0 0 0.75rem 0;">
-                Choose visual presentation style for the synchronized lyrics stage.
-              </p>
-              <div class="theme-grid" id="themeOptionsList"></div>
+            <div class="settings-card-body" id="themesCollapseBody" style="display: block; padding-top: 0.75rem;">
+              <div class="theme-compact-strip" id="themeOptionsList"></div>
+              <div class="theme-compact-info" id="themeActiveDesc">
+                <span class="theme-info-dot">✦</span>
+                <span id="themeDescText">Living fluid ambient mesh dynamically extracted from song artwork with floating particles.</span>
+              </div>
             </div>
           </div>
 
@@ -933,6 +926,75 @@
                 Leave Session
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Song Details & Preview -->
+    <div id="songDetailsModal" class="modal-overlay">
+      <div class="modal-card song-details-card" style="max-width: 480px; width: 92%;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div>
+              <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Song Details</h2>
+              <div style="font-size:0.75rem; color:var(--color-gold);">Track Metadata &amp; Lyric Preview</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close="songDetailsModal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:1.25rem 1.4rem; display:flex; flex-direction:column; gap:1.1rem;">
+          <!-- Top Artwork & Metadata Header -->
+          <div class="song-details-top">
+            <div class="song-details-cover-wrap">
+              <img id="detailModalCover" src="assets/weleta_cover.jpg" alt="Cover" class="song-details-cover" crossorigin="anonymous">
+              <button id="btnDetailModalPlay" class="song-details-play-btn" title="Play Track">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              </button>
+            </div>
+            <div class="song-details-info">
+              <h3 id="detailModalTitle" class="song-details-title">Song Title</h3>
+              <div id="detailModalArtist" class="song-details-artist">Artist Name</div>
+              <div id="detailModalArtistEn" class="song-details-artist-en" style="display:none;"></div>
+              <div id="detailModalAlbum" class="song-details-sub">Album • 2024</div>
+              <div class="song-details-chip-row">
+                <span id="detailModalLrcChip" class="detail-badge detail-badge-lrc">Synced Lyrics</span>
+                <span id="detailModalOfflineChip" class="detail-badge detail-badge-offline">Cloud Catalog</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lyrics Preview Section -->
+          <div class="song-details-lyrics-box">
+            <div class="song-details-section-title">
+              <span>Synchronized Lyrics Preview</span>
+              <button id="btnDetailOpenLyricsEditor" class="btn-pill btn-xs" style="font-size:0.72rem; padding:0.25rem 0.6rem;">Edit LRC</button>
+            </div>
+            <div id="detailModalLyricsSnippet" class="song-details-lyrics-content">
+              No lyrics loaded.
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div class="song-details-actions-grid">
+            <button id="btnDetailPlayNow" class="btn-primary" style="justify-content:center; gap:0.5rem; font-size:0.85rem; padding:0.6rem 1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              <span id="detailPlayNowLabel">Play Now</span>
+            </button>
+            <button id="btnDetailViewLyrics" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <span>Lyrics Stage</span>
+            </button>
+            <button id="btnDetailToggleFavorite" class="btn-pill btn-fav-toggle" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;" title="Toggle Favorite">
+              <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span id="detailFavLabel">Favorite</span>
+            </button>
+            <button id="btnDetailSaveOffline" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span id="detailSaveLabel">Download</span>
+            </button>
           </div>
         </div>
       </div>

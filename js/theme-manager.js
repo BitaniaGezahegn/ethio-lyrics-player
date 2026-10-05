@@ -4,33 +4,38 @@
 export const THEMES = [
   {
     id: 'theme-artwork-ambient',
-    name: 'Dynamic Artwork Ambient (Default)',
-    description: 'Living fluid ambient mesh dynamically extracted from the song artwork, featuring breathing background movement and floating dust/snow particles.',
-    badge: 'Dynamic Art'
+    name: 'Dynamic Ambient',
+    description: 'Living fluid ambient mesh dynamically extracted from song artwork with floating particles.',
+    badge: 'Dynamic Art',
+    previewGradient: 'linear-gradient(135deg, #e11d48, #2563eb, #0f172a)'
   },
   {
     id: 'theme-ethio-classic',
-    name: '1999 Ethio Lyrics Video (Classic)',
-    description: 'Authentic 1999 Ethiopian TV broadcast style: deep crimson vignette, Amharic dual header, broadcasting red beacon dot, and classic circular vinyl record.',
-    badge: 'Classic 1999'
+    name: '1999 Classic',
+    description: 'Authentic 1999 Ethiopian TV broadcast style with deep crimson vignette and vinyl disc.',
+    badge: 'Classic 1999',
+    previewGradient: 'linear-gradient(135deg, #991b1b, #450a0a, #e5b95a)'
   },
   {
     id: 'theme-apple-kinetic',
-    name: 'Apple Music Ambient Canvas',
-    description: '3D physical album sleeve with vinyl record sliding out, fluid ambient gradient mesh, and Apple Music depth-of-field blur.',
-    badge: 'Kinetic Glass'
+    name: 'Kinetic Canvas',
+    description: '3D physical album sleeve, fluid ambient gradient mesh, and Apple Music depth-of-field blur.',
+    badge: 'Kinetic Glass',
+    previewGradient: 'linear-gradient(135deg, #ec4899, #8b5cf6, #1e1b4b)'
   },
   {
     id: 'theme-cinema-horizon',
-    name: 'Cinema Concert Horizon',
-    description: '21:9 Widescreen theatrical concert stage with overhead spotlight beam, expansive typography, and golden karaoke light sweep.',
-    badge: 'Cinematic'
+    name: 'Cinema Horizon',
+    description: '21:9 Widescreen theatrical concert stage with golden spotlight beams and letterbox framing.',
+    badge: 'Cinematic',
+    previewGradient: 'linear-gradient(135deg, #ca8a04, #1c1917, #000000)'
   },
   {
     id: 'theme-karaoke-neon',
-    name: 'Cyber Neon Club & Lounge',
-    description: 'Cyberpunk nightclub stage with counter-rotating dual neon groove rings, electric cyan & magenta glow, and high-voltage pulses.',
-    badge: 'Cyber Neon'
+    name: 'Cyber Neon',
+    description: 'Cyberpunk nightclub stage with electric cyan & magenta glow and counter-rotating rings.',
+    badge: 'Cyber Neon',
+    previewGradient: 'linear-gradient(135deg, #06b6d4, #d946ef, #020617)'
   }
 ];
 
@@ -45,6 +50,9 @@ export class ThemeManager {
     }
 
     this.onThemeChangeCallbacks = [];
+
+    // Ensure the saved theme is applied immediately on construction
+    this.applyTheme(this.currentTheme);
   }
 
   init() {
@@ -78,3 +86,4 @@ export class ThemeManager {
     return THEMES;
   }
 }
+

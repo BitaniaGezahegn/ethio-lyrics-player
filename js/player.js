@@ -27,15 +27,17 @@ export class AudioPlayer {
     this.synthInterval = null;
     this.synthStartTime = 0;
     this.synthPauseOffset = 0;
+    this._rafId = null;
 
     this.initAudioListeners();
   }
 
   initAudioListeners() {
+    // Keep timeupdate as fallback, but primary high-resolution updates are driven at 60fps via RAF
     this.audioElement.addEventListener('timeupdate', () => {
       if (!this.isSynthetic) {
         this.currentTime = this.audioElement.currentTime;
-        this.duration = this.audioElement.duration || 180;
+        this.duration = this.audioElement.duration || this.duration || 180;
         if (this.onTimeUpdate) {
           this.onTimeUpdate(this.currentTime, this.duration);
         }
@@ -44,16 +46,19 @@ export class AudioPlayer {
 
     this.audioElement.addEventListener('play', () => {
       this.isPlaying = true;
+      this._startRafTicker();
       if (this.onStateChange) this.onStateChange('playing');
     });
 
     this.audioElement.addEventListener('pause', () => {
       this.isPlaying = false;
+      this._stopRafTicker();
       if (this.onStateChange) this.onStateChange('paused');
     });
 
     this.audioElement.addEventListener('ended', () => {
       this.isPlaying = false;
+      this._stopRafTicker();
       if (this.onEnded) this.onEnded();
       if (this.onStateChange) this.onStateChange('ended');
     });
@@ -144,17 +149,23 @@ export class AudioPlayer {
     } else {
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.playbackRate;
-      this.audioElement.play().catch(e => console.warn('Audio play prevented:', e));
+      this.audioElement.play().then(() => {
+        this.isPlaying = true;
+        this._startRafTicker();
+        if (this.onStateChange) this.onStateChange('playing');
+      }).catch(e => console.warn('Audio play prevented:', e));
     }
   }
 
   pause() {
     this.isPlaying = false;
+    this._stopRafTicker();
     if (this.isSynthetic) {
       this.stopSyntheticTicker();
       if (this.onStateChange) this.onStateChange('paused');
     } else {
       this.audioElement.pause();
+      if (this.onStateChange) this.onStateChange('paused');
     }
   }
 
@@ -175,6 +186,32 @@ export class AudioPlayer {
       }
     } else {
       this.audioElement.currentTime = this.currentTime;
+      if (this.onTimeUpdate) {
+        this.onTimeUpdate(this.currentTime, this.duration);
+      }
+    }
+  }
+
+  _startRafTicker() {
+    this._stopRafTicker();
+    const tick = () => {
+      if (!this.isPlaying) return;
+      if (!this.isSynthetic && this.audioElement && !this.audioElement.paused) {
+        this.currentTime = this.audioElement.currentTime;
+        this.duration = this.audioElement.duration || this.duration || 180;
+        if (this.onTimeUpdate) {
+          this.onTimeUpdate(this.currentTime, this.duration);
+        }
+      }
+      this._rafId = requestAnimationFrame(tick);
+    };
+    this._rafId = requestAnimationFrame(tick);
+  }
+
+  _stopRafTicker() {
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
     }
   }
 
