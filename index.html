@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="am">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics</title>
-  <meta name="description" content="ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
+  <meta name="description"
+    content="ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
 
   <!-- Open Graph / TikTok / Social Previews -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ethio-lyrics-player.pages.dev/">
   <meta property="og:site_name" content="ELM - Ethio Lyrics Media">
   <meta property="og:title" content="ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics">
-  <meta property="og:description" content="Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork themes, and listening parties.">
+  <meta property="og:description"
+    content="Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork themes, and listening parties.">
   <meta property="og:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ELM | Ethio Lyrics Media">
-  <meta name="twitter:description" content="Synchronized Ethiopian Music Lyrics with live listening rooms and dynamic ambient themes.">
+  <meta name="twitter:description"
+    content="Synchronized Ethiopian Music Lyrics with live listening rooms and dynamic ambient themes.">
   <meta name="twitter:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
 
   <!-- PWA & Mobile Web Meta -->
@@ -28,17 +33,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5b95a%22 stroke-width=%222%22><path d=%22M9 18V5l12-2v13%22/><circle cx=%226%22 cy=%2218%22 r=%223%22/><circle cx=%2218%22 cy=%2216%22 r=%223%22/></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5b95a%22 stroke-width=%222%22><path d=%22M9 18V5l12-2v13%22/><circle cx=%226%22 cy=%2218%22 r=%223%22/><circle cx=%2218%22 cy=%2216%22 r=%223%22/></svg>">
 
   <!-- Preconnect for Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap">
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/themes.css">
 </head>
+
 <body>
 
   <div id="app" class="theme-artwork-ambient">
@@ -46,9 +54,10 @@
     <!-- Modern Pull-to-Refresh Indicator -->
     <div id="pullToRefreshIndicator" class="pull-to-refresh-indicator">
       <div class="ptr-content">
-        <svg class="ptr-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" stroke-opacity="0.25" stroke="currentColor"/>
-          <path d="M12 2a10 10 0 0 1 10 10"/>
+        <svg class="ptr-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25" stroke="currentColor" />
+          <path d="M12 2a10 10 0 0 1 10 10" />
         </svg>
         <span class="ptr-text">Pull to refresh</span>
       </div>
@@ -57,7 +66,8 @@
     <!-- Top Navigation Bar -->
     <header class="top-bar">
       <div class="brand-badge" title="ELM - Ethio Lyrics Media">
-        <svg class="brand-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="brand-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18V5l12-2v13"></path>
           <circle cx="6" cy="18" r="3"></circle>
           <circle cx="18" cy="16" r="3"></circle>
@@ -71,19 +81,40 @@
       <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
       <nav class="desktop-nav-tabs">
         <button class="nav-tab-btn active" data-tab="home">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
           <span>Home</span>
         </button>
         <button class="nav-tab-btn" data-tab="library">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 6 4 14"></path>
+            <path d="M12 6v14"></path>
+            <path d="M8 8v12"></path>
+            <path d="M4 4v16"></path>
+          </svg>
           <span>Library</span>
         </button>
         <button class="nav-tab-btn" data-tab="lyrics">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+          </svg>
           <span>Lyrics</span>
         </button>
         <button class="nav-tab-btn" data-tab="settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
           <span>Settings</span>
           <span id="desktopPendingDot" class="badge-dot" style="display:none;"></span>
         </button>
@@ -93,7 +124,14 @@
       <div class="top-actions">
         <!-- Listen Together (Party Room Button) -->
         <button id="btnOpenListenTogether" class="btn-pill btn-broadcast-pill" title="Listen Together (Party Room)">
-          <svg class="broadcast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+          <svg class="broadcast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+            <circle cx="12" cy="12" r="2" />
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+            <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
+          </svg>
           <span id="listenTogetherBtnText">Party</span>
           <span id="liveRoomActiveIndicator" class="badge-dot-live" style="display:none;"></span>
         </button>
@@ -101,7 +139,16 @@
         <!-- Auth Profile Quick Pill -->
         <div id="authContainer" class="auth-bar-item">
           <button id="btnGoogleSignIn" class="btn-pill btn-auth-pill" title="Sign in with Google">
-            <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+            </svg>
             <span>Sign In</span>
           </button>
           <div id="userProfilePill" class="user-profile-pill" style="display:none;" title="Account Profile">
@@ -111,7 +158,10 @@
         </div>
 
         <button id="btnToggleFullscreen" class="btn-pill btn-icon-only" title="Toggle Fullscreen">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
         </button>
       </div>
     </header>
@@ -134,8 +184,13 @@
         <!-- 1. Search Bar (Top) -->
         <div class="home-search-section">
           <div class="home-search-input-wrap">
-            <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="text" id="inputHomeSearch" class="home-search-input" placeholder="Search by song, artist, or album...">
+            <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="text" id="inputHomeSearch" class="home-search-input"
+              placeholder="Search by song, artist, or album...">
           </div>
         </div>
 
@@ -144,11 +199,19 @@
           <div class="home-filter-scroll" id="homeFilterRow">
             <button class="filter-chip active" data-filter="all">All Music</button>
             <button class="filter-chip" data-filter="favorites">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px; margin-right:4px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
+                style="vertical-align:-1px; margin-right:4px;">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
               <span>Favorites</span>
             </button>
             <button class="filter-chip" data-filter="recent">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px; margin-right:4px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="vertical-align:-1px; margin-right:4px;">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
               <span>Recently Played</span>
             </button>
             <button class="filter-chip" data-filter="suggested">Recommended</button>
@@ -176,9 +239,12 @@
             <div class="hero-glow-bg" id="heroGlowBg"></div>
             <div class="hero-content-wrap">
               <div class="hero-artwork-box">
-                <img id="heroArtworkImg" src="assets/weleta_cover.jpg" alt="Featured Track" class="hero-artwork-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                <img id="heroArtworkImg" src="assets/weleta_cover.jpg" alt="Featured Track" class="hero-artwork-img"
+                  crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
                 <div class="hero-play-badge" id="btnHeroPlayBadge">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3" />
+                  </svg>
                 </div>
               </div>
               <div class="hero-details">
@@ -189,24 +255,46 @@
                 <h2 id="heroTitle" class="hero-title">Select a Song to Begin</h2>
                 <div id="heroArtist" class="hero-artist">ELM — Ethio Lyrics Media</div>
                 <p id="heroDescription" class="hero-description">
-                  Stream Ethiopian music with synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and offline listening.
+                  Stream Ethiopian music with synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and
+                  offline listening.
                 </p>
                 <div class="hero-actions">
                   <button id="btnHeroPlay" class="btn-primary hero-btn-play">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
                     <span id="heroPlayLabel">Play Track</span>
                   </button>
                   <button id="btnHeroOpenLyrics" class="btn-pill hero-btn-lyrics">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 18V5l12-2v13"></path>
+                      <circle cx="6" cy="18" r="3"></circle>
+                      <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
                     <span>View Lyrics</span>
                   </button>
                   <button id="btnHeroDetails" class="btn-pill hero-btn-details" title="Song Details">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
                     <span>Details</span>
                   </button>
-                  <button id="btnHeroFavorite" class="btn-pill btn-fav-toggle btn-hero-fav" title="Toggle Favorite" type="button">
-                    <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  <button id="btnHeroFavorite" class="btn-pill btn-fav-toggle btn-hero-fav" title="Toggle Favorite"
+                    type="button">
+                    <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="#ffffff" stroke-width="2">
+                      <path
+                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#ffffff"
+                      stroke="#ffffff" stroke-width="2" style="display:none;">
+                      <path
+                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -236,8 +324,13 @@
               <h1 class="library-page-title">Music Library</h1>
               <p class="library-page-subtitle">Manage cloud catalog songs and your offline downloads</p>
             </div>
-            <button id="btnShowUploadForm" class="btn-primary" style="display:inline-flex; align-items:center; gap:0.5rem; font-size:0.85rem; padding:0.55rem 1.1rem;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <button id="btnShowUploadForm" class="btn-primary"
+              style="display:inline-flex; align-items:center; gap:0.5rem; font-size:0.85rem; padding:0.55rem 1.1rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
               <span>Upload Song</span>
             </button>
           </div>
@@ -246,15 +339,30 @@
           <div id="trackListView">
             <div class="library-tabs-nav">
               <button id="tabGlobalCatalog" class="library-tab active">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
+                </svg>
                 <span>Global Catalog</span>
               </button>
               <button id="tabPlaylists" class="library-tab">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
                 <span>Playlists</span>
               </button>
               <button id="tabOfflineLibrary" class="library-tab">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
                 <span>Saved Offline</span>
               </button>
             </div>
@@ -262,14 +370,20 @@
             <!-- Search Bar in Library (Global & Offline) -->
             <div class="library-search-bar" id="catalogSearchWrap">
               <div class="home-search-input-wrap">
-                <svg class="home-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                <input type="text" id="inputCatalogSearch" class="home-search-input" placeholder="Search songs, artists, or albums...">
+                <svg class="home-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" id="inputCatalogSearch" class="home-search-input"
+                  placeholder="Search songs, artists, or albums...">
               </div>
             </div>
 
             <!-- Global Public Catalog Container -->
             <div id="globalCatalogList" style="display:flex; flex-direction:column; gap:0.65rem;">
-              <div class="loading-catalog-spinner" style="text-align:center; padding:3rem; color:var(--color-text-dim);">
+              <div class="loading-catalog-spinner"
+                style="text-align:center; padding:3rem; color:var(--color-text-dim);">
                 <div>Loading catalog...</div>
               </div>
             </div>
@@ -280,10 +394,15 @@
               <div class="playlists-action-header">
                 <div>
                   <h3 style="font-size:1.15rem; font-weight:700; color:#fff; margin:0;">Your Playlists</h3>
-                  <div style="font-size:0.8rem; color:var(--color-text-dim);">Create customized collections and listen seamlessly</div>
+                  <div style="font-size:0.8rem; color:var(--color-text-dim);">Create customized collections and listen
+                    seamlessly</div>
                 </div>
-                <button id="btnOpenCreatePlaylistModal" class="btn-primary" style="padding:0.5rem 1rem; font-size:0.82rem; gap:0.45rem;" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button id="btnOpenCreatePlaylistModal" class="btn-primary"
+                  style="padding:0.5rem 1rem; font-size:0.82rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                   <span>New Playlist</span>
                 </button>
               </div>
@@ -293,7 +412,10 @@
                 <!-- Liked Songs Smart Card -->
                 <div class="smart-playlist-card smart-card-liked" id="cardSmartLikedSongs">
                   <div class="smart-card-bg-icon">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
                   </div>
                   <div class="smart-card-content">
                     <div class="smart-card-badge">Auto Playlist</div>
@@ -301,14 +423,19 @@
                     <div class="smart-card-meta" id="smartLikedSongsCount">0 songs</div>
                   </div>
                   <button class="smart-card-play-btn" title="Play Liked Songs" type="button">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
                   </button>
                 </div>
 
                 <!-- Recently Played Smart Card -->
                 <div class="smart-playlist-card smart-card-recent" id="cardSmartRecentSongs">
                   <div class="smart-card-bg-icon">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
                   </div>
                   <div class="smart-card-content">
                     <div class="smart-card-badge">History</div>
@@ -316,7 +443,9 @@
                     <div class="smart-card-meta" id="smartRecentSongsCount">0 songs</div>
                   </div>
                   <button class="smart-card-play-btn" title="Play Recently Played" type="button">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -327,14 +456,19 @@
 
             <!-- Single Playlist Detail View (Sub-view) -->
             <div id="singlePlaylistView" style="display:none; flex-direction:column; gap:1.4rem;">
-              <button id="btnBackToPlaylistsList" class="btn-pill" style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
+              <button id="btnBackToPlaylistsList" class="btn-pill"
+                style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
                 &larr; Back to Playlists
               </button>
 
               <!-- Playlist Banner Header -->
               <div class="playlist-banner-header">
                 <div class="playlist-banner-art" id="playlistBannerArt">
-                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
                 </div>
                 <div class="playlist-banner-info">
                   <div class="playlist-banner-type">PLAYLIST</div>
@@ -346,20 +480,35 @@
 
               <!-- Playlist Action Bar -->
               <div class="playlist-actions-bar">
-                <button id="btnPlaylistPlayAll" class="btn-primary" style="padding:0.6rem 1.4rem; font-size:0.88rem; gap:0.55rem;" type="button">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <button id="btnPlaylistPlayAll" class="btn-primary"
+                  style="padding:0.6rem 1.4rem; font-size:0.88rem; gap:0.55rem;" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3" />
+                  </svg>
                   <span>Play All</span>
                 </button>
-                <button id="btnPlaylistShuffle" class="btn-pill" style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                <button id="btnPlaylistShuffle" class="btn-pill"
+                  style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                  </svg>
                   <span>Shuffle</span>
                 </button>
-                <button id="btnPlaylistAddTracks" class="btn-pill" style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <button id="btnPlaylistAddTracks" class="btn-pill"
+                  style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
                   <span>Add Songs</span>
                 </button>
-                <button id="btnPlaylistDelete" class="btn-pill btn-danger-pill" style="margin-left:auto; padding:0.6rem 0.9rem; font-size:0.82rem;" title="Delete Playlist" type="button">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <button id="btnPlaylistDelete" class="btn-pill btn-danger-pill"
+                  style="margin-left:auto; padding:0.6rem 0.9rem; font-size:0.82rem;" title="Delete Playlist"
+                  type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
                   <span>Delete</span>
                 </button>
               </div>
@@ -373,22 +522,32 @@
           </div>
 
           <!-- View B: Track Upload / Edit Form View -->
-          <div id="trackFormView" style="display:none; flex-direction:column; gap:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:1.5rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:0.75rem; border-bottom:1px solid rgba(255,255,255,0.08);">
+          <div id="trackFormView"
+            style="display:none; flex-direction:column; gap:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:1.5rem;">
+            <div
+              style="display:flex; align-items:center; justify-content:space-between; padding-bottom:0.75rem; border-bottom:1px solid rgba(255,255,255,0.08);">
               <button id="btnBackToLibrary" class="btn-pill" style="font-size:0.8rem; padding:0.35rem 0.8rem;">
                 &larr; Back to Library
               </button>
               <h3 id="trackFormModeTitle" style="font-size:1.05rem; font-weight:600; margin:0;">Upload Song</h3>
             </div>
 
-            <div id="trackFormError" style="display:none; padding:0.65rem 0.9rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; color:#fca5a5; font-size:0.82rem;"></div>
+            <div id="trackFormError"
+              style="display:none; padding:0.65rem 0.9rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; color:#fca5a5; font-size:0.82rem;">
+            </div>
 
             <!-- Audio File Dropzone -->
             <div class="form-group">
               <label>Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
               <div class="dropzone" id="audioDropzone">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                <p style="margin-top:0.4rem; font-size:0.85rem;" id="audioDropzoneLabel">Click or Drag &amp; Drop Audio File (MP3, WAV, AAC, M4A)</p>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                <p style="margin-top:0.4rem; font-size:0.85rem;" id="audioDropzoneLabel">Click or Drag &amp; Drop Audio
+                  File (MP3, WAV, AAC, M4A)</p>
                 <input type="file" id="audioFileInput" accept="audio/*" style="display:none;">
               </div>
             </div>
@@ -398,7 +557,8 @@
               <label>Artwork Image <span class="optional-badge">(Optional)</span></label>
               <div class="cover-picker-container">
                 <div class="cover-preview-box" id="coverPreviewBox" title="Click to upload custom cover image">
-                  <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img" crossorigin="anonymous">
+                  <img id="coverPreviewImg" src="assets/weleta_cover.jpg" alt="Cover Preview" class="cover-preview-img"
+                    crossorigin="anonymous">
                   <div class="cover-preview-overlay">
                     <span>Change</span>
                   </div>
@@ -411,7 +571,8 @@
                     <button type="button" id="btnUploadCoverFile" class="btn-pill" style="font-size:0.75rem;">
                       Select Image
                     </button>
-                    <button type="button" id="btnRemoveCover" class="btn-pill" style="font-size:0.75rem; color:#ff7b7b;">
+                    <button type="button" id="btnRemoveCover" class="btn-pill"
+                      style="font-size:0.75rem; color:#ff7b7b;">
                       Reset
                     </button>
                     <input type="file" id="coverFileInput" accept="image/*" style="display:none;">
@@ -424,11 +585,13 @@
             <div class="form-grid-2col">
               <div class="form-group">
                 <label for="inputCustomArtist">Artist Name <span class="required-badge">* Required</span></label>
-                <input type="text" id="inputCustomArtist" class="form-input" placeholder="e.g. አቢነት አጎናፍር / Abinet" required>
+                <input type="text" id="inputCustomArtist" class="form-input" placeholder="e.g. አቢነት አጎናፍር / Abinet"
+                  required>
               </div>
               <div class="form-group">
                 <label for="inputCustomTitle">Song Title <span class="required-badge">* Required</span></label>
-                <input type="text" id="inputCustomTitle" class="form-input" placeholder="e.g. አትሒጅብኝ / Athijibegn" required>
+                <input type="text" id="inputCustomTitle" class="form-input" placeholder="e.g. አትሒጅብኝ / Athijibegn"
+                  required>
               </div>
             </div>
 
@@ -448,10 +611,12 @@
             <div class="form-group">
               <label>Synchronized LRC Lyrics <span class="optional-badge">(Optional)</span></label>
               <div style="display:flex; gap:0.5rem; margin-bottom:0.4rem;">
-                <button type="button" id="btnUploadLrc" class="btn-pill" style="font-size:0.75rem;">Upload .lrc File</button>
+                <button type="button" id="btnUploadLrc" class="btn-pill" style="font-size:0.75rem;">Upload .lrc
+                  File</button>
                 <input type="file" id="lrcFileInput" accept=".lrc,.txt" style="display:none;">
               </div>
-              <textarea id="inputCustomLrc" class="form-textarea" placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
+              <textarea id="inputCustomLrc" class="form-textarea"
+                placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
             </div>
 
             <!-- Public Submission Card -->
@@ -459,29 +624,44 @@
               <label class="checkbox-container">
                 <input type="checkbox" id="checkSubmitToPublic">
                 <span class="checkmark"></span>
-                <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Catalog (Admin Review)</span>
+                <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Catalog (Admin
+                  Review)</span>
               </label>
-              <p style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
-                Share your track with the global community. Once approved by the admin, it will be published to the catalog for all visitors.
+              <p
+                style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
+                Share your track with the global community. Once approved by the admin, it will be published to the
+                catalog for all visitors.
               </p>
               <div id="publicAudioUrlField" style="display:none; margin-top:0.75rem; padding-left:1.6rem;">
                 <label style="font-size:0.78rem; color:var(--color-gold); font-weight:600;">
-                  Public Audio URL (Cloudflare R2 or direct link): <span class="required-badge">* Required for Catalog</span>
+                  Public Audio URL (Cloudflare R2 or direct link): <span class="required-badge">* Required for
+                    Catalog</span>
                 </label>
                 <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
-                  <input type="url" id="inputPublicAudioUrl" class="form-input" placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3" style="font-size:0.82rem; flex:1;">
-                  <button type="button" id="btnPasteR2Prefix" class="btn-pill" style="font-size:0.72rem; padding:0.4rem 0.65rem; white-space:nowrap;" title="Insert default R2 bucket prefix">
+                  <input type="url" id="inputPublicAudioUrl" class="form-input"
+                    placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3"
+                    style="font-size:0.82rem; flex:1;">
+                  <button type="button" id="btnPasteR2Prefix" class="btn-pill"
+                    style="font-size:0.72rem; padding:0.4rem 0.65rem; white-space:nowrap;"
+                    title="Insert default R2 bucket prefix">
                     + R2 Domain
                   </button>
                 </div>
-                
+
                 <!-- Dedicated Submit Action & Pending Status -->
-                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; margin-top:0.85rem;">
-                  <button type="button" id="btnTriggerPublicSubmit" class="btn-primary" disabled style="opacity:0.5; cursor:not-allowed; font-size:0.82rem; padding:0.5rem 1.15rem; display:inline-flex; align-items:center; gap:0.45rem;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                <div
+                  style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; margin-top:0.85rem;">
+                  <button type="button" id="btnTriggerPublicSubmit" class="btn-primary" disabled
+                    style="opacity:0.5; cursor:not-allowed; font-size:0.82rem; padding:0.5rem 1.15rem; display:inline-flex; align-items:center; gap:0.45rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m22 2-7 20-4-9-9-4Z" />
+                      <path d="M22 2 11 13" />
+                    </svg>
                     <span id="btnTriggerPublicSubmitLabel">Submit for Review</span>
                   </button>
-                  <div id="formPublicPendingBadge" style="display:none; align-items:center; gap:0.45rem; font-size:0.78rem; color:#fce7b2; background:rgba(229,185,90,0.15); border:1px solid rgba(229,185,90,0.4); padding:0.3rem 0.75rem; border-radius:9999px;">
+                  <div id="formPublicPendingBadge"
+                    style="display:none; align-items:center; gap:0.45rem; font-size:0.78rem; color:#fce7b2; background:rgba(229,185,90,0.15); border:1px solid rgba(229,185,90,0.4); padding:0.3rem 0.75rem; border-radius:9999px;">
                     <span class="spotlight-dot" style="background:#f4a261;"></span>
                     <span style="font-weight:600;">Pending Admin Review</span>
                   </div>
@@ -539,7 +719,8 @@
             <div class="disc-wrapper">
               <div class="disc-outer-grooves"></div>
               <div class="vinyl-disc" id="vinylDisc">
-                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc"
+                  crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
                 <div class="disc-center-hole"></div>
               </div>
             </div>
@@ -565,7 +746,11 @@
           <!-- Setting Card 1: Account & Authentication -->
           <div class="settings-card">
             <div class="settings-card-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
               <h2>Account &amp; Cloud Sync</h2>
             </div>
             <div class="settings-card-body">
@@ -573,18 +758,30 @@
                 <p style="font-size:0.85rem; color:var(--color-text-dim); margin:0;">
                   Sign in with Google to submit tracks to the global catalog and sync preferences.
                 </p>
-                <button id="btnSettingsGoogleSignIn" class="btn-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:fit-content; padding:0.65rem 1.4rem;">
-                  <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                <button id="btnSettingsGoogleSignIn" class="btn-primary"
+                  style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:fit-content; padding:0.65rem 1.4rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24">
+                    <path fill="#ffffff"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#ffffff"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#ffffff"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#ffffff"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
                   <span>Sign in with Google</span>
                 </button>
               </div>
 
               <div id="settingsAuthSignedIn" style="display:none; flex-direction:column; gap:0.9rem;">
                 <div style="display:flex; align-items:center; gap:0.85rem;">
-                  <img id="settingsUserAvatar" src="" alt="User Avatar" class="user-avatar-mini" style="width:42px; height:42px;" crossorigin="anonymous">
+                  <img id="settingsUserAvatar" src="" alt="User Avatar" class="user-avatar-mini"
+                    style="width:42px; height:42px;" crossorigin="anonymous">
                   <div>
                     <div id="settingsUserName" style="font-weight:600; font-size:1rem; color:#fff;">User</div>
-                    <div id="settingsUserEmail" style="font-size:0.8rem; color:var(--color-text-dim);">email@example.com</div>
+                    <div id="settingsUserEmail" style="font-size:0.8rem; color:var(--color-text-dim);">email@example.com
+                    </div>
                   </div>
                   <button id="btnSettingsSignOut" class="btn-pill" style="margin-left:auto; font-size:0.78rem;">
                     Sign Out
@@ -595,31 +792,45 @@
                 <div class="settings-sync-status-box">
                   <div style="display:flex; align-items:center; justify-content:space-between;">
                     <div style="display:flex; align-items:center; gap:0.55rem;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                      </svg>
                       <span style="font-weight:600; font-size:0.88rem; color:#fff;">Cloud Sync &amp; Backup</span>
                     </div>
                     <span id="syncStatusBadge" class="badge-status-sync">Real-Time Active</span>
                   </div>
                   <p style="font-size:0.78rem; color:var(--color-text-dim); margin:0.4rem 0 0.5rem 0; line-height:1.4;">
-                    Favorites, listening history, and theme settings are backed up and synced automatically across mobile, tablet, and PC devices.
+                    Favorites, listening history, and theme settings are backed up and synced automatically across
+                    mobile, tablet, and PC devices.
                   </p>
                   <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.25rem;">
-                    <span id="lastSyncedTimeLabel" style="font-size:0.72rem; color:var(--color-text-dim);">Last synced: Just now</span>
-                    <button id="btnManualSyncNow" class="btn-pill" style="font-size:0.75rem; padding:0.35rem 0.8rem; display:inline-flex; align-items:center; gap:0.35rem;" type="button">
-                      <svg id="syncNowIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span id="lastSyncedTimeLabel" style="font-size:0.72rem; color:var(--color-text-dim);">Last synced:
+                      Just now</span>
+                    <button id="btnManualSyncNow" class="btn-pill"
+                      style="font-size:0.75rem; padding:0.35rem 0.8rem; display:inline-flex; align-items:center; gap:0.35rem;"
+                      type="button">
+                      <svg id="syncNowIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                      </svg>
                       <span>Sync Now</span>
                     </button>
                   </div>
                 </div>
 
                 <!-- Admin Action Banner -->
-                <div id="settingsAdminRow" style="display:none; padding:0.9rem 1.1rem; background:rgba(229,185,90,0.1); border:1px solid rgba(229,185,90,0.3); border-radius:14px; align-items:center; justify-content:space-between;">
+                <div id="settingsAdminRow"
+                  style="display:none; padding:0.9rem 1.1rem; background:rgba(229,185,90,0.1); border:1px solid rgba(229,185,90,0.3); border-radius:14px; align-items:center; justify-content:space-between;">
                   <div>
                     <div style="font-weight:700; font-size:0.92rem; color:#fce7b2;">Admin Privileges Active</div>
-                    <div style="font-size:0.78rem; color:var(--color-text-dim);">Review community submissions and publish tracks to R2</div>
+                    <div style="font-size:0.78rem; color:var(--color-text-dim);">Review community submissions and
+                      publish tracks to R2</div>
                   </div>
-                  <button id="btnOpenAdminStudioFromSettings" class="btn-pill btn-admin-badge" style="font-size:0.82rem; padding:0.45rem 1rem;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <button id="btnOpenAdminStudioFromSettings" class="btn-pill btn-admin-badge"
+                    style="font-size:0.82rem; padding:0.45rem 1rem;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
                     <span>Admin Studio</span>
                     <span id="settingsAdminPendingBadge" class="badge-counter" style="display:none;">0</span>
                   </button>
@@ -630,21 +841,35 @@
 
           <!-- Setting Card 2: Themes & Display Styles (Compact Modern Makeover) -->
           <div class="settings-card" id="settingsThemesCard">
-            <div class="settings-card-header" id="btnToggleThemesAccordion" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="settings-card-header" id="btnToggleThemesAccordion"
+              style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%;">
               <div style="display: flex; align-items: center; gap: 0.65rem;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                  <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                  <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                  <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                  <path
+                    d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                </svg>
                 <h2>Display Themes</h2>
               </div>
               <div style="display: flex; align-items: center; gap: 0.65rem;">
                 <span class="badge-status-active" id="activeThemeBadgeLabel">Dynamic Ambient</span>
-                <svg id="themesChevronIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.25s ease;"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg id="themesChevronIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="transition: transform 0.25s ease;">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
             </div>
             <div class="settings-card-body" id="themesCollapseBody" style="display: block; padding-top: 0.75rem;">
               <div class="theme-compact-strip" id="themeOptionsList"></div>
               <div class="theme-compact-info" id="themeActiveDesc">
                 <span class="theme-info-dot">✦</span>
-                <span id="themeDescText">Living fluid ambient mesh dynamically extracted from song artwork with floating particles.</span>
+                <span id="themeDescText">Living fluid ambient mesh dynamically extracted from song artwork with floating
+                  particles.</span>
               </div>
             </div>
           </div>
@@ -652,14 +877,20 @@
           <!-- Setting Card 3: Creative Studio Tools -->
           <div class="settings-card">
             <div class="settings-card-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+              </svg>
               <h2>Creative Studio Tools</h2>
             </div>
             <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
-              <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div
+                style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">LRC Lyrics Editor</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Tap-to-sync timecodes to audio for any track</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Tap-to-sync timecodes to audio for any
+                    track</div>
                 </div>
                 <button id="btnOpenLrcEditorFromSettings" class="btn-pill" style="font-size:0.8rem;">
                   Open Editor
@@ -669,7 +900,8 @@
               <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0;">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Offline Storage Engine</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Service Worker &amp; IndexedDB Persistent Cache</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Service Worker &amp; IndexedDB Persistent
+                    Cache</div>
                 </div>
                 <span class="badge-status-active">Active</span>
               </div>
@@ -680,19 +912,28 @@
           <div class="settings-card">
             <div class="settings-card-header">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46V12.9a8.27 8.27 0 0 0 5.77 2.3v-3.45a4.83 4.83 0 0 1-3.77-1.92V6.69z"/>
+                <path
+                  d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46V12.9a8.27 8.27 0 0 0 5.77 2.3v-3.45a4.83 4.83 0 0 1-3.77-1.92V6.69z" />
               </svg>
               <h2>Official Media &amp; Community</h2>
             </div>
             <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
-              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; padding:0.6rem 0;">
+              <div
+                style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; padding:0.6rem 0;">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Follow on TikTok</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Daily synchronized lyric drops, music discovery &amp; sound clips</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Daily synchronized lyric drops, music
+                    discovery &amp; sound clips</div>
                 </div>
-                <a href="https://www.tiktok.com/@EthioLyricsMedia" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size:0.8rem; padding:0.45rem 1rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.45rem;">
+                <a href="https://www.tiktok.com/@Ethio_Lyrics_Media" target="_blank" rel="noopener noreferrer"
+                  class="btn-primary"
+                  style="font-size:0.8rem; padding:0.45rem 1rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.45rem;">
                   <span>@EthioLyricsMedia</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
                 </a>
               </div>
             </div>
@@ -714,7 +955,8 @@
             <div class="room-bar-title">
               <span id="roomBarCodeLabel">ETHIO-XXXX</span>
               <span class="room-role-pill" id="roomBarRolePill">Host</span>
-              <button id="roomBarSyncChip" class="room-sync-chip status-insync" title="Click to resync audio" type="button">
+              <button id="roomBarSyncChip" class="room-sync-chip status-insync" title="Click to resync audio"
+                type="button">
                 <span class="sync-chip-dot"></span>
                 <span id="roomBarSyncChipText" class="sync-chip-text">In sync</span>
               </button>
@@ -724,37 +966,70 @@
         </div>
         <!-- Expandable Reaction Drawer Widget -->
         <div class="room-reactions-wrapper">
-          <button id="btnToggleReactions" class="btn-reaction-toggle" title="Send Live Reaction" type="button" aria-expanded="false">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <button id="btnToggleReactions" class="btn-reaction-toggle" title="Send Live Reaction" type="button"
+            aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
             <span class="reaction-toggle-label">React</span>
           </button>
 
           <div id="reactionsDropdown" class="reactions-popover-tray" style="display:none;">
             <button class="btn-reaction" data-reaction="fire" title="Fire Beat" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1">
+                <path
+                  d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+              </svg>
             </button>
             <button class="btn-reaction" data-reaction="heart" title="Love Song" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
             </button>
             <button class="btn-reaction" data-reaction="music" title="Groove Vibes" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
             </button>
             <button class="btn-reaction" data-reaction="sparkle" title="Cheers" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2">
+                <path
+                  d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+              </svg>
             </button>
           </div>
         </div>
         <div class="room-bar-actions">
           <button id="btnShareRoomLink" class="btn-pill btn-sm" title="Share Session Invite" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
             <span id="shareLinkBtnText">Share</span>
           </button>
           <button id="btnManageActiveRoom" class="btn-pill btn-sm" title="Room Details &amp; People" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
             <span>People</span>
           </button>
           <button id="btnLeaveRoom" class="btn-pill btn-sm btn-danger-pill" title="Leave Session" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
             <span>Leave</span>
           </button>
         </div>
@@ -764,18 +1039,29 @@
       <footer class="player-bar-dock">
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
-          <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
+          <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art"
+            crossorigin="anonymous">
           <div class="track-text-meta">
             <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
             <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
           </div>
           <div class="dock-track-quick-actions" onclick="event.stopPropagation();">
             <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
-              <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff"
+                stroke-width="2">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff"
+                stroke-width="2" style="display:none;">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
             </button>
             <button id="btnDockAddToPlaylist" class="btn-dock-action" title="Add to Playlist" type="button">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6" />
+              </svg>
             </button>
           </div>
         </div>
@@ -785,39 +1071,61 @@
           <div class="buttons-row">
             <!-- Shuffle Button -->
             <button id="btnShuffle" class="ctrl-btn btn-mode-toggle" title="Shuffle (Off)" type="button">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+              </svg>
               <span class="mode-dot"></span>
             </button>
 
             <!-- Prev Track Button -->
             <button id="btnPrevTrack" class="ctrl-btn" title="Previous Track" type="button">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="19 20 9 12 19 4 19 20" />
+                <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5" />
+              </svg>
             </button>
 
             <!-- Rewind 5s Button -->
             <button id="btnRewind" class="ctrl-btn ctrl-btn-seek" title="Rewind 5s" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
+              </svg>
             </button>
 
             <!-- Center Play/Pause Button -->
             <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause" type="button">
-              <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-              <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="6 3 20 12 6 21 6 3" />
+              </svg>
+              <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                <rect x="6" y="4" width="4" height="16" />
+                <rect x="14" y="4" width="4" height="16" />
+              </svg>
             </button>
 
             <!-- Fast Forward 5s Button -->
             <button id="btnForward" class="ctrl-btn ctrl-btn-seek" title="Fast Forward 5s" type="button">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z" />
+              </svg>
             </button>
 
             <!-- Next Track Button -->
             <button id="btnNextTrack" class="ctrl-btn" title="Next Track" type="button">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 4 15 12 5 20 5 4" />
+                <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5" />
+              </svg>
             </button>
 
             <!-- Repeat Mode Button -->
             <button id="btnRepeat" class="ctrl-btn btn-mode-toggle" title="Repeat (Off)" type="button">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m17 2 4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                <path d="m7 22-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+              </svg>
               <span class="mode-badge-one">1</span>
               <span class="mode-dot"></span>
             </button>
@@ -838,28 +1146,46 @@
         <div class="player-controls-right">
           <!-- Sleep Timer -->
           <button id="btnSleepTimer" class="ctrl-btn btn-sleep-timer" title="Sleep Timer" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
             <span id="sleepTimerBadge" class="sleep-timer-badge" style="display:none;"></span>
           </button>
 
           <!-- Queue Drawer Button -->
           <button id="btnQueue" class="ctrl-btn btn-queue-toggle" title="Up Next Queue" type="button">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
             <span id="queueCountBadge" class="queue-count-badge">0</span>
           </button>
 
           <!-- Playback Speed -->
-          <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">1.0x</button>
+          <button id="btnSpeed" class="ctrl-btn" title="Playback Speed"
+            style="font-size:0.75rem; font-weight:700;">1.0x</button>
 
           <!-- Volume Container (Desktop & Mobile Touch-Friendly Floating Tray) -->
           <div class="volume-container" id="volumeContainer">
             <button id="btnMute" class="ctrl-btn btn-volume-toggle" title="Volume (Tap to adjust)" type="button">
-              <svg id="volumeIconHigh" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-              <svg id="volumeIconMuted" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+              <svg id="volumeIconHigh" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+              </svg>
+              <svg id="volumeIconMuted" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"
+                style="display:none;">
+                <path
+                  d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+              </svg>
             </button>
             <div id="volumePopupTray" class="volume-popup-tray">
               <span class="vol-icon-min">🔈</span>
-              <input type="range" id="volumeSlider" class="volume-slider-range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
+              <input type="range" id="volumeSlider" class="volume-slider-range" min="0" max="1" step="0.01" value="0.8"
+                aria-label="Volume">
               <span class="vol-icon-max">🔊</span>
               <span id="volumePercentBadge" class="volume-percent-badge">80%</span>
             </div>
@@ -871,19 +1197,40 @@
     <!-- Mobile Bottom Navigation Bar (Fixed at bottom on phones) -->
     <nav class="mobile-bottom-nav">
       <button class="bottom-nav-item active" data-tab="home">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5 12 3l9 6.5V20a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
         <span>Home</span>
       </button>
       <button class="bottom-nav-item" data-tab="library">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"></path><path d="M12 6v14"></path><path d="M8 8v12"></path><path d="M4 4v16"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="m16 6 4 14"></path>
+          <path d="M12 6v14"></path>
+          <path d="M8 8v12"></path>
+          <path d="M4 4v16"></path>
+        </svg>
         <span>Library</span>
       </button>
       <button class="bottom-nav-item" data-tab="lyrics">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
         <span>Lyrics</span>
       </button>
       <button class="bottom-nav-item" data-tab="settings">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
         <span>Settings</span>
         <span id="mobilePendingDot" class="badge-dot" style="display:none;"></span>
       </button>
@@ -894,10 +1241,13 @@
       <div class="modal-card admin-modal-card">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             <div>
               <h2 style="font-size:1.15rem; margin:0;">Admin Studio</h2>
-              <div style="font-size:0.75rem; color:var(--color-gold);">Review Submissions &amp; Manage Global Catalog</div>
+              <div style="font-size:0.75rem; color:var(--color-gold);">Review Submissions &amp; Manage Global Catalog
+              </div>
             </div>
           </div>
           <button class="modal-close-btn" data-close="adminModal">&times;</button>
@@ -952,7 +1302,8 @@
 
             <div class="form-group">
               <label>Audio URL (Cloudflare R2 or direct MP3) <span class="required-badge">* Required</span></label>
-              <input type="url" id="adminNewAudioUrl" class="form-input" placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3">
+              <input type="url" id="adminNewAudioUrl" class="form-input"
+                placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3">
               <div style="display:flex; gap:0.4rem; margin-top:0.35rem;">
                 <button type="button" id="btnAdminAppendR2" class="btn-pill" style="font-size:0.72rem;">
                   Paste R2 Domain
@@ -962,12 +1313,14 @@
 
             <div class="form-group">
               <label>Cover Artwork URL</label>
-              <input type="text" id="adminNewCoverUrl" class="form-input" placeholder="assets/weleta_cover.jpg or https://...">
+              <input type="text" id="adminNewCoverUrl" class="form-input"
+                placeholder="assets/weleta_cover.jpg or https://...">
             </div>
 
             <div class="form-group">
               <label>Synchronized LRC Lyrics</label>
-              <textarea id="adminNewLrc" class="form-textarea" rows="4" placeholder="[00:00.00] Lyrics line here..."></textarea>
+              <textarea id="adminNewLrc" class="form-textarea" rows="4"
+                placeholder="[00:00.00] Lyrics line here..."></textarea>
             </div>
 
             <button id="btnAdminPublishDirect" class="btn-primary" style="margin-top:0.5rem;">
@@ -983,7 +1336,12 @@
       <div class="modal-card" style="max-width: 460px; width: 92%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             <div>
               <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Submit to Global Catalog</h2>
               <div style="font-size:0.75rem; color:var(--color-gold);">Admin Moderation Queue</div>
@@ -992,31 +1350,50 @@
           <button class="modal-close-btn" data-close="submissionConfirmModal">&times;</button>
         </div>
         <div class="modal-body" style="padding:1.25rem 1.4rem; display:flex; flex-direction:column; gap:1rem;">
-          <div style="display:flex; align-items:center; gap:0.9rem; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:0.85rem;">
-            <img id="confirmSubArtwork" src="assets/weleta_cover.jpg" alt="Artwork" style="width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0;">
+          <div
+            style="display:flex; align-items:center; gap:0.9rem; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:0.85rem;">
+            <img id="confirmSubArtwork" src="assets/weleta_cover.jpg" alt="Artwork"
+              style="width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0;">
             <div style="flex:1; min-width:0;">
-              <div id="confirmSubTitle" style="font-weight:700; font-size:0.95rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Song Title</div>
-              <div id="confirmSubArtist" style="font-size:0.82rem; color:var(--color-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Artist Name</div>
-              <div id="confirmSubMeta" style="font-size:0.75rem; color:var(--color-text-dim); margin-top:2px;">Single (2024)</div>
+              <div id="confirmSubTitle"
+                style="font-weight:700; font-size:0.95rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Song Title</div>
+              <div id="confirmSubArtist"
+                style="font-size:0.82rem; color:var(--color-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Artist Name</div>
+              <div id="confirmSubMeta" style="font-size:0.75rem; color:var(--color-text-dim); margin-top:2px;">Single
+                (2024)</div>
             </div>
           </div>
 
-          <div style="background:rgba(229,185,90,0.08); border:1px solid rgba(229,185,90,0.25); border-radius:12px; padding:0.85rem; font-size:0.82rem; line-height:1.45; color:rgba(255,255,255,0.85);">
+          <div
+            style="background:rgba(229,185,90,0.08); border:1px solid rgba(229,185,90,0.25); border-radius:12px; padding:0.85rem; font-size:0.82rem; line-height:1.45; color:rgba(255,255,255,0.85);">
             <div style="font-weight:600; color:#fce7b2; margin-bottom:0.25rem;">Public Audio Link (Cloudflare R2):</div>
-            <div id="confirmSubAudioUrl" style="word-break:break-all; font-family:monospace; font-size:0.75rem; color:#a7f3d0; background:rgba(0,0,0,0.3); padding:0.35rem 0.5rem; border-radius:6px;"></div>
+            <div id="confirmSubAudioUrl"
+              style="word-break:break-all; font-family:monospace; font-size:0.75rem; color:#a7f3d0; background:rgba(0,0,0,0.3); padding:0.35rem 0.5rem; border-radius:6px;">
+            </div>
             <p style="margin:0.5rem 0 0 0; font-size:0.75rem; color:var(--color-text-dim);">
-              Your submission will be queued for review. Once approved by the admin, it will be instantly published to the Global Catalog for everyone.
+              Your submission will be queued for review. Once approved by the admin, it will be instantly published to
+              the Global Catalog for everyone.
             </p>
           </div>
 
-          <div id="confirmSubErrorMsg" style="display:none; padding:0.6rem 0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#fca5a5; font-size:0.8rem;"></div>
+          <div id="confirmSubErrorMsg"
+            style="display:none; padding:0.6rem 0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#fca5a5; font-size:0.8rem;">
+          </div>
 
           <div style="display:flex; gap:0.65rem; justify-content:flex-end; margin-top:0.35rem;">
-            <button type="button" class="btn-pill" id="btnCancelSubModal" style="padding:0.5rem 1.1rem; font-size:0.85rem;">
+            <button type="button" class="btn-pill" id="btnCancelSubModal"
+              style="padding:0.5rem 1.1rem; font-size:0.85rem;">
               Cancel
             </button>
-            <button type="button" class="btn-primary" id="btnExecutePublicSubmit" style="padding:0.5rem 1.25rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.4rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            <button type="button" class="btn-primary" id="btnExecutePublicSubmit"
+              style="padding:0.5rem 1.25rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.4rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+              </svg>
               <span id="btnExecutePublicSubmitLabel">Confirm &amp; Submit</span>
             </button>
           </div>
@@ -1029,7 +1406,14 @@
       <div class="modal-card room-modal-card" style="max-width: 500px; width: 92%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+              <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
+            </svg>
             <div>
               <h2 style="font-size:1.15rem; margin:0; font-weight:700;">Listen Together</h2>
               <div style="font-size:0.75rem; color:#93c5fd;">Real-Time Synced Ethiopian Music &amp; Lyrics</div>
@@ -1039,14 +1423,17 @@
         </div>
 
         <div class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem;">
-          
+
           <!-- View 1: Lobby (Not in a room) -->
           <div id="roomLobbyView" style="display:flex; flex-direction:column; gap:1rem;">
-            
+
             <!-- Host Card -->
             <div class="room-action-card">
               <div class="room-action-icon-wrap">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2">
+                  <path
+                    d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
               </div>
               <div style="flex:1;">
                 <div style="font-weight:700; font-size:0.95rem; color:#fff;">Start a Live Session</div>
@@ -1054,12 +1441,14 @@
                   Become the DJ. Stream music &amp; synchronized lyrics in lockstep to your friends.
                 </div>
               </div>
-              <button id="btnCreateRoom" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
+              <button id="btnCreateRoom" class="btn-primary"
+                style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
                 Start Session
               </button>
             </div>
 
-            <div style="display:flex; align-items:center; gap:0.75rem; color:var(--color-text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em;">
+            <div
+              style="display:flex; align-items:center; gap:0.75rem; color:var(--color-text-muted); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em;">
               <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
               <span>or join friends</span>
               <span style="flex:1; height:1px; background:rgba(255,255,255,0.08);"></span>
@@ -1069,56 +1458,88 @@
             <div class="room-action-card" style="flex-direction:column; gap:0.75rem; align-items:stretch;">
               <div style="display:flex; align-items:center; justify-content:space-between;">
                 <div style="display:flex; align-items:center; gap:0.6rem;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                    <polyline points="10 17 15 12 10 7" />
+                    <line x1="15" y1="12" x2="3" y2="12" />
+                  </svg>
                   <span style="font-weight:600; font-size:0.9rem; color:#fff;">Join with Room Code</span>
                 </div>
                 <span style="font-size:0.72rem; color:var(--color-text-dim);">Enter 4-character code</span>
               </div>
               <div style="display:flex; gap:0.5rem; align-items:stretch;">
-                <div class="room-code-input-group" style="display:flex; align-items:center; flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; overflow:hidden; transition:border-color 0.2s ease, box-shadow 0.2s ease;">
-                  <span class="room-code-prefix-badge" style="padding:0.6rem 0.75rem; font-weight:800; font-size:0.85rem; color:var(--color-gold); background:rgba(255,255,255,0.04); border-right:1px solid rgba(255,255,255,0.1); user-select:none; letter-spacing:0.04em;">ETHIO-</span>
-                  <input type="text" id="inputJoinRoomCode" class="form-input room-code-input" placeholder="XXXX" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase; font-weight:800; letter-spacing:0.16em; font-size:1.05rem; flex:1; border:none; background:transparent; padding:0.6rem 0.8rem; outline:none; color:#fff; box-shadow:none;">
+                <div class="room-code-input-group"
+                  style="display:flex; align-items:center; flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; overflow:hidden; transition:border-color 0.2s ease, box-shadow 0.2s ease;">
+                  <span class="room-code-prefix-badge"
+                    style="padding:0.6rem 0.75rem; font-weight:800; font-size:0.85rem; color:var(--color-gold); background:rgba(255,255,255,0.04); border-right:1px solid rgba(255,255,255,0.1); user-select:none; letter-spacing:0.04em;">ETHIO-</span>
+                  <input type="text" id="inputJoinRoomCode" class="form-input room-code-input" placeholder="XXXX"
+                    maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                    style="text-transform:uppercase; font-weight:800; letter-spacing:0.16em; font-size:1.05rem; flex:1; border:none; background:transparent; padding:0.6rem 0.8rem; outline:none; color:#fff; box-shadow:none;">
                 </div>
-                <button id="btnJoinRoom" class="btn-primary" style="padding:0.6rem 1.25rem; font-size:0.85rem; border-radius:12px; font-weight:600;" type="button">
+                <button id="btnJoinRoom" class="btn-primary"
+                  style="padding:0.6rem 1.25rem; font-size:0.85rem; border-radius:12px; font-weight:600;" type="button">
                   Join
                 </button>
               </div>
-              <div id="joinRoomError" style="display:none; color:#fca5a5; font-size:0.78rem; padding:0.4rem 0.6rem; background:rgba(239,68,68,0.15); border-radius:6px;"></div>
+              <div id="joinRoomError"
+                style="display:none; color:#fca5a5; font-size:0.78rem; padding:0.4rem 0.6rem; background:rgba(239,68,68,0.15); border-radius:6px;">
+              </div>
             </div>
 
             <!-- Custom Participant Nickname -->
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.06);">
+            <div
+              style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.06);">
               <div style="font-size:0.8rem; color:var(--color-text-dim);">
                 Your Name: <strong id="currentParticipantNameLabel" style="color:#fff;">Music Lover</strong>
               </div>
-              <button id="btnEditParticipantName" class="btn-pill" style="font-size:0.72rem; padding:0.25rem 0.6rem;" type="button">Change</button>
+              <button id="btnEditParticipantName" class="btn-pill" style="font-size:0.72rem; padding:0.25rem 0.6rem;"
+                type="button">Change</button>
             </div>
           </div>
 
           <!-- View 2: Active Room Session -->
           <div id="roomActiveView" style="display:none; flex-direction:column; gap:1.1rem;">
-            
+
             <!-- Room Info & Invite Code Banner -->
             <div class="active-room-header-box">
               <div>
-                <span class="badge-status-sync" style="background:rgba(16,185,129,0.15); color:#6ee7b7; border-color:rgba(16,185,129,0.3);">
+                <span class="badge-status-sync"
+                  style="background:rgba(16,185,129,0.15); color:#6ee7b7; border-color:rgba(16,185,129,0.3);">
                   <span class="live-pulse-dot-green"></span> Live Session Active
                 </span>
-                <h3 id="activeRoomCodeTitle" style="font-size:1.4rem; font-weight:800; letter-spacing:0.06em; color:#fff; margin:0.4rem 0 0.1rem 0;">ETHIO-XXXX</h3>
-                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Host (DJ)</div>
+                <h3 id="activeRoomCodeTitle"
+                  style="font-size:1.4rem; font-weight:800; letter-spacing:0.06em; color:#fff; margin:0.4rem 0 0.1rem 0;">
+                  ETHIO-XXXX</h3>
+                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Host (DJ)
+                </div>
               </div>
-              <button id="btnShareInviteLinkModal" class="btn-pill" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 0.9rem; font-size:0.8rem;" type="button" title="Share Session Invite">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <button id="btnShareInviteLinkModal" class="btn-pill"
+                style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 0.9rem; font-size:0.8rem;"
+                type="button" title="Share Session Invite">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
                 <span id="shareInviteLinkModalLabel">Share Session</span>
               </button>
             </div>
 
             <!-- Synchronized Track Box -->
-            <div style="display:flex; align-items:center; gap:0.85rem; padding:0.75rem 0.9rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
-              <img id="activeRoomTrackArt" src="assets/weleta_cover.jpg" alt="Track Art" style="width:48px; height:48px; border-radius:8px; object-fit:cover;">
+            <div
+              style="display:flex; align-items:center; gap:0.85rem; padding:0.75rem 0.9rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+              <img id="activeRoomTrackArt" src="assets/weleta_cover.jpg" alt="Track Art"
+                style="width:48px; height:48px; border-radius:8px; object-fit:cover;">
               <div style="flex:1; min-width:0;">
-                <div id="activeRoomTrackTitle" style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Song Title</div>
-                <div id="activeRoomTrackArtist" style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Artist</div>
+                <div id="activeRoomTrackTitle"
+                  style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  Song Title</div>
+                <div id="activeRoomTrackArtist"
+                  style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  Artist</div>
               </div>
               <span id="activeRoomTrackStateBadge" class="badge-status-sync" style="font-size:0.7rem;">Playing</span>
             </div>
@@ -1127,21 +1548,30 @@
             <div class="room-sync-card">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
                 <div style="display:flex; align-items:center; gap:0.4rem;">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
                   <span style="font-size:0.82rem; font-weight:700; color:#fff;">Sync &amp; Audio Latency</span>
                 </div>
-                <button id="btnModalResync" class="btn-pill btn-sm" type="button" style="font-size:0.72rem; padding:0.25rem 0.6rem;">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <button id="btnModalResync" class="btn-pill btn-sm" type="button"
+                  style="font-size:0.72rem; padding:0.25rem 0.6rem;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                  </svg>
                   <span>Resync Now</span>
                 </button>
               </div>
               <div style="display:flex; flex-direction:column; gap:0.35rem; margin-top:0.4rem;">
-                <div style="display:flex; justify-content:space-between; font-size:0.74rem; color:var(--color-text-dim);">
+                <div
+                  style="display:flex; justify-content:space-between; font-size:0.74rem; color:var(--color-text-dim);">
                   <span>Bluetooth / Speaker Delay:</span>
                   <span id="audioDelayValueLabel" style="color:var(--color-gold); font-weight:600;">0ms (Direct)</span>
                 </div>
-                <input id="sliderAudioDelay" type="range" min="0" max="400" step="10" value="0" class="room-delay-slider" aria-label="Audio Latency Delay">
-                <div style="font-size:0.68rem; color:var(--color-text-muted);">Adjust if using Bluetooth headphones or external speakers that delay sound.</div>
+                <input id="sliderAudioDelay" type="range" min="0" max="400" step="10" value="0"
+                  class="room-delay-slider" aria-label="Audio Latency Delay">
+                <div style="font-size:0.68rem; color:var(--color-text-muted);">Adjust if using Bluetooth headphones or
+                  external speakers that delay sound.</div>
               </div>
             </div>
 
@@ -1149,14 +1579,17 @@
             <div>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
                 <span style="font-size:0.85rem; font-weight:600; color:#fff;">Participants</span>
-                <span id="activeRoomCountBadge" style="font-size:0.75rem; color:var(--color-text-dim);">1 listening</span>
+                <span id="activeRoomCountBadge" style="font-size:0.75rem; color:var(--color-text-dim);">1
+                  listening</span>
               </div>
               <div id="activeRoomParticipantsList" class="participants-list-box"></div>
             </div>
 
             <!-- Session Actions -->
             <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:0.4rem;">
-              <button id="btnLeaveRoomModal" class="btn-pill" style="color:#ff7b7b; border-color:rgba(239,68,68,0.3); font-size:0.82rem; padding:0.5rem 1.1rem;" type="button">
+              <button id="btnLeaveRoomModal" class="btn-pill"
+                style="color:#ff7b7b; border-color:rgba(239,68,68,0.3); font-size:0.82rem; padding:0.5rem 1.1rem;"
+                type="button">
                 Leave Session
               </button>
             </div>
@@ -1170,7 +1603,12 @@
       <div class="modal-card song-details-card" style="max-width: 480px; width: 92%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
             <div>
               <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Song Details</h2>
               <div style="font-size:0.75rem; color:var(--color-gold);">Track Metadata &amp; Lyric Preview</div>
@@ -1182,9 +1620,12 @@
           <!-- Top Artwork & Metadata Header -->
           <div class="song-details-top">
             <div class="song-details-cover-wrap">
-              <img id="detailModalCover" src="assets/weleta_cover.jpg" alt="Cover" class="song-details-cover" crossorigin="anonymous">
+              <img id="detailModalCover" src="assets/weleta_cover.jpg" alt="Cover" class="song-details-cover"
+                crossorigin="anonymous">
               <button id="btnDetailModalPlay" class="song-details-play-btn" title="Play Track">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="6 3 20 12 6 21 6 3" />
+                </svg>
               </button>
             </div>
             <div class="song-details-info">
@@ -1203,7 +1644,8 @@
           <div class="song-details-lyrics-box">
             <div class="song-details-section-title">
               <span>Synchronized Lyrics Preview</span>
-              <button id="btnDetailOpenLyricsEditor" class="btn-pill btn-xs" style="font-size:0.72rem; padding:0.25rem 0.6rem;">Edit LRC</button>
+              <button id="btnDetailOpenLyricsEditor" class="btn-pill btn-xs"
+                style="font-size:0.72rem; padding:0.25rem 0.6rem;">Edit LRC</button>
             </div>
             <div id="detailModalLyricsSnippet" class="song-details-lyrics-content">
               No lyrics loaded.
@@ -1212,25 +1654,52 @@
 
           <!-- Bottom Action Buttons -->
           <div class="song-details-actions-grid">
-            <button id="btnDetailPlayNow" class="btn-primary" style="justify-content:center; gap:0.5rem; font-size:0.85rem; padding:0.6rem 1rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            <button id="btnDetailPlayNow" class="btn-primary"
+              style="justify-content:center; gap:0.5rem; font-size:0.85rem; padding:0.6rem 1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="6 3 20 12 6 21 6 3" />
+              </svg>
               <span id="detailPlayNowLabel">Play Now</span>
             </button>
-            <button id="btnDetailViewLyrics" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <button id="btnDetailViewLyrics" class="btn-pill"
+              style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
               <span>Lyrics Stage</span>
             </button>
-            <button id="btnDetailAddToPlaylist" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;" title="Add to Playlist">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+            <button id="btnDetailAddToPlaylist" class="btn-pill"
+              style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;"
+              title="Add to Playlist">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6" />
+              </svg>
               <span>Add to Playlist</span>
             </button>
-            <button id="btnDetailToggleFavorite" class="btn-pill btn-fav-toggle" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;" title="Toggle Favorite">
-              <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <button id="btnDetailToggleFavorite" class="btn-pill btn-fav-toggle"
+              style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;"
+              title="Toggle Favorite">
+              <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff"
+                stroke-width="2">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff"
+                stroke-width="2" style="display:none;">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
               <span id="detailFavLabel">Favorite</span>
             </button>
-            <button id="btnDetailSaveOffline" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <button id="btnDetailSaveOffline" class="btn-pill"
+              style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               <span id="detailSaveLabel">Download</span>
             </button>
           </div>
@@ -1247,22 +1716,30 @@
       <div class="modal-card" style="max-width: 460px; width: 92%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
+            </svg>
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Create Playlist</h3>
           </div>
           <button class="modal-close-btn" data-close="createPlaylistModal">&times;</button>
         </div>
-        <form id="formCreatePlaylist" class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.1rem;">
+        <form id="formCreatePlaylist" class="modal-body"
+          style="padding:1.3rem; display:flex; flex-direction:column; gap:1.1rem;">
           <div class="form-group">
             <label for="inputPlaylistTitle">Playlist Name <span class="required-badge">* Required</span></label>
-            <input type="text" id="inputPlaylistTitle" class="form-input" placeholder="e.g. My Tizita Favorites" required maxlength="50">
+            <input type="text" id="inputPlaylistTitle" class="form-input" placeholder="e.g. My Tizita Favorites"
+              required maxlength="50">
           </div>
           <div class="form-group">
             <label for="inputPlaylistDesc">Description <span class="optional-badge">(Optional)</span></label>
-            <textarea id="inputPlaylistDesc" class="form-input" rows="2" placeholder="Give your playlist a vibe or notes..." maxlength="140" style="resize:none;"></textarea>
+            <textarea id="inputPlaylistDesc" class="form-input" rows="2"
+              placeholder="Give your playlist a vibe or notes..." maxlength="140" style="resize:none;"></textarea>
           </div>
           <div style="display:flex; justify-content:flex-end; gap:0.65rem; margin-top:0.4rem;">
-            <button type="button" class="btn-pill" data-close="createPlaylistModal" style="padding:0.55rem 1rem;">Cancel</button>
+            <button type="button" class="btn-pill" data-close="createPlaylistModal"
+              style="padding:0.55rem 1rem;">Cancel</button>
             <button type="submit" class="btn-primary" style="padding:0.55rem 1.3rem; font-weight:600;">Create</button>
           </div>
         </form>
@@ -1274,7 +1751,9 @@
       <div class="modal-card" style="max-width: 480px; width: 92%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
+              <path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6" />
+            </svg>
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add to Playlist</h3>
           </div>
           <button class="modal-close-btn" data-close="addToPlaylistModal">&times;</button>
@@ -1282,21 +1761,31 @@
         <div class="modal-body" style="padding:1.25rem; display:flex; flex-direction:column; gap:1.1rem;">
           <!-- Target Song Preview -->
           <div id="addToPlaylistTrackPreview" class="add-to-playlist-track-banner">
-            <img id="addToPlaylistCover" src="assets/weleta_cover.jpg" alt="Art" style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
+            <img id="addToPlaylistCover" src="assets/weleta_cover.jpg" alt="Art"
+              style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
             <div style="flex:1; min-width:0;">
-              <div id="addToPlaylistTitle" style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Song Title</div>
-              <div id="addToPlaylistArtist" style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Artist</div>
+              <div id="addToPlaylistTitle"
+                style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Song Title</div>
+              <div id="addToPlaylistArtist"
+                style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Artist</div>
             </div>
           </div>
 
           <!-- Create New Playlist Quick Action -->
-          <button id="btnQuickCreatePlaylist" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <button id="btnQuickCreatePlaylist" class="btn-pill"
+            style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
             <span>Create New Playlist</span>
           </button>
 
           <!-- Playlist Choice Rows -->
-          <div id="addToPlaylistChoicesList" class="add-to-playlist-choices" style="max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:0.45rem;"></div>
+          <div id="addToPlaylistChoicesList" class="add-to-playlist-choices"
+            style="max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:0.45rem;"></div>
         </div>
       </div>
     </div>
@@ -1306,11 +1795,19 @@
       <div class="queue-drawer-sheet">
         <div class="queue-drawer-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Up Next Queue</h3>
           </div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
-            <button id="btnClearQueue" class="btn-pill btn-sm" title="Clear Up Next" type="button" style="font-size:0.75rem; padding:0.3rem 0.65rem;">Clear Queue</button>
+            <button id="btnClearQueue" class="btn-pill btn-sm" title="Clear Up Next" type="button"
+              style="font-size:0.75rem; padding:0.3rem 0.65rem;">Clear Queue</button>
             <button class="modal-close-btn" data-close="queueDrawerModal">&times;</button>
           </div>
         </div>
@@ -1321,8 +1818,11 @@
           <div id="queueNowPlayingCard" class="queue-track-item active-queue-item">
             <img id="queueNowPlayingArt" src="assets/weleta_cover.jpg" alt="Art" class="queue-thumb-img">
             <div style="flex:1; min-width:0;">
-              <div id="queueNowPlayingTitle" style="font-weight:700; font-size:0.9rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No Track Playing</div>
-              <div id="queueNowPlayingArtist" style="font-size:0.78rem; color:var(--color-text-dim);">Select a song to start listening</div>
+              <div id="queueNowPlayingTitle"
+                style="font-weight:700; font-size:0.9rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                No Track Playing</div>
+              <div id="queueNowPlayingArtist" style="font-size:0.78rem; color:var(--color-text-dim);">Select a song to
+                start listening</div>
             </div>
             <div class="queue-equalizer-bars">
               <span></span><span></span><span></span>
@@ -1344,37 +1844,46 @@
       <div class="modal-card" style="max-width: 400px; width: 90%;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Sleep Timer</h3>
           </div>
           <button class="modal-close-btn" data-close="sleepTimerModal">&times;</button>
         </div>
         <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:0.75rem;">
-          <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0 0 0.4rem 0;">Music will automatically fade out and pause after the chosen duration.</p>
+          <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0 0 0.4rem 0;">Music will automatically fade
+            out and pause after the chosen duration.</p>
           <button class="btn-timer-option" data-timer="15" type="button">15 Minutes</button>
           <button class="btn-timer-option" data-timer="30" type="button">30 Minutes</button>
           <button class="btn-timer-option" data-timer="45" type="button">45 Minutes</button>
           <button class="btn-timer-option" data-timer="60" type="button">1 Hour</button>
           <button class="btn-timer-option" data-timer="end_of_track" type="button">End of Current Song</button>
-          <button id="btnTurnOffSleepTimer" class="btn-timer-option btn-timer-off" style="display:none; color:#f87171; border-color:rgba(239,68,68,0.3);" type="button">Turn Off Timer</button>
+          <button id="btnTurnOffSleepTimer" class="btn-timer-option btn-timer-off"
+            style="display:none; color:#f87171; border-color:rgba(239,68,68,0.3);" type="button">Turn Off Timer</button>
         </div>
       </div>
     </div>
 
     <!-- 5. Add Songs to Playlist Modal (Catalog Picker) -->
     <div id="addTracksToPlaylistPickerModal" class="modal-overlay">
-      <div class="modal-card" style="max-width: 540px; width: 92%; max-height:85vh; display:flex; flex-direction:column;">
+      <div class="modal-card"
+        style="max-width: 540px; width: 92%; max-height:85vh; display:flex; flex-direction:column;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add Songs to Playlist</h3>
           </div>
           <button class="modal-close-btn" data-close="addTracksToPlaylistPickerModal">&times;</button>
         </div>
         <div style="padding:0.75rem 1.25rem 0 1.25rem;">
-          <input type="text" id="inputPlaylistSongSearch" class="form-input" placeholder="Search song title or artist...">
+          <input type="text" id="inputPlaylistSongSearch" class="form-input"
+            placeholder="Search song title or artist...">
         </div>
-        <div id="playlistSongPickerList" class="modal-body" style="padding:1rem 1.25rem; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
+        <div id="playlistSongPickerList" class="modal-body"
+          style="padding:1rem 1.25rem; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
       </div>
     </div>
 
@@ -1385,19 +1894,26 @@
     <div class="debug-panel-header">
       <div style="display:flex; align-items:center; gap:0.4rem;">
         <span class="live-dot-pulse" style="width:6px; height:6px;"></span>
-        <span style="font-weight:700; font-size:0.75rem; letter-spacing:0.04em; color:var(--color-gold);">PARTY SYNC DEBUG v2</span>
+        <span style="font-weight:700; font-size:0.75rem; letter-spacing:0.04em; color:var(--color-gold);">PARTY SYNC
+          DEBUG v2</span>
       </div>
       <button id="btnDebugClose" class="debug-close-btn" type="button" aria-label="Close debug">&times;</button>
     </div>
     <div class="debug-panel-grid">
-      <div class="dbg-row"><span class="dbg-lbl">Clock Offset:</span><span id="dbgClockOffset" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Clock Offset:</span><span id="dbgClockOffset" class="dbg-val">--</span>
+      </div>
       <div class="dbg-row"><span class="dbg-lbl">Best RTT:</span><span id="dbgBestRtt" class="dbg-val">--</span></div>
-      <div class="dbg-row"><span class="dbg-lbl">Engine State:</span><span id="dbgStatus" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Engine State:</span><span id="dbgStatus" class="dbg-val">--</span>
+      </div>
       <div class="dbg-row"><span class="dbg-lbl">Live Drift:</span><span id="dbgDrift" class="dbg-val">--</span></div>
-      <div class="dbg-row"><span class="dbg-lbl">Median Drift:</span><span id="dbgMedian" class="dbg-val">--</span></div>
-      <div class="dbg-row"><span class="dbg-lbl">Rate Multiplier:</span><span id="dbgRate" class="dbg-val">--</span></div>
-      <div class="dbg-row"><span class="dbg-lbl">Epoch / Action:</span><span id="dbgEpochAction" class="dbg-val">--</span></div>
-      <div class="dbg-row"><span class="dbg-lbl">Seek Lead / Hard:</span><span id="dbgSeekStats" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Median Drift:</span><span id="dbgMedian" class="dbg-val">--</span>
+      </div>
+      <div class="dbg-row"><span class="dbg-lbl">Rate Multiplier:</span><span id="dbgRate" class="dbg-val">--</span>
+      </div>
+      <div class="dbg-row"><span class="dbg-lbl">Epoch / Action:</span><span id="dbgEpochAction"
+          class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Seek Lead / Hard:</span><span id="dbgSeekStats"
+          class="dbg-val">--</span></div>
     </div>
     <canvas id="dbgSparkline" width="230" height="42" class="debug-sparkline"></canvas>
   </div>
@@ -1405,4 +1921,5 @@
   <!-- Scripts -->
   <script type="module" src="js/app.js"></script>
 </body>
+
 </html>
