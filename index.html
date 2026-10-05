@@ -714,6 +714,10 @@
             <div class="room-bar-title">
               <span id="roomBarCodeLabel">ETHIO-XXXX</span>
               <span class="room-role-pill" id="roomBarRolePill">Host</span>
+              <button id="roomBarSyncChip" class="room-sync-chip status-insync" title="Click to resync audio" type="button">
+                <span class="sync-chip-dot"></span>
+                <span id="roomBarSyncChipText" class="sync-chip-text">In sync</span>
+              </button>
             </div>
             <div class="room-bar-listeners" id="roomBarListenersLabel">1 listening together</div>
           </div>
@@ -1119,6 +1123,28 @@
               <span id="activeRoomTrackStateBadge" class="badge-status-sync" style="font-size:0.7rem;">Playing</span>
             </div>
 
+            <!-- Audio Sync & Bluetooth Delay Settings Card -->
+            <div class="room-sync-card">
+              <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem;">
+                <div style="display:flex; align-items:center; gap:0.4rem;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <span style="font-size:0.82rem; font-weight:700; color:#fff;">Sync &amp; Audio Latency</span>
+                </div>
+                <button id="btnModalResync" class="btn-pill btn-sm" type="button" style="font-size:0.72rem; padding:0.25rem 0.6rem;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  <span>Resync Now</span>
+                </button>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:0.35rem; margin-top:0.4rem;">
+                <div style="display:flex; justify-content:space-between; font-size:0.74rem; color:var(--color-text-dim);">
+                  <span>Bluetooth / Speaker Delay:</span>
+                  <span id="audioDelayValueLabel" style="color:var(--color-gold); font-weight:600;">0ms (Direct)</span>
+                </div>
+                <input id="sliderAudioDelay" type="range" min="0" max="400" step="10" value="0" class="room-delay-slider" aria-label="Audio Latency Delay">
+                <div style="font-size:0.68rem; color:var(--color-text-muted);">Adjust if using Bluetooth headphones or external speakers that delay sound.</div>
+              </div>
+            </div>
+
             <!-- Participant List -->
             <div>
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem;">
@@ -1352,6 +1378,28 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Party Mode Live Debug Overlay (?syncdebug=1) -->
+  <div id="partySyncDebugOverlay" class="party-sync-debug-panel" style="display:none;">
+    <div class="debug-panel-header">
+      <div style="display:flex; align-items:center; gap:0.4rem;">
+        <span class="live-dot-pulse" style="width:6px; height:6px;"></span>
+        <span style="font-weight:700; font-size:0.75rem; letter-spacing:0.04em; color:var(--color-gold);">PARTY SYNC DEBUG v2</span>
+      </div>
+      <button id="btnDebugClose" class="debug-close-btn" type="button" aria-label="Close debug">&times;</button>
+    </div>
+    <div class="debug-panel-grid">
+      <div class="dbg-row"><span class="dbg-lbl">Clock Offset:</span><span id="dbgClockOffset" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Best RTT:</span><span id="dbgBestRtt" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Engine State:</span><span id="dbgStatus" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Live Drift:</span><span id="dbgDrift" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Median Drift:</span><span id="dbgMedian" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Rate Multiplier:</span><span id="dbgRate" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Epoch / Action:</span><span id="dbgEpochAction" class="dbg-val">--</span></div>
+      <div class="dbg-row"><span class="dbg-lbl">Seek Lead / Hard:</span><span id="dbgSeekStats" class="dbg-val">--</span></div>
+    </div>
+    <canvas id="dbgSparkline" width="230" height="42" class="debug-sparkline"></canvas>
   </div>
 
   <!-- Scripts -->

@@ -395,9 +395,18 @@ export const Storage = {
 
   // Participant Identity for Listen Together
   getParticipant(currentUser = null) {
+    let tabSuffix = '';
+    try {
+      tabSuffix = sessionStorage.getItem('ethio_lyrics_tab_id');
+      if (!tabSuffix) {
+        tabSuffix = '_' + Math.random().toString(36).substr(2, 4);
+        sessionStorage.setItem('ethio_lyrics_tab_id', tabSuffix);
+      }
+    } catch (e) {}
+
     if (currentUser) {
       return {
-        id: currentUser.uid,
+        id: currentUser.uid + tabSuffix,
         name: currentUser.displayName || 'Google User',
         avatar: currentUser.photoURL || ''
       };
@@ -413,10 +422,25 @@ export const Storage = {
       localStorage.setItem('ethio_lyrics_guest_name', pName);
     }
     return {
-      id: pId,
+      id: pId + tabSuffix,
       name: pName,
       avatar: ''
     };
+  },
+
+  getAudioDelayMs() {
+    try {
+      const val = localStorage.getItem('ethio_lyrics_audio_delay_ms');
+      return val ? parseInt(val, 10) || 0 : 0;
+    } catch (e) {
+      return 0;
+    }
+  },
+
+  setAudioDelayMs(ms) {
+    try {
+      localStorage.setItem('ethio_lyrics_audio_delay_ms', String(Math.max(0, Math.min(500, parseInt(ms, 10) || 0))));
+    } catch (e) {}
   },
 
   setParticipantName(name) {

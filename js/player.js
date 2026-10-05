@@ -16,6 +16,7 @@ export class AudioPlayer {
     this.duration = 0;
     this.volume = 0.8;
     this.playbackRate = 1.0;
+    this.syncRateMultiplier = 1.0;
     this.isSynthetic = true; // Use synth if no external audio file loaded
     this.audioUrl = null;
 
@@ -24,6 +25,9 @@ export class AudioPlayer {
     this.onDurationChange = null;
     this.onStateChange = null;
     this.onEnded = null;
+    this.onPlaying = null;
+    this.onSeeked = null;
+    this.onWaiting = null;
 
     // Web Audio Synthesizer state
     this.audioCtx = null;
@@ -53,6 +57,18 @@ export class AudioPlayer {
       this.isPlaying = true;
       this._startRafTicker();
       if (this.onStateChange) this.onStateChange('playing');
+    });
+
+    this.audioElement.addEventListener('playing', () => {
+      if (this.onPlaying) this.onPlaying();
+    });
+
+    this.audioElement.addEventListener('seeked', () => {
+      if (this.onSeeked) this.onSeeked();
+    });
+
+    this.audioElement.addEventListener('waiting', () => {
+      if (this.onWaiting) this.onWaiting();
     });
 
     this.audioElement.addEventListener('pause', () => {
@@ -138,7 +154,7 @@ export class AudioPlayer {
     this.audioElement.src = url;
     this.audioElement.load();
     this.audioElement.volume = this.volume;
-    this.audioElement.playbackRate = this.playbackRate;
+    this.audioElement.playbackRate = this.getEffectivePlaybackRate();
     this.seek(0);
   }
 
@@ -169,15 +185,21 @@ export class AudioPlayer {
         }
       }, 100);
 
+      if (this.onPlaying) this.onPlaying();
       if (this.onStateChange) this.onStateChange('playing');
+      return Promise.resolve(true);
     } else {
       this.audioElement.volume = this.volume;
-      this.audioElement.playbackRate = this.playbackRate;
-      this.audioElement.play().then(() => {
+      this.audioElement.playbackRate = this.getEffectivePlaybackRate();
+      return this.audioElement.play().then(() => {
         this.isPlaying = true;
         this._startRafTicker();
         if (this.onStateChange) this.onStateChange('playing');
-      }).catch(e => console.warn('Audio play prevented:', e));
+        return true;
+      }).catch(e => {
+        console.warn('Audio play prevented:', e);
+        return false;
+      });
     }
   }
 
@@ -207,6 +229,9 @@ export class AudioPlayer {
       this.synthStartTime = performance.now() - (this.currentTime * 1000);
       if (this.onTimeUpdate) {
         this.onTimeUpdate(this.currentTime, this.duration);
+      }
+      if (this.onSeeked) {
+        this.onSeeked();
       }
     } else {
       this.audioElement.currentTime = this.currentTime;
@@ -246,9 +271,18 @@ export class AudioPlayer {
     this.audioElement.volume = this.volume;
   }
 
+  getEffectivePlaybackRate() {
+    return Math.max(0.25, Math.min(4.0, (this.playbackRate || 1.0) * (this.syncRateMultiplier || 1.0)));
+  }
+
   setPlaybackRate(rate) {
     this.playbackRate = rate;
-    this.audioElement.playbackRate = rate;
+    this.audioElement.playbackRate = this.getEffectivePlaybackRate();
+  }
+
+  setSyncRateMultiplier(mult) {
+    this.syncRateMultiplier = mult || 1.0;
+    this.audioElement.playbackRate = this.getEffectivePlaybackRate();
   }
 
   stopSyntheticTicker() {

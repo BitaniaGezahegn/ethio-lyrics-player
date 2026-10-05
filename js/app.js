@@ -6,6 +6,7 @@ import { Storage } from './storage.js';
 import { PaletteExtractor } from './palette.js';
 import { AmbientParticles } from './particles.js';
 import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service.js';
+import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 
 class LyricsApp {
   constructor() {
@@ -48,15 +49,22 @@ class LyricsApp {
     this.sleepTimerInterval = null;
     this.currentPendingPlaylistTrack = null;
 
-    // Listen Together (Party Room & Synced Playback) State
+    // Listen Together (Party Room & Synced Playback v2) State
     this.activeRoom = null;
     this.isRoomHost = false;
     this.roomUnsubscribe = null;
+    this.roomParticipantsUnsubscribe = null;
+    this.roomReactionsUnsubscribe = null;
     this.myParticipant = Storage.getParticipant(null);
-    this._lastReceivedPlaybackTimestamp = 0;
     this._isApplyingRemoteSync = false;
     this._seenReactionIds = new Set();
-    this._roomHeartbeatTimer = null;
+    this.guestSync = null;
+    this.hostBroadcaster = null;
+    this.presenceHeartbeatTimer = null;
+    this.presenceParticipants = [];
+    this.audioDelaySec = Storage.getAudioDelayMs() / 1000;
+    this.debugSparklineHistory = [];
+    this.debugTimer = null;
 
     // Track Form / Upload State
     this.editingTrackId = null;
@@ -83,6 +91,7 @@ class LyricsApp {
     this.initPullToRefresh();
     this.initServiceWorker();
     this.initLibrary();
+    this.initDebugOverlay();
   }
 
   initServiceWorker() {
@@ -96,9 +105,6 @@ class LyricsApp {
   }
 
   async initLibrary() {
-    // 0. Calibrate universal server clock for zero-latency Listen Together
-    FirebaseService.calibrateServerTime();
-
     // 1. Clean up legacy hardcoded sample tracks from early development
     this.tracks = await Storage.getAllTracks();
     const legacyIds = ['abinet_athijibegn', 'ethio_tizita'];
@@ -233,6 +239,24 @@ class LyricsApp {
     this.btnToggleReactions = document.getElementById('btnToggleReactions');
     this.reactionsDropdown = document.getElementById('reactionsDropdown');
     this.reactionFloatingStage = document.getElementById('reactionFloatingStage');
+
+    // Listen Together v2 Sync & Delay Controls
+    this.roomBarSyncChip = document.getElementById('roomBarSyncChip');
+    this.roomBarSyncChipText = document.getElementById('roomBarSyncChipText');
+    this.btnModalResync = document.getElementById('btnModalResync');
+    this.sliderAudioDelay = document.getElementById('sliderAudioDelay');
+    this.audioDelayValueLabel = document.getElementById('audioDelayValueLabel');
+    this.partySyncDebugOverlay = document.getElementById('partySyncDebugOverlay');
+    this.btnDebugClose = document.getElementById('btnDebugClose');
+    this.dbgClockOffset = document.getElementById('dbgClockOffset');
+    this.dbgBestRtt = document.getElementById('dbgBestRtt');
+    this.dbgStatus = document.getElementById('dbgStatus');
+    this.dbgDrift = document.getElementById('dbgDrift');
+    this.dbgMedian = document.getElementById('dbgMedian');
+    this.dbgRate = document.getElementById('dbgRate');
+    this.dbgEpochAction = document.getElementById('dbgEpochAction');
+    this.dbgSeekStats = document.getElementById('dbgSeekStats');
+    this.dbgSparkline = document.getElementById('dbgSparkline');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -832,6 +856,7 @@ class LyricsApp {
     // Play / Pause
     if (this.btnPlayPause) {
       this.btnPlayPause.addEventListener('click', () => {
+        if (this.isGuestLocked('playback')) return;
         if (!this.currentTrack) {
           if (this.publicTracks.length > 0) {
             this.loadTrack(this.publicTracks[0], true);
@@ -848,23 +873,19 @@ class LyricsApp {
     // Rewind / Forward 5s
     if (this.btnRewind) {
       this.btnRewind.addEventListener('click', () => {
+        if (this.isGuestLocked('seeking')) return;
         if (this.currentTrack) {
           const target = Math.max(0, this.player.currentTime - 5);
           this.player.seek(target);
-          if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target, isExplicitSeek: true });
-          }
         }
       });
     }
     if (this.btnForward) {
       this.btnForward.addEventListener('click', () => {
+        if (this.isGuestLocked('seeking')) return;
         if (this.currentTrack) {
           const target = this.player.currentTime + 5;
           this.player.seek(target);
-          if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target, isExplicitSeek: true });
-          }
         }
       });
     }
@@ -879,10 +900,16 @@ class LyricsApp {
 
     // Previous & Next Track
     if (this.btnPrevTrack) {
-      this.btnPrevTrack.addEventListener('click', () => this.playPrevTrack());
+      this.btnPrevTrack.addEventListener('click', () => {
+        if (this.isGuestLocked('tracks')) return;
+        this.playPrevTrack();
+      });
     }
     if (this.btnNextTrack) {
-      this.btnNextTrack.addEventListener('click', () => this.playNextTrack());
+      this.btnNextTrack.addEventListener('click', () => {
+        if (this.isGuestLocked('tracks')) return;
+        this.playNextTrack();
+      });
     }
 
     // Add to Playlist on Dock
@@ -985,14 +1012,39 @@ class LyricsApp {
       const speeds = [1.0, 1.25, 1.5, 0.75];
       let speedIdx = 0;
       this.btnSpeed.addEventListener('click', () => {
+        if (this.isGuestLocked('playback speed')) return;
         speedIdx = (speedIdx + 1) % speeds.length;
         const spd = speeds[speedIdx];
         this.player.setPlaybackRate(spd);
         this.btnSpeed.textContent = `${spd}x`;
+        if (this.activeRoom && this.isRoomHost) {
+          this.hostBroadcaster?.notify('rate');
+        }
       });
     }
 
     // Audio Player State Listeners
+    this.player.onPlaying = () => {
+      if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+        this.hostBroadcaster?.notify('play');
+      }
+      if (this.guestSync) {
+        this.guestSync.notifyPlaying();
+      }
+    };
+
+    this.player.onSeeked = () => {
+      if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+        this.hostBroadcaster?.notify('seek');
+      }
+    };
+
+    this.player.onWaiting = () => {
+      if (this.guestSync) {
+        this.guestSync.notifyWaiting();
+      }
+    };
+
     this.player.onStateChange = (state) => {
       if (state === 'playing') {
         if (this.playIcon) this.playIcon.style.display = 'none';
@@ -1008,18 +1060,8 @@ class LyricsApp {
       }
       this.updateHeroState();
 
-      // Broadcast playback state if Host
-      if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-        if (state === 'playing') {
-          this.startHostHeartbeat();
-        } else {
-          this.stopHostHeartbeat();
-        }
-        FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
-          playbackState: state === 'playing' ? 'playing' : 'paused',
-          positionSec: this.player.currentTime || 0,
-          isExplicitSeek: true
-        });
+      if (state === 'paused' && this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+        this.hostBroadcaster?.notify('pause');
       }
     };
 
@@ -1044,11 +1086,15 @@ class LyricsApp {
 
     // Smart Queue: When a song ends, respect repeat mode & play next
     this.player.onEnded = async () => {
-      this.stopHostHeartbeat();
       if (this.playIcon) this.playIcon.style.display = 'block';
       if (this.pauseIcon) this.pauseIcon.style.display = 'none';
       if (this.vinylDisc) this.vinylDisc.classList.remove('spinning');
       this.syncLyrics(0);
+
+      // In party mode, guests must wait for the host's anchor and not auto-advance
+      if (this.activeRoom && !this.isRoomHost) {
+        return;
+      }
 
       // Check Sleep Timer "End of Track"
       if (this.sleepTimerTargetMs === 'end_of_track') {
@@ -1123,27 +1169,24 @@ class LyricsApp {
     // Timeline Scrubber
     if (this.scrubberTrack) {
       const seekAtClientX = (clientX) => {
+        if (this.isGuestLocked('seeking')) return;
         if (!this.currentTrack || !this.player.duration) return;
         const rect = this.scrubberTrack.getBoundingClientRect();
         const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
         const newTime = pos * this.player.duration;
         this.player.seek(newTime);
-        if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-          FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
-            positionSec: newTime,
-            isExplicitSeek: true
-          });
-        }
       };
 
       this.scrubberTrack.addEventListener('click', (e) => seekAtClientX(e.clientX));
       this.scrubberTrack.addEventListener('touchstart', (e) => {
+        if (this.isGuestLocked('seeking')) return;
         if (e.touches && e.touches[0]) {
           this.isScrubbing = true;
           seekAtClientX(e.touches[0].clientX);
         }
       }, { passive: true });
       this.scrubberTrack.addEventListener('touchmove', (e) => {
+        if (this.isGuestLocked('seeking')) return;
         if (this.isScrubbing && e.touches && e.touches[0]) {
           seekAtClientX(e.touches[0].clientX);
         }
@@ -1190,12 +1233,15 @@ class LyricsApp {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
       if (e.code === 'Space') {
         e.preventDefault();
+        if (this.isGuestLocked('playback')) return;
         this.player.togglePlay();
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
+        if (this.isGuestLocked('seeking')) return;
         if (this.currentTrack) this.player.seek(this.player.currentTime - 5);
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
+        if (this.isGuestLocked('seeking')) return;
         if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
       } else if (e.code === 'KeyF' || e.code === 'KeyC') {
         if (this.btnToggleFullscreen) this.btnToggleFullscreen.click();
@@ -1407,6 +1453,43 @@ class LyricsApp {
     }
     if (this.btnLeaveRoom) {
       this.btnLeaveRoom.addEventListener('click', () => this.handleLeaveRoom(true));
+    }
+
+    // Listen Together Audio Latency & Resync Controls
+    if (this.sliderAudioDelay) {
+      const currentDelay = Storage.getAudioDelayMs();
+      this.sliderAudioDelay.value = currentDelay;
+      if (this.audioDelayValueLabel) {
+        this.audioDelayValueLabel.textContent = currentDelay > 0 ? `${currentDelay}ms (Compensated)` : '0ms (Direct)';
+      }
+      this.sliderAudioDelay.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10) || 0;
+        if (this.audioDelayValueLabel) {
+          this.audioDelayValueLabel.textContent = val > 0 ? `${val}ms (Compensated)` : '0ms (Direct)';
+        }
+        Storage.setAudioDelayMs(val);
+        this.audioDelaySec = val / 1000;
+      });
+    }
+
+    if (this.btnModalResync) {
+      this.btnModalResync.addEventListener('click', () => {
+        this.resyncGuestAudio();
+      });
+    }
+
+    if (this.roomBarSyncChip) {
+      this.roomBarSyncChip.addEventListener('click', () => {
+        this.resyncGuestAudio();
+      });
+    }
+
+    if (this.btnDebugClose) {
+      this.btnDebugClose.addEventListener('click', () => {
+        if (this.partySyncDebugOverlay) {
+          this.partySyncDebugOverlay.style.display = 'none';
+        }
+      });
     }
 
     // Expandable Reaction Tray Toggle & Outside Click Handler
@@ -1899,6 +1982,7 @@ class LyricsApp {
   // Track Loading & Sync
   // --------------------------------------------------------------------------
   async loadTrack(track, autoPlay = true) {
+    if (!this._isApplyingRemoteSync && this.isGuestLocked('track selection')) return;
     this.currentTrack = track;
     Storage.setLastTrackId(track.id);
 
@@ -1956,20 +2040,7 @@ class LyricsApp {
 
     // Broadcast track change if Host
     if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-      FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
-        currentTrack: {
-          id: track.id,
-          title: track.title,
-          artist: track.artist,
-          album: track.album || 'Single',
-          year: track.year || '2024',
-          cover: track.cover || 'assets/weleta_cover.jpg',
-          audioUrl: track.audioUrl || '',
-          lrc: track.lrc || ''
-        },
-        playbackState: autoPlay ? 'playing' : 'paused',
-        positionSec: 0
-      });
+      this.hostBroadcaster?.notify('track', { bumpEpoch: true });
     }
 
     this.updateHeroState();
@@ -3561,8 +3632,16 @@ class LyricsApp {
   }
 
   // --------------------------------------------------------------------------
-  // Listen Together (Party Room Management & Synchronization)
+  // Listen Together (Party Room Management & Synchronization v2)
   // --------------------------------------------------------------------------
+  isGuestLocked(actionName = 'playback') {
+    if (this.activeRoom && !this.isRoomHost) {
+      this.showToast(`Only the DJ controls ${actionName} 🎧`);
+      return true;
+    }
+    return false;
+  }
+
   openListenTogetherModal() {
     if (!this.listenTogetherModal) return;
     this.myParticipant = Storage.getParticipant(this.currentUser);
@@ -3590,22 +3669,28 @@ class LyricsApp {
         this.btnCreateRoom.textContent = 'Starting...';
       }
 
+      await FirebaseService.calibrateServerTime();
+
       const currentTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
       const room = await FirebaseService.createListenRoom(
         this.myParticipant,
         currentTrack,
         this.player.isPlaying ? 'playing' : 'paused',
-        this.player.currentTime || 0
+        this.player.currentTime || 0,
+        this.player.getEffectivePlaybackRate ? this.player.getEffectivePlaybackRate() : 1.0
       );
 
       this.activeRoom = room;
       this.isRoomHost = true;
-      if (this.player.isPlaying) {
-        this.startHostHeartbeat();
-      }
+      document.body.classList.remove('is-party-guest');
+
+      this.initHostBroadcaster();
+      this.startPresenceHeartbeat(room.roomCode, true);
       this.subscribeToRoom(room.roomCode);
 
       this.updateListenRoomUI(room);
+      this.updateSyncChipUI({ state: 'host' });
+
       if (this.btnCreateRoom) {
         this.btnCreateRoom.disabled = false;
         this.btnCreateRoom.textContent = 'Start Session';
@@ -3619,23 +3704,123 @@ class LyricsApp {
     }
   }
 
-  startHostHeartbeat() {
-    this.stopHostHeartbeat();
-    this._roomHeartbeatTimer = setInterval(() => {
-      if (this.activeRoom && this.isRoomHost && this.player.isPlaying && !this._isApplyingRemoteSync) {
-        FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
-          playbackState: 'playing',
-          positionSec: this.player.currentTime || 0,
-          isExplicitSeek: false
+  initHostBroadcaster() {
+    if (this.hostBroadcaster) {
+      this.hostBroadcaster.stop();
+    }
+    this.hostBroadcaster = new HostBroadcaster({
+      getState: () => ({
+        trackId: this.currentTrack ? this.currentTrack.id : null,
+        state: this.player.isPlaying ? 'playing' : 'paused',
+        positionSec: this.player.currentTime || 0,
+        rate: this.player.playbackRate || 1.0,
+      }),
+      publish: async (anchor, meta) => {
+        if (!this.activeRoom) return;
+        const currentTrack = this.currentTrack ? {
+          id: this.currentTrack.id,
+          title: this.currentTrack.title,
+          artist: this.currentTrack.artist,
+          album: this.currentTrack.album || 'Single',
+          year: this.currentTrack.year || '2024',
+          cover: this.currentTrack.cover || 'assets/weleta_cover.jpg',
+          audioUrl: this.currentTrack.audioUrl || '',
+          lrc: this.currentTrack.lrc || ''
+        } : null;
+        await FirebaseService.publishPlaybackAnchor(this.activeRoom.roomCode, anchor, {
+          currentTrack: currentTrack,
+          playbackState: anchor.state,
+          positionSec: anchor.positionSec,
+          clientTimestamp: anchor.anchorServerMs,
+          epoch: anchor.epoch
         });
-      }
-    }, 4000); // Relaxed from aggressive 1.5s to gentle 4.0s for smooth, steady drift checking
+      },
+      clock: { now: () => FirebaseService.getServerNow() },
+      getLatencySec: () => this.audioDelaySec || 0,
+    });
+    this.hostBroadcaster.start();
   }
 
-  stopHostHeartbeat() {
-    if (this._roomHeartbeatTimer) {
-      clearInterval(this._roomHeartbeatTimer);
-      this._roomHeartbeatTimer = null;
+  initGuestSyncEngine() {
+    if (this.guestSync) {
+      this.guestSync.stop();
+    }
+    const playerAdapter = {
+      getPosition: () => this.player.currentTime || 0,
+      isPlaying: () => !!this.player.isPlaying,
+      getDuration: () => this.player.duration || 0,
+      seek: (sec) => this.player.seek(sec),
+      play: () => this.player.play(),
+      pause: () => this.player.pause(),
+      setRateMultiplier: (m) => this.player.setSyncRateMultiplier(m),
+      setBaseRate: (r) => this.player.setPlaybackRate(r),
+    };
+    this.guestSync = new GuestSyncEngine({
+      player: playerAdapter,
+      clock: { now: () => FirebaseService.getServerNow() },
+      getLatencySec: () => this.audioDelaySec || 0,
+      onStatus: (status) => {
+        this.updateSyncChipUI(status);
+        if (this.partySyncDebugOverlay && this.partySyncDebugOverlay.style.display !== 'none') {
+          const debugInfo = this.guestSync.getDebugInfo();
+          this.updateDebugOverlay(debugInfo);
+        }
+      }
+    });
+    this.guestSync.setTrackReady(!!this.currentTrack);
+    this.guestSync.start();
+  }
+
+  startPresenceHeartbeat(roomCode, isHost) {
+    this.stopPresenceHeartbeat();
+    const sendPulse = async () => {
+      if (!this.activeRoom || !this.myParticipant) return;
+      const drift = this.guestSync ? Math.round(this.guestSync.lastDriftSec * 1000) : 0;
+      await FirebaseService.heartbeatPresence(roomCode, this.myParticipant.id, drift);
+    };
+
+    sendPulse();
+
+    this.presenceHeartbeatTimer = setInterval(async () => {
+      if (!this.activeRoom || !this.myParticipant) return;
+      await sendPulse();
+
+      // Host Failover: if we are a guest, check if host is dark (> 90s)
+      if (!this.isRoomHost && Array.isArray(this.presenceParticipants) && this.presenceParticipants.length > 0) {
+        const now = Date.now();
+        const hostP = this.presenceParticipants.find(p => p.isHost);
+        const hostIsDark = !hostP || (now - (hostP.lastSeen?.toMillis ? hostP.lastSeen.toMillis() : (hostP.lastSeenMs || 0)) > 90000);
+        if (hostIsDark) {
+          const alive = this.presenceParticipants.filter(p => {
+            const seen = p.lastSeen?.toMillis ? p.lastSeen.toMillis() : (p.lastSeenMs || 0);
+            return (now - seen) <= 90000;
+          });
+          alive.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+          if (alive.length > 0 && alive[0].id === this.myParticipant.id) {
+            console.log('[PartySync] Host timed out. Claiming host as oldest active participant...');
+            try {
+              const claimed = await FirebaseService.claimHost(roomCode, this.myParticipant);
+              if (claimed) {
+                this.isRoomHost = true;
+                document.body.classList.remove('is-party-guest');
+                if (this.guestSync) { this.guestSync.stop(); this.guestSync = null; }
+                this.initHostBroadcaster();
+                this.updateSyncChipUI({ state: 'host' });
+                this.showToast('Session host disconnected. You are now the DJ 👑');
+              }
+            } catch (err) {
+              console.warn('[PartySync] Host takeover attempt failed:', err);
+            }
+          }
+        }
+      }
+    }, 30000);
+  }
+
+  stopPresenceHeartbeat() {
+    if (this.presenceHeartbeatTimer) {
+      clearInterval(this.presenceHeartbeatTimer);
+      this.presenceHeartbeatTimer = null;
     }
   }
 
@@ -3671,12 +3856,25 @@ class LyricsApp {
 
     try {
       this.myParticipant = Storage.getParticipant(this.currentUser);
+      await FirebaseService.calibrateServerTime();
+
       const room = await FirebaseService.joinListenRoom(fullTargetCode, this.myParticipant);
 
       this.activeRoom = room;
       this.isRoomHost = room.hostId === this.myParticipant.id;
-      this.subscribeToRoom(room.roomCode);
 
+      if (this.isRoomHost) {
+        document.body.classList.remove('is-party-guest');
+        this.initHostBroadcaster();
+        this.updateSyncChipUI({ state: 'host' });
+      } else {
+        document.body.classList.add('is-party-guest');
+        this.initGuestSyncEngine();
+        this.updateSyncChipUI({ state: 'synced' });
+      }
+
+      this.startPresenceHeartbeat(room.roomCode, this.isRoomHost);
+      this.subscribeToRoom(room.roomCode);
       this.updateListenRoomUI(room);
 
       if (this.btnJoinRoom) {
@@ -3701,7 +3899,16 @@ class LyricsApp {
       this.roomUnsubscribe();
       this.roomUnsubscribe = null;
     }
+    if (this.roomParticipantsUnsubscribe) {
+      this.roomParticipantsUnsubscribe();
+      this.roomParticipantsUnsubscribe = null;
+    }
+    if (this.roomReactionsUnsubscribe) {
+      this.roomReactionsUnsubscribe();
+      this.roomReactionsUnsubscribe = null;
+    }
 
+    // 1. Room document listener (state & anchor)
     this.roomUnsubscribe = FirebaseService.subscribeListenRoom(roomCode, async (room) => {
       if (!room || room.isActive === false) {
         alert('The host has ended this Listen Together session.');
@@ -3710,24 +3917,28 @@ class LyricsApp {
       }
 
       this.activeRoom = room;
-      this.isRoomHost = room.hostId === this.myParticipant.id;
-      this.updateListenRoomUI(room);
+      const isHostNow = room.hostId === this.myParticipant.id;
 
-      // Handle live reactions
-      if (Array.isArray(room.reactions)) {
-        room.reactions.forEach(rx => {
-          if (!this._seenReactionIds.has(rx.id)) {
-            this._seenReactionIds.add(rx.id);
-            if (rx.from !== (this.myParticipant ? this.myParticipant.name : '')) {
-              this.renderFloatingReaction(rx.type, rx.from);
-            }
-          }
-        });
+      if (isHostNow !== this.isRoomHost) {
+        this.isRoomHost = isHostNow;
+        if (isHostNow) {
+          document.body.classList.remove('is-party-guest');
+          if (this.guestSync) { this.guestSync.stop(); this.guestSync = null; }
+          this.initHostBroadcaster();
+          this.updateSyncChipUI({ state: 'host' });
+          this.showToast('You are now the Session Host (DJ) 👑');
+        } else {
+          document.body.classList.add('is-party-guest');
+          if (this.hostBroadcaster) { this.hostBroadcaster.stop(); this.hostBroadcaster = null; }
+          this.initGuestSyncEngine();
+          this.updateSyncChipUI({ state: 'synced' });
+        }
       }
+
+      this.updateListenRoomUI(room);
 
       // Guest Playback Synchronization
       if (!this.isRoomHost && room.currentTrack) {
-        // 1. Sync Track if different
         if (!this.currentTrack || this.currentTrack.id !== room.currentTrack.id) {
           this._isApplyingRemoteSync = true;
           const existing = [...this.publicTracks, ...this.tracks].find(t => t.id === room.currentTrack.id);
@@ -3744,96 +3955,264 @@ class LyricsApp {
 
           await this.loadTrack(trackToLoad, false);
           this._isApplyingRemoteSync = false;
+          if (this.guestSync) this.guestSync.setTrackReady(true);
         }
 
-        // 2. Calibrated Universal Time & Elapsed Drift Calculation
-        const currentServerNow = FirebaseService.getServerNow();
-        const eventServerTime = room.clientTimestamp || currentServerNow;
-        const elapsedSec = Math.max(0, (currentServerNow - eventServerTime) / 1000);
-        const targetTime = room.playbackState === 'playing' ? (room.positionSec + elapsedSec) : room.positionSec;
-        const isExplicitSeek = !!room.isExplicitSeek;
+        const pb = room.playback || {
+          trackId: room.currentTrack?.id,
+          state: room.playbackState || 'paused',
+          positionSec: room.positionSec || 0,
+          anchorServerMs: room.anchorServerMs !== undefined ? room.anchorServerMs : (room.clientTimestamp || FirebaseService.getServerNow()),
+          rate: room.playbackRate || 1.0,
+          epoch: room.epoch || 1
+        };
 
-        if (room.playbackState === 'playing') {
-          if (!this.player.isPlaying) {
-            this._isApplyingRemoteSync = true;
-            this.player.seek(targetTime);
-            this.player.play();
-            this._isApplyingRemoteSync = false;
-            if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
-            this._smoothedDrift = 0;
-          } else {
-            // Raw drift: positive means guest lags behind host; negative means guest is ahead
-            const rawDrift = targetTime - this.player.currentTime;
-            
-            // Exponential moving average filter to suppress network jitter spikes
-            if (typeof this._smoothedDrift !== 'number' || isNaN(this._smoothedDrift)) {
-              this._smoothedDrift = rawDrift;
-            } else {
-              this._smoothedDrift = this._smoothedDrift * 0.65 + rawDrift * 0.35;
-            }
+        if (this.guestSync) {
+          this.guestSync.setAnchor({
+            trackId: pb.trackId || room.currentTrack?.id,
+            state: pb.state || room.playbackState || 'paused',
+            positionSec: pb.positionSec ?? (room.positionSec || 0),
+            anchorServerMs: pb.anchorServerMs ?? (room.clientTimestamp || FirebaseService.getServerNow()),
+            rate: pb.rate ?? (room.playbackRate || 1.0),
+            epoch: pb.epoch ?? (room.epoch || 1),
+          });
+        }
+      }
+    });
 
-            const drift = this._smoothedDrift;
-            const absDrift = Math.abs(drift);
+    // 2. Participants subcollection listener
+    this.roomParticipantsUnsubscribe = FirebaseService.subscribeParticipants(roomCode, (participants) => {
+      this.presenceParticipants = participants;
+      this.renderParticipantsList(participants);
+    });
 
-            // Large discrepancy (> 1.25s) or deliberate user action by host: snap directly
-            if (isExplicitSeek || absDrift > 1.25) {
-              this._isApplyingRemoteSync = true;
-              this.player.seek(targetTime);
-              this._isApplyingRemoteSync = false;
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
-              this._smoothedDrift = 0;
-            } else if (absDrift < 0.07) {
-              // Deadband (within ±70ms of host): in tight sync, keep neutral 1.0x rate
-              if (this.player.audioElement && this.player.audioElement.playbackRate !== 1.0) {
-                this.player.audioElement.playbackRate = 1.0;
-              }
-            } else if (drift > 0.30) {
-              // Moderate lag (300ms to 1250ms behind): gentle +3.5% speedup
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.035;
-            } else if (drift > 0.07) {
-              // Minor lag (70ms to 300ms behind): imperceptible +1.8% micro-nudge
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.018;
-            } else if (drift < -0.30) {
-              // Moderate lead (300ms to 1250ms ahead): gentle -3.5% slowdown
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.965;
-            } else if (drift < -0.07) {
-              // Minor lead (70ms to 300ms ahead): imperceptible -1.8% micro-nudge
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.982;
-            }
-          }
-        } else if (room.playbackState === 'paused') {
-          this._smoothedDrift = 0;
-          if (this.player.isPlaying) {
-            this._isApplyingRemoteSync = true;
-            this.player.pause();
-            this.player.seek(targetTime);
-            this._isApplyingRemoteSync = false;
-          } else if (isExplicitSeek || Math.abs(targetTime - this.player.currentTime) > 0.4) {
-            this.player.seek(targetTime);
-          }
-          if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+    // 3. Reactions subcollection listener
+    this.roomReactionsUnsubscribe = FirebaseService.subscribeReactions(roomCode, Date.now() - 1000, (rx) => {
+      if (!this._seenReactionIds.has(rx.id)) {
+        this._seenReactionIds.add(rx.id);
+        const myName = this.myParticipant ? this.myParticipant.name : '';
+        if (rx.from && rx.from !== myName) {
+          this.renderFloatingReaction(rx.type, rx.from);
         }
       }
     });
   }
 
+  renderParticipantsList(participants) {
+    const list = Array.isArray(participants) && participants.length > 0 
+      ? participants 
+      : (this.activeRoom?.participants || []);
+    const pCount = list.length;
+
+    if (this.roomBarListenersLabel) {
+      this.roomBarListenersLabel.textContent = `${pCount} listening together`;
+    }
+    if (this.activeRoomCountBadge) {
+      this.activeRoomCountBadge.textContent = `${pCount} in room`;
+    }
+    if (this.activeRoomParticipantsList) {
+      this.activeRoomParticipantsList.innerHTML = '';
+      list.forEach(p => {
+        const isCurrent = p.id === (this.myParticipant ? this.myParticipant.id : '');
+        const pEl = document.createElement('div');
+        pEl.className = 'participant-item';
+        pEl.innerHTML = `
+          <div class="participant-user-info">
+            ${p.avatar ? `<img src="${p.avatar}" alt="${p.name || 'Participant'}" class="participant-avatar-img" crossorigin="anonymous">` : `<div class="participant-avatar-badge">${(p.name || 'M')[0].toUpperCase()}</div>`}
+            <div>
+              <div style="font-weight:600; font-size:0.88rem; color:#fff;">${p.name || 'Listener'} ${isCurrent ? '<span style="color:var(--color-gold); font-size:0.75rem;">(You)</span>' : ''}</div>
+              <div style="font-size:0.7rem; color:var(--color-text-dim);">${p.isHost ? 'Session Host' : 'Listener'}</div>
+            </div>
+          </div>
+          ${p.isHost ? `<span class="room-role-pill" style="font-size:0.65rem;">DJ</span>` : ''}
+        `;
+        this.activeRoomParticipantsList.appendChild(pEl);
+      });
+    }
+  }
+
+  resyncGuestAudio() {
+    if (!this.activeRoom) return;
+    if (this.isRoomHost) {
+      this.showToast('You are the DJ 👑 (Broadcasting)');
+      return;
+    }
+    if (this.guestSync) {
+      this.guestSync.unlockFromGesture();
+      this.showToast('Resyncing audio with DJ... 🎧');
+    }
+  }
+
+  updateSyncChipUI(status) {
+    if (!this.roomBarSyncChip || !this.roomBarSyncChipText) return;
+    if (!this.activeRoom) {
+      this.roomBarSyncChip.style.display = 'none';
+      return;
+    }
+    this.roomBarSyncChip.style.display = 'inline-flex';
+
+    if (this.isRoomHost) {
+      this.roomBarSyncChip.className = 'room-sync-chip status-host';
+      this.roomBarSyncChipText.textContent = 'DJ 👑';
+      this.roomBarSyncChip.title = 'You are the DJ (Live Host)';
+      return;
+    }
+
+    const state = status?.state || 'in-sync';
+    const driftMs = Math.round(status?.driftMs || 0);
+    this.roomBarSyncChip.classList.remove('status-insync', 'status-adjusting', 'status-seeking', 'status-buffering', 'status-host');
+
+    switch (state) {
+      case 'in-sync':
+        this.roomBarSyncChip.classList.add('status-insync');
+        this.roomBarSyncChipText.textContent = Math.abs(driftMs) > 0 ? `In sync (±${Math.abs(driftMs)}ms)` : 'In sync';
+        this.roomBarSyncChip.title = `Synchronized within ${Math.abs(driftMs)}ms. Click to hard resync.`;
+        break;
+      case 'syncing':
+        this.roomBarSyncChip.classList.add('status-adjusting');
+        this.roomBarSyncChipText.textContent = `Nudging (${driftMs > 0 ? '+' : ''}${driftMs}ms)`;
+        this.roomBarSyncChip.title = `Micro-adjusting tempo to align audio. Click to hard resync.`;
+        break;
+      case 'buffering':
+      case 'waiting-host':
+        this.roomBarSyncChip.classList.add('status-buffering');
+        this.roomBarSyncChipText.textContent = 'Buffering...';
+        this.roomBarSyncChip.title = 'Waiting for audio buffer...';
+        break;
+      case 'blocked':
+        this.roomBarSyncChip.classList.add('status-seeking');
+        this.roomBarSyncChipText.textContent = 'Tap to Play 🎧';
+        this.roomBarSyncChip.title = 'Autoplay blocked. Tap to start synchronized audio.';
+        break;
+      case 'paused':
+        this.roomBarSyncChip.classList.add('status-insync');
+        this.roomBarSyncChipText.textContent = 'Paused';
+        this.roomBarSyncChip.title = 'DJ paused playback';
+        break;
+      case 'loading':
+        this.roomBarSyncChip.classList.add('status-buffering');
+        this.roomBarSyncChipText.textContent = 'Loading...';
+        this.roomBarSyncChip.title = 'Loading track...';
+        break;
+      default:
+        this.roomBarSyncChip.classList.add('status-insync');
+        this.roomBarSyncChipText.textContent = 'Party Mode';
+        break;
+    }
+  }
+
+  initDebugOverlay() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('syncdebug') === '1' && this.partySyncDebugOverlay) {
+      this.partySyncDebugOverlay.style.display = 'block';
+      this.debugSparklineHistory = [];
+    }
+  }
+
+  updateDebugOverlay(info) {
+    if (!this.partySyncDebugOverlay || this.partySyncDebugOverlay.style.display === 'none') return;
+    const offset = FirebaseService.getClockOffset();
+    const bestRtt = FirebaseService.getBestRtt();
+    if (this.dbgClockOffset) this.dbgClockOffset.textContent = `${Math.round(offset)}ms`;
+    if (this.dbgBestRtt) this.dbgBestRtt.textContent = `${Math.round(bestRtt)}ms`;
+    if (this.dbgStatus) this.dbgStatus.textContent = info.state || '--';
+    if (this.dbgDrift) this.dbgDrift.textContent = `${Math.round(info.driftMs || 0)}ms`;
+    if (this.dbgMedian) this.dbgMedian.textContent = `${Math.round(info.medianMs || info.driftMs || 0)}ms`;
+    if (this.dbgRate) this.dbgRate.textContent = `${(info.rate || 1.0).toFixed(3)}x`;
+    if (this.dbgEpochAction) this.dbgEpochAction.textContent = `ep:${info.anchor?.epoch ?? '--'} | ${info.lastAction || 'idle'}`;
+    if (this.dbgSeekStats) this.dbgSeekStats.textContent = `lead:${Math.round(info.seekLeadMs || 0)}ms | snaps:${info.stats?.hardSeeks || 0}`;
+
+    this.debugSparklineHistory.push(info.medianMs || info.driftMs || 0);
+    if (this.debugSparklineHistory.length > 50) {
+      this.debugSparklineHistory.shift();
+    }
+    this.renderDebugSparkline();
+  }
+
+  renderDebugSparkline() {
+    if (!this.dbgSparkline) return;
+    const ctx = this.dbgSparkline.getContext('2d');
+    if (!ctx) return;
+    const w = this.dbgSparkline.width;
+    const h = this.dbgSparkline.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const midY = h / 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    ctx.stroke();
+
+    const maxRange = 150;
+    const deadbandPx = (30 / maxRange) * (h / 2);
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+    ctx.fillRect(0, midY - deadbandPx, w, deadbandPx * 2);
+
+    const history = this.debugSparklineHistory;
+    if (history.length < 2) return;
+
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    const step = w / 49;
+    for (let i = 0; i < history.length; i++) {
+      const val = history[i];
+      const clampedVal = Math.max(-maxRange, Math.min(maxRange, val));
+      const y = midY - (clampedVal / maxRange) * (midY - 3);
+      const x = i * step;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    const lastVal = history[history.length - 1];
+    const absLast = Math.abs(lastVal);
+    ctx.strokeStyle = absLast <= 30 ? '#10b981' : (absLast <= 100 ? '#f59e0b' : '#ef4444');
+    ctx.stroke();
+  }
+
   async handleLeaveRoom(notifyCloud = true) {
-    this.stopHostHeartbeat();
-    if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+    this.stopPresenceHeartbeat();
+    if (this.player.setSyncRateMultiplier) {
+      this.player.setSyncRateMultiplier(1.0);
+    }
+    if (this.guestSync) {
+      this.guestSync.stop();
+      this.guestSync = null;
+    }
+    if (this.hostBroadcaster) {
+      this.hostBroadcaster.stop();
+      this.hostBroadcaster = null;
+    }
 
     if (this.activeRoom && notifyCloud && this.myParticipant) {
-      await FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
+      if (this.isRoomHost) {
+        await FirebaseService.endListenRoom(this.activeRoom.roomCode);
+      } else {
+        await FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
+      }
     }
     if (this.roomUnsubscribe) {
       this.roomUnsubscribe();
       this.roomUnsubscribe = null;
     }
+    if (this.roomParticipantsUnsubscribe) {
+      this.roomParticipantsUnsubscribe();
+      this.roomParticipantsUnsubscribe = null;
+    }
+    if (this.roomReactionsUnsubscribe) {
+      this.roomReactionsUnsubscribe();
+      this.roomReactionsUnsubscribe = null;
+    }
+
     this.activeRoom = null;
     this.isRoomHost = false;
+    this.presenceParticipants = [];
     this._seenReactionIds.clear();
     document.body.classList.remove('in-active-room');
+    document.body.classList.remove('is-party-guest');
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'none';
+    if (this.roomBarSyncChip) this.roomBarSyncChip.style.display = 'none';
     if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.remove('active');
     if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'none';
     if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
@@ -3845,7 +4224,6 @@ class LyricsApp {
     if (!room) return;
     document.body.classList.add('in-active-room');
 
-    // Immediately toggle modal to Active Session View
     if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
     if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
 
@@ -3853,8 +4231,7 @@ class LyricsApp {
     if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.add('active');
     if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'inline-block';
 
-    const pCount = (room.participants || []).length;
-    const isHost = room.hostId === this.myParticipant.id;
+    const isHost = room.hostId === (this.myParticipant ? this.myParticipant.id : '');
 
     if (this.roomBarCodeLabel) this.roomBarCodeLabel.textContent = room.roomCode;
     if (this.roomBarRolePill) {
@@ -3862,9 +4239,6 @@ class LyricsApp {
       this.roomBarRolePill.style.background = isHost ? 'rgba(229,185,90,0.18)' : 'rgba(96,165,250,0.18)';
       this.roomBarRolePill.style.color = isHost ? '#fce7b2' : '#93c5fd';
       this.roomBarRolePill.style.borderColor = isHost ? 'rgba(229,185,90,0.4)' : 'rgba(96,165,250,0.4)';
-    }
-    if (this.roomBarListenersLabel) {
-      this.roomBarListenersLabel.textContent = `${pCount} listening together`;
     }
 
     if (this.activeRoomCodeTitle) this.activeRoomCodeTitle.textContent = room.roomCode;
@@ -3877,32 +4251,13 @@ class LyricsApp {
       if (this.activeRoomTrackTitle) this.activeRoomTrackTitle.textContent = room.currentTrack.title || 'Untitled';
       if (this.activeRoomTrackArtist) this.activeRoomTrackArtist.textContent = room.currentTrack.artist || 'Unknown Artist';
       if (this.activeRoomTrackStateBadge) {
-        this.activeRoomTrackStateBadge.textContent = room.playbackState === 'playing' ? 'Playing' : 'Paused';
-        this.activeRoomTrackStateBadge.style.color = room.playbackState === 'playing' ? '#6ee7b7' : 'var(--color-text-dim)';
+        const isPlaying = (room.playback?.state || room.playbackState) === 'playing';
+        this.activeRoomTrackStateBadge.textContent = isPlaying ? 'Playing' : 'Paused';
+        this.activeRoomTrackStateBadge.style.color = isPlaying ? '#6ee7b7' : 'var(--color-text-dim)';
       }
     }
 
-    if (this.activeRoomCountBadge) {
-      this.activeRoomCountBadge.textContent = `${pCount} in room`;
-    }
-    if (this.activeRoomParticipantsList) {
-      this.activeRoomParticipantsList.innerHTML = '';
-      (room.participants || []).forEach(p => {
-        const pEl = document.createElement('div');
-        pEl.className = 'participant-item';
-        pEl.innerHTML = `
-          <div class="participant-user-info">
-            ${p.avatar ? `<img src="${p.avatar}" alt="${p.name}" class="participant-avatar-img" crossorigin="anonymous">` : `<div class="participant-avatar-badge">${(p.name || 'M')[0].toUpperCase()}</div>`}
-            <div>
-              <div style="font-weight:600; font-size:0.88rem; color:#fff;">${p.name} ${p.id === this.myParticipant.id ? '<span style="color:var(--color-gold); font-size:0.75rem;">(You)</span>' : ''}</div>
-              <div style="font-size:0.7rem; color:var(--color-text-dim);">${p.isHost ? 'Session Host' : 'Listener'}</div>
-            </div>
-          </div>
-          ${p.isHost ? `<span class="room-role-pill" style="font-size:0.65rem;">DJ</span>` : ''}
-        `;
-        this.activeRoomParticipantsList.appendChild(pEl);
-      });
-    }
+    this.renderParticipantsList(this.presenceParticipants);
 
     if (this.btnLeaveRoomModal) {
       this.btnLeaveRoomModal.textContent = isHost ? 'End Session for All' : 'Leave Session';
@@ -3919,7 +4274,8 @@ class LyricsApp {
     const name = this.myParticipant ? this.myParticipant.name : 'Friend';
     FirebaseService.sendRoomReaction(this.activeRoom.roomCode, {
       type: type,
-      from: name
+      from: name,
+      fromId: this.myParticipant ? this.myParticipant.id : ''
     });
     this.renderFloatingReaction(type, 'You');
   }

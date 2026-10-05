@@ -23,11 +23,14 @@ import {
   addDoc, 
   deleteDoc, 
   query, 
+  where,
+  limit,
   orderBy, 
   serverTimestamp,
   onSnapshot,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
 
 export const firebaseConfig = {
@@ -59,6 +62,7 @@ try {
 }
 
 let serverTimeOffsetMs = 0;
+let lastCalibrationMeta = { offset: 0, rtt: 0, method: 'none', timestamp: 0 };
 
 export const FirebaseService = {
   get isInitialized() {
@@ -311,8 +315,48 @@ export const FirebaseService = {
     }
   },
 
+  // -------------------------------------------------------------
   // Universal NTP/Server Time Calibration for Zero-Drift Listen Together
-  async calibrateServerTime() {
+  // -------------------------------------------------------------
+  async calibrateServerTime({ samples = 5, forceHttp = false } = {}) {
+    if (!forceHttp && db) {
+      try {
+        let clientId = sessionStorage.getItem('ethio_clock_client_id');
+        if (!clientId) {
+          clientId = 'clk_' + Math.random().toString(36).slice(2, 11);
+          try { sessionStorage.setItem('ethio_clock_client_id', clientId); } catch (e) {}
+        }
+        const ref = doc(db, 'clock_sync', clientId);
+        const results = [];
+        for (let i = 0; i < samples; i++) {
+          const t0 = Date.now();
+          const p0 = performance.now();
+          await setDoc(ref, { t: serverTimestamp(), clientId }, { merge: false });
+          const rtt = performance.now() - p0;
+          const snap = await getDoc(ref);
+          const serverMs = snap.data()?.t?.toMillis?.();
+          if (serverMs) {
+            // NTP offset: serverTime - (localStartTime + rtt/2)
+            results.push({ rtt, offset: serverMs - (t0 + (rtt / 2)) });
+          }
+        }
+        if (results.length > 0) {
+          // Sort by lowest round-trip time (NTP best practice)
+          results.sort((a, b) => a.rtt - b.rtt);
+          const best = results[0];
+          serverTimeOffsetMs = Math.round(best.offset);
+          lastCalibrationMeta = { offset: serverTimeOffsetMs, rtt: Math.round(best.rtt), method: 'firestore', timestamp: Date.now() };
+          console.log(`[Listen Together] High-precision Firestore clock offset: ${serverTimeOffsetMs}ms (best RTT: ${Math.round(best.rtt)}ms)`);
+          return serverTimeOffsetMs;
+        }
+      } catch (err) {
+        console.warn('Firestore server time calibration error, falling back to HTTP Date header:', err);
+      }
+    }
+    return this._httpDateFallback();
+  },
+
+  async _httpDateFallback() {
     try {
       const samples = [];
       for (let i = 0; i < 3; i++) {
@@ -321,20 +365,36 @@ export const FirebaseService = {
         const t1 = performance.now();
         const serverDateHeader = res.headers.get('date');
         if (serverDateHeader) {
-          const rtt = t1 - t0;
+          const rtt = Math.max(1, t1 - t0);
           const serverEpoch = new Date(serverDateHeader).getTime() + (rtt / 2);
-          samples.push(serverEpoch - Date.now());
+          samples.push({ rtt, offset: serverEpoch - Date.now() });
         }
       }
       if (samples.length > 0) {
-        samples.sort((a, b) => a - b);
-        serverTimeOffsetMs = samples[Math.floor(samples.length / 2)];
-        console.log(`[Listen Together] High-precision clock offset: ${serverTimeOffsetMs}ms (samples: ${samples.join(', ')})`);
+        samples.sort((a, b) => a.rtt - b.rtt);
+        serverTimeOffsetMs = Math.round(samples[0].offset);
+        lastCalibrationMeta = { offset: serverTimeOffsetMs, rtt: Math.round(samples[0].rtt), method: 'http', timestamp: Date.now() };
+        console.log(`[Listen Together] HTTP Date clock offset: ${serverTimeOffsetMs}ms (RTT: ${Math.round(samples[0].rtt)}ms)`);
+      } else {
+        lastCalibrationMeta = { offset: 0, rtt: 0, method: 'local', timestamp: Date.now() };
       }
     } catch (e) {
-      console.warn('Server time calibration fallback:', e);
+      console.warn('Server time calibration fallback error:', e);
+      lastCalibrationMeta = { offset: 0, rtt: 0, method: 'local', timestamp: Date.now() };
     }
     return serverTimeOffsetMs;
+  },
+
+  getCalibrationMeta() {
+    return { ...lastCalibrationMeta };
+  },
+
+  getClockOffset() {
+    return serverTimeOffsetMs;
+  },
+
+  getBestRtt() {
+    return lastCalibrationMeta?.rtt || 0;
   },
 
   getServerNow() {
@@ -346,7 +406,7 @@ export const FirebaseService = {
   },
 
   // -------------------------------------------------------------
-  // Listen Together (Party Room & Synced Playback Engine)
+  // Listen Together (Party Room & Synced Playback Engine v2)
   // -------------------------------------------------------------
   generateRoomCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -357,16 +417,18 @@ export const FirebaseService = {
     return `ETHIO-${code}`;
   },
 
-  async createListenRoom(hostInfo, trackData, playbackState = 'paused', positionSec = 0) {
+  async createListenRoom(hostInfo, trackData, playbackState = 'paused', positionSec = 0, initialRate = 1.0) {
     if (!db) throw new Error('Firestore not initialized');
     const roomCode = this.generateRoomCode();
     const docRef = doc(db, 'listen_rooms', roomCode);
 
     const roomPayload = {
+      schemaVersion: 2,
       roomCode: roomCode,
       hostId: hostInfo.id,
       hostName: hostInfo.name || 'Party Host',
       hostAvatar: hostInfo.avatar || '',
+      isActive: true,
       currentTrack: trackData ? {
         id: trackData.id || ('track_' + Date.now()),
         title: trackData.title || 'Untitled',
@@ -377,23 +439,36 @@ export const FirebaseService = {
         audioUrl: trackData.audioUrl || '',
         lrc: trackData.lrc || ''
       } : null,
-      playbackState: playbackState, // 'playing' | 'paused'
-      positionSec: Number(positionSec) || 0,
-      clientTimestamp: this.getServerNow(),
+      playback: {
+        trackId: trackData ? trackData.id : null,
+        state: playbackState,
+        positionSec: Number(positionSec) || 0,
+        anchorServerMs: this.getServerNow(),
+        rate: Number(initialRate) || 1.0,
+        epoch: 1
+      },
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      participants: [{
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(docRef, roomPayload);
+
+    // Register host into participants subcollection
+    try {
+      const hostPRef = doc(db, 'listen_rooms', roomCode, 'participants', hostInfo.id);
+      await setDoc(hostPRef, {
         id: hostInfo.id,
         name: hostInfo.name || 'Party Host',
         avatar: hostInfo.avatar || '',
         isHost: true,
-        joinedAt: Date.now()
-      }],
-      reactions: [],
-      isActive: true
-    };
+        joinedAt: Date.now(),
+        lastSeen: serverTimestamp(),
+        driftMs: 0
+      });
+    } catch (e) {
+      console.warn('Register host participant subcollection error:', e);
+    }
 
-    await setDoc(docRef, roomPayload);
     return roomPayload;
   },
 
@@ -424,78 +499,153 @@ export const FirebaseService = {
     }
 
     const currentData = snap.data();
-    let participants = currentData.participants || [];
-    // Deduplicate existing participant
-    participants = participants.filter(p => p.id !== participant.id);
-    participants.push({
+    if (currentData.schemaVersion && currentData.schemaVersion < 2) {
+      throw new Error(`Room ${cleanCode} was created with an older version. Ask the host to refresh.`);
+    }
+
+    // Register into participants subcollection
+    const pRef = doc(db, 'listen_rooms', cleanCode, 'participants', participant.id);
+    await setDoc(pRef, {
       id: participant.id,
       name: participant.name || 'Friend',
       avatar: participant.avatar || '',
       isHost: false,
-      joinedAt: Date.now()
-    });
+      joinedAt: Date.now(),
+      lastSeen: serverTimestamp(),
+      driftMs: 0
+    }, { merge: true });
 
-    await updateDoc(docRef, {
-      participants: participants,
-      updatedAt: serverTimestamp()
-    });
+    return currentData;
+  },
 
-    return { ...currentData, participants };
+  async publishPlaybackAnchor(roomCode, anchorPayload, extraDocUpdates = {}) {
+    if (!db || !roomCode) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      await updateDoc(docRef, {
+        playback: {
+          trackId: anchorPayload.trackId || null,
+          state: anchorPayload.state || 'paused',
+          positionSec: Number(anchorPayload.positionSec) || 0,
+          anchorServerMs: Number(anchorPayload.anchorServerMs) || this.getServerNow(),
+          rate: Number(anchorPayload.rate) || 1.0,
+          epoch: Number(anchorPayload.epoch) || 1
+        },
+        ...extraDocUpdates,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn('publishPlaybackAnchor error:', e);
+    }
+  },
+
+  async heartbeatPresence(roomCode, participantId, driftMs = 0) {
+    if (!db || !roomCode || !participantId) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const pRef = doc(db, 'listen_rooms', cleanCode, 'participants', participantId);
+      await setDoc(pRef, {
+        lastSeen: serverTimestamp(),
+        driftMs: Math.round(Number(driftMs) || 0)
+      }, { merge: true });
+    } catch (e) {
+      console.warn('heartbeatPresence error:', e);
+    }
+  },
+
+  subscribeParticipants(roomCode, callback) {
+    if (!db || !roomCode) return () => {};
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const colRef = collection(db, 'listen_rooms', cleanCode, 'participants');
+      return onSnapshot(colRef, (snap) => {
+        const list = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+        callback(list);
+      }, (err) => {
+        console.warn('subscribeParticipants error:', err);
+      });
+    } catch (e) {
+      console.warn('subscribeParticipants setup error:', e);
+      return () => {};
+    }
+  },
+
+  async claimHost(roomCode, newHostParticipant, expectedOldHostId = null) {
+    if (!db || !roomCode || !newHostParticipant) return false;
+    const cleanCode = roomCode.trim().toUpperCase();
+    const roomRef = doc(db, 'listen_rooms', cleanCode);
+    try {
+      return await runTransaction(db, async (txn) => {
+        const roomSnap = await txn.get(roomRef);
+        if (!roomSnap.exists()) return false;
+        const data = roomSnap.data();
+        if (data.isActive === false) return false;
+        if (expectedOldHostId && data.hostId !== expectedOldHostId && data.hostId !== newHostParticipant.id) {
+          return false;
+        }
+        const curPb = data.playback || {};
+        const newEpoch = (curPb.epoch || 1) + 1;
+        txn.update(roomRef, {
+          hostId: newHostParticipant.id,
+          hostName: newHostParticipant.name || 'Party Host',
+          hostAvatar: newHostParticipant.avatar || '',
+          'playback.epoch': newEpoch,
+          updatedAt: serverTimestamp()
+        });
+        const newHPRef = doc(db, 'listen_rooms', cleanCode, 'participants', newHostParticipant.id);
+        txn.set(newHPRef, { isHost: true, lastSeen: serverTimestamp() }, { merge: true });
+        return true;
+      });
+    } catch (err) {
+      console.warn('claimHost transaction error:', err);
+      return false;
+    }
+  },
+
+  async endListenRoom(roomCode) {
+    if (!db || !roomCode) return;
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const docRef = doc(db, 'listen_rooms', cleanCode);
+      await updateDoc(docRef, {
+        isActive: false,
+        updatedAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.warn('endListenRoom error:', e);
+    }
   },
 
   async leaveListenRoom(roomCode, participantId) {
     if (!db || !roomCode || !participantId) return;
     try {
       const cleanCode = roomCode.trim().toUpperCase();
-      const docRef = doc(db, 'listen_rooms', cleanCode);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) return;
+      const pRef = doc(db, 'listen_rooms', cleanCode, 'participants', participantId);
+      await deleteDoc(pRef).catch(() => {});
 
-      const data = snap.data();
-      let participants = data.participants || [];
-      const leavingParticipant = participants.find(p => p.id === participantId);
+      const roomRef = doc(db, 'listen_rooms', cleanCode);
+      const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) return;
+      const room = roomSnap.data();
 
-      participants = participants.filter(p => p.id !== participantId);
-
-      // If host left and no one left, mark room inactive
-      if (participants.length === 0 || (leavingParticipant && leavingParticipant.isHost && participants.length === 0)) {
-        await updateDoc(docRef, {
-          isActive: false,
-          participants: [],
-          updatedAt: serverTimestamp()
-        });
-      } else if (leavingParticipant && leavingParticipant.isHost && participants.length > 0) {
-        // Pass host to next participant
-        participants[0].isHost = true;
-        await updateDoc(docRef, {
-          hostId: participants[0].id,
-          hostName: participants[0].name,
-          participants: participants,
-          updatedAt: serverTimestamp()
-        });
-      } else {
-        await updateDoc(docRef, {
-          participants: participants,
-          updatedAt: serverTimestamp()
-        });
+      if (room.hostId === participantId) {
+        // Host leaving: pick next oldest participant
+        const pCol = collection(db, 'listen_rooms', cleanCode, 'participants');
+        const pSnap = await getDocs(pCol);
+        const remaining = [];
+        pSnap.forEach((d) => remaining.push({ id: d.id, ...d.data() }));
+        if (remaining.length === 0) {
+          await updateDoc(roomRef, { isActive: false, updatedAt: serverTimestamp() });
+        } else {
+          remaining.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+          const next = remaining[0];
+          await this.claimHost(cleanCode, next, participantId);
+        }
       }
     } catch (e) {
       console.warn('leaveListenRoom error:', e);
-    }
-  },
-
-  async updateRoomPlayback(roomCode, updateData) {
-    if (!db || !roomCode) return;
-    try {
-      const cleanCode = roomCode.trim().toUpperCase();
-      const docRef = doc(db, 'listen_rooms', cleanCode);
-      await updateDoc(docRef, {
-        ...updateData,
-        clientTimestamp: this.getServerNow(),
-        updatedAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.warn('updateRoomPlayback error:', e);
     }
   },
 
@@ -503,20 +653,39 @@ export const FirebaseService = {
     if (!db || !roomCode) return;
     try {
       const cleanCode = roomCode.trim().toUpperCase();
-      const docRef = doc(db, 'listen_rooms', cleanCode);
-      const reactionPayload = {
-        id: 'rx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        type: reaction.type, // 'fire' | 'heart' | 'music' | 'sparkle'
+      const colRef = collection(db, 'listen_rooms', cleanCode, 'reactions');
+      const now = Date.now();
+      await addDoc(colRef, {
+        type: reaction.type,
         from: reaction.from || 'Friend',
-        timestamp: Date.now()
-      };
-
-      await updateDoc(docRef, {
-        reactions: arrayUnion(reactionPayload),
-        updatedAt: serverTimestamp()
+        fromId: reaction.fromId || '',
+        ts: now,
+        expireAt: now + 3600000 // 1 hr TTL for optional Firestore TTL policy
       });
     } catch (e) {
       console.warn('sendRoomReaction error:', e);
+    }
+  },
+
+  subscribeReactions(roomCode, joinTimestamp, callback) {
+    if (!db || !roomCode) return () => {};
+    try {
+      const cleanCode = roomCode.trim().toUpperCase();
+      const colRef = collection(db, 'listen_rooms', cleanCode, 'reactions');
+      const startTs = Number(joinTimestamp) || Date.now() - 3000;
+      const q = query(colRef, where('ts', '>=', startTs), orderBy('ts', 'asc'), limit(50));
+      return onSnapshot(q, (snap) => {
+        snap.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            callback({ id: change.doc.id, ...change.doc.data() });
+          }
+        });
+      }, (err) => {
+        console.warn('subscribeReactions error:', err);
+      });
+    } catch (e) {
+      console.warn('subscribeReactions setup error:', e);
+      return () => {};
     }
   },
 
