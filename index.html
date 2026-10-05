@@ -178,11 +178,39 @@
       </div>
 
       <!-- ====================================================================
-           TAB 1: HOME (Music Discovery & Suggestion Engine)
+           TAB 1: HOME (Redesigned Music Discovery & Recommendation Hub)
            ==================================================================== -->
       <section id="tabViewHome" class="tab-view active">
-        <!-- 1. Search Bar (Top) -->
-        <div class="home-search-section">
+        <!-- 1. Header with Time-of-Day Greeting & Listening DNA Stats -->
+        <div class="home-greeting-banner">
+          <div class="greeting-left">
+            <div class="greeting-period-badge" id="greetingMoodBadge">
+              <span class="live-dot-pulse"></span>
+              <span id="greetingMoodText">Nightfall Tizita 🌆</span>
+            </div>
+            <h1 class="greeting-heading" id="greetingHeadingText">Good evening <span class="greeting-amharic-sub" id="greetingHeadingAmharic">እንደምን አመሹ</span></h1>
+            <p class="greeting-subtext" id="greetingSubtext">Curated Ethiopian melodies, synchronized lyrics, and personalized discovery</p>
+          </div>
+          <div class="greeting-dna-stats" id="greetingDnaStats">
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatTotal">0</span>
+              <span class="dna-stat-lbl">Songs</span>
+            </div>
+            <div class="dna-stat-divider"></div>
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatLrc">0</span>
+              <span class="dna-stat-lbl">Synced LRC</span>
+            </div>
+            <div class="dna-stat-divider"></div>
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatFavs">0</span>
+              <span class="dna-stat-lbl">Favorites</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Search & Filter Bar -->
+        <div class="home-search-filter-container">
           <div class="home-search-input-wrap">
             <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -190,50 +218,62 @@
               <path d="m21 21-4.3-4.3" />
             </svg>
             <input type="text" id="inputHomeSearch" class="home-search-input"
-              placeholder="Search by song, artist, or album...">
+              placeholder="Search by song, artist, album, or lyrics...">
+            <button id="btnClearHomeSearch" class="btn-clear-search" style="display:none;" title="Clear search">&times;</button>
           </div>
-        </div>
-
-        <!-- 2. Filter Chips -->
-        <div class="home-filter-section">
+          <!-- Vibe & Filter Pills -->
           <div class="home-filter-scroll" id="homeFilterRow">
-            <button class="filter-chip active" data-filter="all">All Music</button>
+            <button class="filter-chip active" data-filter="all">
+              <span>All Music</span>
+            </button>
+            <button class="filter-chip" data-filter="suggested">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              <span>Made For You</span>
+            </button>
+            <button class="filter-chip" data-filter="lrc">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <span>Synced Lyrics</span>
+            </button>
+            <button class="filter-chip" data-filter="classic">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>Tizita Classics</span>
+            </button>
+            <button class="filter-chip" data-filter="pop">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              <span>Modern Pop</span>
+            </button>
             <button class="filter-chip" data-filter="favorites">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"
-                style="vertical-align:-1px; margin-right:4px;">
-                <path
-                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <span>Favorites</span>
             </button>
             <button class="filter-chip" data-filter="recent">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                style="vertical-align:-1px; margin-right:4px;">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               <span>Recently Played</span>
             </button>
-            <button class="filter-chip" data-filter="suggested">Recommended</button>
-            <button class="filter-chip" data-filter="classic">Ethio Classic</button>
-            <button class="filter-chip" data-filter="pop">Modern Pop</button>
-            <button class="filter-chip" data-filter="lrc">Synced Lyrics</button>
-            <button class="filter-chip" data-filter="offline">Downloaded</button>
+            <button class="filter-chip" data-filter="offline">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Offline Ready</span>
+            </button>
           </div>
         </div>
 
-        <!-- 3. Section: Recommended For You -->
-        <div class="home-catalog-section" id="sectionRecommendations">
+        <!-- 3. Section: Jump Back In (Spotify-style Compact Launch Pad) -->
+        <div class="home-catalog-section" id="sectionJumpBackIn" style="display:none;">
           <div class="home-section-header">
-            <div>
-              <h2 class="home-section-title">Recommended For You</h2>
-              <div class="home-section-subtitle">Curated picks based on synchronized lyrics and listening vibes</div>
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(229,185,90,0.15); color:var(--color-gold);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Jump Back In <span class="home-section-amharic">እንደገና ያድምጡ</span></h2>
+                <div class="home-section-subtitle">Quick resume your recent tracks and personal favorites</div>
+              </div>
             </div>
           </div>
-          <div class="home-music-grid" id="gridSuggestions"></div>
+          <div class="jump-back-in-grid" id="gridJumpBackIn"></div>
         </div>
 
-        <!-- 4. Featured Spotlight Section (Moved Down & Compact) -->
+        <!-- 4. Featured Spotlight Section ("Track of the Moment") -->
         <div class="home-hero-section">
           <div class="hero-card" id="heroCard">
             <div class="hero-glow-bg" id="heroGlowBg"></div>
@@ -251,12 +291,13 @@
                 <div class="hero-badge-tag">
                   <span class="spotlight-dot"></span>
                   <span id="heroBadgeText">Featured Spotlight</span>
+                  <span id="heroDurationBadge" class="hero-meta-badge" style="display:none;">0:00</span>
+                  <span id="heroLrcBadge" class="hero-meta-badge hero-lrc-pill">Synced Lyrics</span>
                 </div>
                 <h2 id="heroTitle" class="hero-title">Select a Song to Begin</h2>
                 <div id="heroArtist" class="hero-artist">ELM — Ethio Lyrics Media</div>
                 <p id="heroDescription" class="hero-description">
-                  Stream Ethiopian music with synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and
-                  offline listening.
+                  Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and offline listening.
                 </p>
                 <div class="hero-actions">
                   <button id="btnHeroPlay" class="btn-primary hero-btn-play">
@@ -302,12 +343,109 @@
           </div>
         </div>
 
-        <!-- 5. Section: Global Cloud Catalog -->
+        <!-- 5. Shelf 1: Recommended For You ("Made For You / Smart Mix") -->
+        <div class="home-catalog-section" id="sectionRecommendations">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(96,165,250,0.15); color:#60a5fa;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Made For You <span class="home-section-amharic">የተመረጡ ዜማዎች</span></h2>
+                <div class="home-section-subtitle">Ranked by your listening habits, artist affinity, and synced lyrics richness</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <button id="btnShuffleRecommended" class="btn-pill btn-xs btn-shelf-action" title="Shuffle Recommended Mix">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                <span>Shuffle Mix</span>
+              </button>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridSuggestions"></div>
+        </div>
+
+        <!-- 6. Shelf 2: "Because You Listened To..." Context Shelf -->
+        <div class="home-catalog-section" id="sectionBecauseYouListened" style="display:none;">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(236,72,153,0.15); color:#ec4899;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title" id="becauseTitleText">Because You Listened To...</h2>
+                <div class="home-section-subtitle" id="becauseSubtitleText">More tracks sharing this mood and vocal texture</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <button id="btnPlayBecauseShelf" class="btn-pill btn-xs btn-shelf-action" title="Play All from this shelf">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Play All</span>
+              </button>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridBecauseYouListened"></div>
+        </div>
+
+        <!-- 7. Shelf 3: Synced Lyrics Showcase (Verified line-by-line Amharic LRC) -->
+        <div class="home-catalog-section" id="sectionLyricsShowcase">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(16,185,129,0.15); color:#10b981;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Lyrics Stage Showcase <span class="home-section-amharic">ከግጥም ጋር የቀረቡ</span></h2>
+                <div class="home-section-subtitle">Certified line-by-line synchronized Amharic lyrics for sing-along</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <button id="btnPlayLyricsShowcase" class="btn-pill btn-xs btn-shelf-action" title="Play Synced Lyrics Showcase">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Play All</span>
+              </button>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridLyricsShowcase"></div>
+        </div>
+
+        <!-- 8. Shelf 4: Iconic Ethiopian Artists Discovery Circle -->
+        <div class="home-catalog-section" id="sectionIconicArtists">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(168,85,247,0.15); color:#a855f7;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Iconic Artists <span class="home-section-amharic">ታዋቂ ድምጻውያን</span></h2>
+                <div class="home-section-subtitle">Explore catalog tracks grouped by legendary Ethiopian singers</div>
+              </div>
+            </div>
+          </div>
+          <div class="artists-circle-scroll" id="rowIconicArtists"></div>
+        </div>
+
+        <!-- 9. Shelf 5: Global Cloud Catalog -->
         <div class="home-catalog-section" id="sectionGlobalCatalog">
           <div class="home-section-header">
-            <div>
-              <h2 class="home-section-title">Global Catalog</h2>
-              <div class="home-section-subtitle">Streamed globally via Cloudflare R2 object storage</div>
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(244,162,97,0.15); color:#f4a261;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Global Cloud Catalog <span class="home-section-amharic">የደመና ካታሎግ</span></h2>
+                <div class="home-section-subtitle" id="catalogCounterSubtitle">Streaming live via Cloudflare R2 object storage</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <div class="catalog-sort-wrap">
+                <select id="selectCatalogSort" class="catalog-sort-select" title="Sort Catalog">
+                  <option value="newest">Latest Added</option>
+                  <option value="title">Song Title (A-Z)</option>
+                  <option value="artist">Artist Name (A-Z)</option>
+                  <option value="lrc">Synced Lyrics First</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="home-music-grid" id="gridGlobalCatalog"></div>

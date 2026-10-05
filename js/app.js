@@ -7,6 +7,7 @@ import { PaletteExtractor } from './palette.js';
 import { AmbientParticles } from './particles.js';
 import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
+import { RecommendationEngine } from './recommendation-engine.js';
 
 class LyricsApp {
   constructor() {
@@ -270,12 +271,42 @@ class LyricsApp {
     this.btnHeroDetails = document.getElementById('btnHeroDetails');
     this.btnHeroFavorite = document.getElementById('btnHeroFavorite');
 
-    // Home Discovery Grids & Filters
+    // Home Discovery Grids, Shelves & Filters
+    this.greetingMoodBadge = document.getElementById('greetingMoodBadge');
+    this.greetingMoodText = document.getElementById('greetingMoodText');
+    this.greetingHeadingText = document.getElementById('greetingHeadingText');
+    this.greetingHeadingAmharic = document.getElementById('greetingHeadingAmharic');
+    this.greetingSubtext = document.getElementById('greetingSubtext');
+    this.dnaStatTotal = document.getElementById('dnaStatTotal');
+    this.dnaStatLrc = document.getElementById('dnaStatLrc');
+    this.dnaStatFavs = document.getElementById('dnaStatFavs');
+    this.heroDurationBadge = document.getElementById('heroDurationBadge');
+    this.heroLrcBadge = document.getElementById('heroLrcBadge');
+
     this.homeFilterRow = document.getElementById('homeFilterRow');
     this.inputHomeSearch = document.getElementById('inputHomeSearch');
+    this.btnClearHomeSearch = document.getElementById('btnClearHomeSearch');
+    this.sectionJumpBackIn = document.getElementById('sectionJumpBackIn');
+    this.gridJumpBackIn = document.getElementById('gridJumpBackIn');
+    this.sectionRecommendations = document.getElementById('sectionRecommendations');
     this.gridSuggestions = document.getElementById('gridSuggestions');
+    this.btnShuffleRecommended = document.getElementById('btnShuffleRecommended');
+    this.sectionBecauseYouListened = document.getElementById('sectionBecauseYouListened');
+    this.becauseTitleText = document.getElementById('becauseTitleText');
+    this.becauseSubtitleText = document.getElementById('becauseSubtitleText');
+    this.gridBecauseYouListened = document.getElementById('gridBecauseYouListened');
+    this.btnPlayBecauseShelf = document.getElementById('btnPlayBecauseShelf');
+    this.sectionLyricsShowcase = document.getElementById('sectionLyricsShowcase');
+    this.gridLyricsShowcase = document.getElementById('gridLyricsShowcase');
+    this.btnPlayLyricsShowcase = document.getElementById('btnPlayLyricsShowcase');
+    this.sectionIconicArtists = document.getElementById('sectionIconicArtists');
+    this.rowIconicArtists = document.getElementById('rowIconicArtists');
+    this.sectionGlobalCatalog = document.getElementById('sectionGlobalCatalog');
     this.gridGlobalCatalog = document.getElementById('gridGlobalCatalog');
     this.gridPersonalCatalog = document.getElementById('gridPersonalCatalog');
+    this.selectCatalogSort = document.getElementById('selectCatalogSort');
+    this.catalogCounterSubtitle = document.getElementById('catalogCounterSubtitle');
+    this.catalogSortOption = 'newest';
 
     // Lyrics Stage & Header Elements
     this.artistAmharic = document.getElementById('artistAmharic');
@@ -822,10 +853,14 @@ class LyricsApp {
 
     // Hero Spotlight Controls
     const handleHeroPlay = async () => {
-      if (!this.currentTrack && this.publicTracks.length > 0) {
-        await this.loadTrack(this.publicTracks[0], true);
-      } else if (this.currentTrack) {
+      const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+      if (!spotlightTrack) return;
+      if (this.currentTrack && this.currentTrack.id === spotlightTrack.id) {
         this.player.togglePlay();
+      } else {
+        const pool = [...this.publicTracks, ...this.tracks];
+        this.setQueue(pool, pool.findIndex(t => t.id === spotlightTrack.id));
+        await this.loadTrack(spotlightTrack, true);
       }
       this.updateHeroState();
     };
@@ -833,22 +868,114 @@ class LyricsApp {
     if (this.btnHeroPlay) this.btnHeroPlay.addEventListener('click', handleHeroPlay);
     if (this.btnHeroPlayBadge) this.btnHeroPlayBadge.addEventListener('click', handleHeroPlay);
 
+    if (this.btnHeroOpenLyrics) {
+      this.btnHeroOpenLyrics.addEventListener('click', () => {
+        this.switchTab('lyrics');
+      });
+    }
+
+    const btnHeroDetails = document.getElementById('btnHeroDetails');
+    if (btnHeroDetails) {
+      btnHeroDetails.addEventListener('click', () => {
+        const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+        if (spotlightTrack) this.openSongDetails(spotlightTrack);
+      });
+    }
+
+    const btnHeroQueue = document.getElementById('btnHeroQueue');
+    if (btnHeroQueue) {
+      btnHeroQueue.addEventListener('click', () => {
+        const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+        if (spotlightTrack) this.addToQueue(spotlightTrack, false);
+      });
+    }
+
     // Filter Chips
     if (this.homeFilterRow) {
       this.homeFilterRow.addEventListener('click', (e) => {
-        const chip = e.target.closest('.filter-chip');
+        const chip = e.target.closest('.home-filter-chip') || e.target.closest('.filter-chip');
         if (!chip) return;
-        this.homeFilterRow.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        this.homeFilterRow.querySelectorAll('.home-filter-chip, .filter-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         this.activeFilter = chip.getAttribute('data-filter') || 'all';
         this.renderHomePage();
       });
     }
 
-    // Search Input
+    // Search Input with Clear Button
     if (this.inputHomeSearch) {
       this.inputHomeSearch.addEventListener('input', (e) => {
         this.searchQuery = e.target.value.trim().toLowerCase();
+        if (this.btnClearHomeSearch) {
+          this.btnClearHomeSearch.style.display = this.searchQuery ? 'inline-flex' : 'none';
+        }
+        this.renderHomePage();
+      });
+    }
+
+    if (this.btnClearHomeSearch) {
+      this.btnClearHomeSearch.addEventListener('click', () => {
+        if (this.inputHomeSearch) this.inputHomeSearch.value = '';
+        this.searchQuery = '';
+        this.btnClearHomeSearch.style.display = 'none';
+        this.renderHomePage();
+      });
+    }
+
+    // Shelf Actions: Shuffle Recommended Mix
+    if (this.btnShuffleRecommended) {
+      this.btnShuffleRecommended.addEventListener('click', async () => {
+        const allTracks = [...this.publicTracks, ...this.tracks];
+        const mix = RecommendationEngine.getPersonalizedRecommendations(allTracks, {
+          favorites: this.favorites,
+          recentlyPlayed: this.recentlyPlayed,
+          currentTrack: this.currentTrack,
+          activeVibe: this.activeFilter,
+          limit: 12
+        });
+        if (mix.length > 0) {
+          const shuffled = [...mix].sort(() => Math.random() - 0.5);
+          this.setQueue(shuffled, 0);
+          await this.loadTrack(shuffled[0], true);
+          this.showToast('Shuffling Recommended Mix ✨');
+        }
+      });
+    }
+
+    // Shelf Actions: Play Because You Listened Shelf
+    if (this.btnPlayBecauseShelf) {
+      this.btnPlayBecauseShelf.addEventListener('click', async () => {
+        const allTracks = [...this.publicTracks, ...this.tracks];
+        const shelf = RecommendationEngine.getBecauseYouListenedShelf(allTracks, {
+          recentlyPlayed: this.recentlyPlayed,
+          favorites: this.favorites,
+          currentTrack: this.currentTrack
+        });
+        if (shelf && shelf.tracks.length > 0) {
+          this.setQueue(shelf.tracks, 0);
+          await this.loadTrack(shelf.tracks[0], true);
+          this.showToast(`Playing tracks inspired by ${shelf.seedArtist} 🎵`);
+        }
+      });
+    }
+
+    // Shelf Actions: Play Lyrics Stage Showcase Shelf
+    if (this.btnPlayLyricsShowcase) {
+      this.btnPlayLyricsShowcase.addEventListener('click', async () => {
+        const allTracks = [...this.publicTracks, ...this.tracks];
+        const showcase = RecommendationEngine.getLyricsStageShowcase(allTracks, 10);
+        if (showcase.length > 0) {
+          this.setQueue(showcase, 0);
+          await this.loadTrack(showcase[0], true);
+          this.showToast('Playing Synced Lyrics Showcase 📜');
+        }
+      });
+    }
+
+    // Catalog Sort Select
+    if (this.selectCatalogSort) {
+      this.selectCatalogSort.addEventListener('change', (e) => {
+        this.catalogSortOption = e.target.value;
         this.renderHomePage();
       });
     }
@@ -1758,6 +1885,7 @@ class LyricsApp {
         await this.handleAdminDirectPublish();
       });
     }
+
   }
 
   // --------------------------------------------------------------------------
@@ -1766,91 +1894,252 @@ class LyricsApp {
   updateHeroState() {
     if (!this.heroCard) return;
     const isPlaying = this.player.isPlaying;
+    const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
     if (this.heroPlayLabel) {
       this.heroPlayLabel.textContent = isPlaying ? 'Pause Track' : 'Play Track';
     }
     if (this.btnHeroPlayBadge) {
       this.btnHeroPlayBadge.innerHTML = isPlaying 
-        ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' 
-        : '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+        ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' 
+        : '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
     }
-  }
-
-  renderHomePage() {
-    if (!this.homeExploreView) return;
-
-    // 1. Featured Spotlight
-    const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
     if (spotlightTrack) {
       if (this.heroArtworkImg) {
         this.heroArtworkImg.src = spotlightTrack.cover || 'assets/weleta_cover.jpg';
       }
       if (this.heroTitle) this.heroTitle.textContent = spotlightTrack.title;
       if (this.heroArtist) this.heroArtist.textContent = spotlightTrack.artist;
-      this.updateHeroState();
+      if (this.heroLrcBadge) {
+        this.heroLrcBadge.textContent = spotlightTrack.lrc ? 'Synced LRC' : 'Audio';
+      }
+      if (this.heroDurationBadge) {
+        const dur = this.getTrackDuration(spotlightTrack);
+        this.heroDurationBadge.textContent = dur > 0 ? LyricsParser.formatTime(dur) : '3:45';
+      }
+    }
+  }
+
+  renderHomePage() {
+    if (!this.homeExploreView) return;
+
+    // 1. Live Greeting & Listening DNA Stats
+    const greetingData = RecommendationEngine.getGreetingData();
+    if (this.greetingMoodBadge) this.greetingMoodBadge.textContent = greetingData.badge;
+    if (this.greetingMoodText) this.greetingMoodText.textContent = greetingData.amharicPeriod;
+    if (this.greetingHeadingText) {
+      const userFirstName = this.currentUser && this.currentUser.displayName ? this.currentUser.displayName.split(' ')[0] : 'Music Lover';
+      this.greetingHeadingText.textContent = `${greetingData.greeting}, ${userFirstName}`;
+    }
+    if (this.greetingHeadingAmharic) this.greetingHeadingAmharic.textContent = greetingData.amharicGreeting;
+    if (this.greetingSubtext) this.greetingSubtext.textContent = greetingData.subtitle;
+
+    const allTracks = [...this.publicTracks, ...this.tracks];
+    // Deduplicate by ID
+    const uniquePool = [];
+    const seenIds = new Set();
+    for (const t of allTracks) {
+      if (t && t.id && !seenIds.has(t.id)) {
+        seenIds.add(t.id);
+        uniquePool.push(t);
+      }
     }
 
-    // 2. Filter & Match Tracks
-    const allTracks = [...this.publicTracks, ...this.tracks];
-    let filtered = allTracks;
+    const dnaStats = RecommendationEngine.getListeningStats(uniquePool, {
+      favoriteIds: this.favorites || [],
+      recentIds: this.recentlyPlayed || []
+    });
+    if (this.dnaStatTotal) this.dnaStatTotal.textContent = dnaStats.totalTracks;
+    if (this.dnaStatLrc) this.dnaStatLrc.textContent = dnaStats.syncedLyricsCount;
+    if (this.dnaStatFavs) this.dnaStatFavs.textContent = dnaStats.favoriteCount;
 
+    // 2. Update Featured Spotlight
+    this.updateHeroState();
+
+    // 3. Jump Back In Shelf
+    const jumpTracks = RecommendationEngine.getJumpBackIn(uniquePool, this.recentlyPlayed || []);
+    this.renderJumpBackInGrid(jumpTracks);
+
+    // 4. Iconic Artists Discovery Row
+    const iconicArtists = RecommendationEngine.getIconicArtists(uniquePool);
+    this.renderIconicArtistsRow(iconicArtists);
+
+    // 5. Smart Recommendations Shelf ("Made For You")
+    const recs = RecommendationEngine.getPersonalizedRecommendations(uniquePool, {
+      currentTrack: this.currentTrack,
+      recentIds: this.recentlyPlayed || [],
+      favoriteIds: this.favorites || [],
+      limit: 8
+    });
+    this.renderMusicGrid(this.gridSuggestions, recs, 'No personalized recommendations available yet. Play a song or like your favorites to tune your recommendations!');
+
+    // 6. Context-Aware "Because You Listened To" Shelf
+    const becauseShelf = RecommendationEngine.getBecauseYouListenedShelf(uniquePool, {
+      recentIds: this.recentlyPlayed || [],
+      currentTrack: this.currentTrack
+    });
+    if (this.sectionBecauseYouListened) {
+      if (becauseShelf.tracks && becauseShelf.tracks.length > 0 && becauseShelf.sourceArtist) {
+        this.sectionBecauseYouListened.style.display = 'block';
+        if (this.becauseTitleText) this.becauseTitleText.textContent = `Because You Listened To ${becauseShelf.sourceArtist}`;
+        if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = `Handpicked gems inspired by ${becauseShelf.sourceArtist}`;
+        this.renderMusicGrid(this.gridBecauseYouListened, becauseShelf.tracks, 'No similar tracks found.');
+      } else {
+        this.sectionBecauseYouListened.style.display = 'none';
+      }
+    }
+
+    // 7. Verified Synced Lyrics Showcase Shelf
+    const showcaseTracks = RecommendationEngine.getLyricsStageShowcase(uniquePool, 8);
+    this.renderMusicGrid(this.gridLyricsShowcase, showcaseTracks, 'No synced lyrics tracks available.');
+
+    // 8. Global Cloud Catalog Shelf (with search, category filter, and sorting)
+    let catalogTracks = [...this.publicTracks];
+
+    // Filter by Search Query
     if (this.searchQuery) {
       const q = this.searchQuery;
-      filtered = filtered.filter(t =>
+      catalogTracks = catalogTracks.filter(t =>
         (t.title && t.title.toLowerCase().includes(q)) ||
         (t.artist && t.artist.toLowerCase().includes(q)) ||
         (t.album && t.album.toLowerCase().includes(q))
       );
     }
 
+    // Filter by Active Filter Chip
     if (this.activeFilter === 'favorites') {
       const favIds = this.favorites || [];
-      filtered = allTracks.filter(t => favIds.includes(t.id));
+      catalogTracks = catalogTracks.filter(t => favIds.includes(t.id));
     } else if (this.activeFilter === 'recent') {
       const recentIds = this.recentlyPlayed || [];
       const ordered = [];
       recentIds.forEach(id => {
-        const match = allTracks.find(t => t.id === id);
+        const match = catalogTracks.find(t => t.id === id);
         if (match && !ordered.includes(match)) ordered.push(match);
       });
-      filtered = ordered;
+      catalogTracks = ordered;
     } else if (this.activeFilter === 'suggested') {
-      // Suggestion Engine: Prioritizes tracks with synced lyrics, distinct artists, or recent additions
-      filtered = filtered.filter(t => t.lrc && t.lrc.length > 10);
+      catalogTracks = catalogTracks.filter(t => t.lrc && t.lrc.length > 20);
     } else if (this.activeFilter === 'classic') {
-      filtered = filtered.filter(t => (t.album && t.album.toLowerCase().includes('classic')) || (parseInt(t.year) < 2010));
+      catalogTracks = catalogTracks.filter(t => (t.album && t.album.toLowerCase().includes('classic')) || (parseInt(t.year) < 2010));
     } else if (this.activeFilter === 'pop') {
-      filtered = filtered.filter(t => !t.year || parseInt(t.year) >= 2010);
+      catalogTracks = catalogTracks.filter(t => !t.year || parseInt(t.year) >= 2010);
     } else if (this.activeFilter === 'lrc') {
-      filtered = filtered.filter(t => t.lrc && t.lrc.length > 5);
+      catalogTracks = catalogTracks.filter(t => t.lrc && t.lrc.length > 10);
     } else if (this.activeFilter === 'offline') {
-      filtered = this.tracks;
+      catalogTracks = this.tracks;
     }
 
-    // 3. Populate Grids
-    this.renderMusicGrid(this.gridSuggestions, this.getSmartSuggestions(filtered), 'No suggestions matching your filter.');
-    this.renderMusicGrid(this.gridGlobalCatalog, this.publicTracks.filter(t => filtered.includes(t)), 'No cloud tracks available. Use Admin Studio to publish tracks to R2!');
-    this.renderMusicGrid(this.gridPersonalCatalog, this.tracks.filter(t => filtered.includes(t)), 'No offline tracks saved. Download songs from the catalog or upload your own!');
+    // Sorting
+    const sortMode = this.catalogSortOption || 'newest';
+    if (sortMode === 'title') {
+      catalogTracks.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    } else if (sortMode === 'artist') {
+      catalogTracks.sort((a, b) => (a.artist || '').localeCompare(b.artist || ''));
+    } else if (sortMode === 'year') {
+      catalogTracks.sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0));
+    } else if (sortMode === 'lrc') {
+      catalogTracks.sort((a, b) => ((b.lrc ? b.lrc.length : 0) - (a.lrc ? a.lrc.length : 0)));
+    }
+
+    if (this.catalogCounterSubtitle) {
+      this.catalogCounterSubtitle.textContent = `${catalogTracks.length} Ethiopian tracks ready to stream & download`;
+    }
+
+    this.renderMusicGrid(this.gridGlobalCatalog, catalogTracks, 'No cloud tracks found matching your criteria. Use Admin Studio to publish tracks!');
+
+    // Personal Offline Catalog
+    this.renderMusicGrid(this.gridPersonalCatalog, this.tracks, 'No offline tracks saved yet. Download songs from the catalog or upload your own in the library!');
+  }
+
+  renderJumpBackInGrid(jumpTracks) {
+    if (!this.sectionJumpBackIn || !this.gridJumpBackIn) return;
+    if (!jumpTracks || jumpTracks.length === 0) {
+      this.sectionJumpBackIn.style.display = 'none';
+      return;
+    }
+    this.sectionJumpBackIn.style.display = 'block';
+    this.gridJumpBackIn.innerHTML = '';
+
+    jumpTracks.forEach(track => {
+      const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
+      const isPlaying = isCurrent && this.player.isPlaying;
+      const card = document.createElement('div');
+      card.className = `jump-card ${isCurrent ? 'playing' : ''}`;
+      card.innerHTML = `
+        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="jump-card-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <div class="jump-card-info">
+          <div class="jump-card-title" title="${track.title}">${track.title}</div>
+          <div class="jump-card-artist" title="${track.artist}">${track.artist}</div>
+        </div>
+        <button class="jump-card-play-btn" title="${isPlaying ? 'Pause' : 'Play'}" type="button">
+          ${isPlaying 
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}
+        </button>
+      `;
+
+      card.addEventListener('click', async (e) => {
+        if (e.target.closest('.jump-card-play-btn')) {
+          e.stopPropagation();
+        }
+        if (isCurrent) {
+          this.player.togglePlay();
+        } else {
+          const pool = [...this.publicTracks, ...this.tracks];
+          this.setQueue(pool, pool.findIndex(t => t.id === track.id));
+          await this.loadTrack(track, true);
+        }
+        this.renderHomePage();
+      });
+
+      this.gridJumpBackIn.appendChild(card);
+    });
+  }
+
+  renderIconicArtistsRow(artists) {
+    if (!this.sectionIconicArtists || !this.rowIconicArtists) return;
+    if (!artists || artists.length === 0) {
+      this.sectionIconicArtists.style.display = 'none';
+      return;
+    }
+    this.sectionIconicArtists.style.display = 'block';
+    this.rowIconicArtists.innerHTML = '';
+
+    artists.forEach(artist => {
+      const card = document.createElement('div');
+      card.className = 'artist-circle-card';
+      card.innerHTML = `
+        <div class="artist-circle-avatar">
+          <img src="${artist.cover || 'assets/weleta_cover.jpg'}" alt="${artist.name}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        </div>
+        <div class="artist-circle-name" title="${artist.name}">${artist.name}</div>
+        <div class="artist-circle-tracks">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
+      `;
+
+      card.addEventListener('click', () => {
+        // Quick filter catalog by clicking artist avatar
+        if (this.inputHomeSearch) {
+          this.inputHomeSearch.value = artist.name;
+          this.searchQuery = artist.name.toLowerCase();
+          if (this.btnClearHomeSearch) this.btnClearHomeSearch.style.display = 'block';
+          this.renderHomePage();
+          if (this.sectionGlobalCatalog) {
+            this.sectionGlobalCatalog.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+
+      this.rowIconicArtists.appendChild(card);
+    });
   }
 
   getSmartSuggestions(tracksList) {
-    if (!tracksList || tracksList.length === 0) return [];
-    // Smart Suggestion Logic:
-    // 1. Give highest weight to songs with rich synced lyrics
-    // 2. Give weight to songs matching the current playing song's artist or era
-    // 3. Shuffle or rotate for engaging fresh discovery
-    const sorted = [...tracksList].sort((a, b) => {
-      let scoreA = 0;
-      let scoreB = 0;
-      if (a.lrc && a.lrc.length > 20) scoreA += 5;
-      if (b.lrc && b.lrc.length > 20) scoreB += 5;
-      if (this.currentTrack) {
-        if (a.artist === this.currentTrack.artist) scoreA += 3;
-        if (b.artist === this.currentTrack.artist) scoreB += 3;
-      }
-      return scoreB - scoreA;
+    return RecommendationEngine.getPersonalizedRecommendations(tracksList, {
+      currentTrack: this.currentTrack,
+      recentIds: this.recentlyPlayed || [],
+      favoriteIds: this.favorites || [],
+      limit: 8
     });
-    return sorted.slice(0, 8);
   }
 
   renderMusicGrid(container, tracks, emptyMessage) {
@@ -1859,7 +2148,7 @@ class LyricsApp {
 
     if (!tracks || tracks.length === 0) {
       container.innerHTML = `
-        <div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--color-text-dim); font-size: 0.88rem; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.08);">
+        <div style="grid-column: 1 / -1; padding: 2.5rem 1.5rem; text-align: center; color: var(--color-text-dim); font-size: 0.88rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.08);">
           ${emptyMessage}
         </div>
       `;
@@ -1870,6 +2159,8 @@ class LyricsApp {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
       const isFav = this.favorites && this.favorites.includes(track.id);
+      const dur = this.getTrackDuration(track);
+      const durFormatted = dur > 0 ? LyricsParser.formatTime(dur) : '';
 
       const card = document.createElement('div');
       card.className = `music-card ${isCurrent ? 'playing' : ''}`;
@@ -1877,25 +2168,34 @@ class LyricsApp {
         <div class="card-art-wrap">
           <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="card-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div class="card-play-overlay">
-            <div class="card-play-icon">${isPlaying ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
+            <div class="card-play-icon">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
         </div>
         <div class="card-meta">
           <div class="card-title" title="${track.title}">${track.title}</div>
           <div class="card-artist" title="${track.artist}">${track.artist}</div>
+          <div class="card-badges-row">
+            <span class="card-badge ${track.lrc ? 'card-badge-lrc' : ''}">${track.lrc ? 'Synced LRC' : 'Audio'}</span>
+            ${durFormatted ? `<span class="card-badge">${durFormatted}</span>` : ''}
+            ${track.year ? `<span class="card-badge">${track.year}</span>` : ''}
+          </div>
           <div class="card-tag-row">
-            <span class="card-tag">${track.lrc ? 'Synced' : 'Audio'}</span>
             <div class="card-actions-row">
+              <button class="card-btn-action btn-card-queue" title="Add to Queue" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
               <button class="card-btn-action btn-card-playlist" title="Add to Playlist" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
               </button>
               <button class="card-btn-action btn-card-info" title="Preview Song Details" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               </button>
               <button class="card-btn-action btn-card-fav ${isFav ? 'is-favorite' : ''}" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#ffffff' : 'none'}" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="${isFav ? '#ffffff' : 'none'}" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               </button>
-              <button class="card-btn-action btn-card-download" title="Save for Offline" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="card-btn-action btn-card-download" title="Save for Offline" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -1916,23 +2216,21 @@ class LyricsApp {
         });
       }
 
+      // Add to queue button
+      const btnQueue = card.querySelector('.btn-card-queue');
+      if (btnQueue) {
+        btnQueue.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.addToQueue(track, false);
+        });
+      }
+
       // Add to playlist button
       const btnPlaylist = card.querySelector('.btn-card-playlist');
       if (btnPlaylist) {
         btnPlaylist.addEventListener('click', (e) => {
           e.stopPropagation();
           this.openAddToPlaylistModal(track);
-        });
-      }
-
-      // Open details on clicking the card title or meta
-      const cardMeta = card.querySelector('.card-meta');
-      if (cardMeta) {
-        cardMeta.addEventListener('click', (e) => {
-          // If clicked inside action buttons, let them handle it
-          if (e.target.closest('.card-btn-action')) return;
-          e.stopPropagation();
-          this.openSongDetails(track);
         });
       }
 
@@ -1956,21 +2254,25 @@ class LyricsApp {
 
       // Download button
       const dlBtn = card.querySelector('.btn-card-download');
-      dlBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
-        try {
-          await Storage.downloadTrackForOffline(track);
-          dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
-          dlBtn.title = 'Saved Offline';
-          this.tracks = await Storage.getAllTracks();
-        } catch (err) {
-          dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-          setTimeout(() => { dlBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'; }, 2000);
-        }
-      });
+      if (dlBtn) {
+        dlBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
+          try {
+            await Storage.downloadTrackForOffline(track);
+            dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+            dlBtn.title = 'Saved Offline';
+            this.tracks = await Storage.getAllTracks();
+          } catch (err) {
+            dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+            setTimeout(() => { dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'; }, 2000);
+          }
+        });
+      }
 
-      card.addEventListener('click', () => {
+      // Open details on clicking the card
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.card-btn-action') || e.target.closest('.card-play-overlay')) return;
         this.openSongDetails(track);
       });
 
