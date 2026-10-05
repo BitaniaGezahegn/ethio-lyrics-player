@@ -843,7 +843,7 @@ class LyricsApp {
           const target = Math.max(0, this.player.currentTime - 5);
           this.player.seek(target);
           if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target });
+            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target, isExplicitSeek: true });
           }
         }
       });
@@ -854,7 +854,7 @@ class LyricsApp {
           const target = this.player.currentTime + 5;
           this.player.seek(target);
           if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
-            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target });
+            FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, { positionSec: target, isExplicitSeek: true });
           }
         }
       });
@@ -1008,7 +1008,8 @@ class LyricsApp {
         }
         FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
           playbackState: state === 'playing' ? 'playing' : 'paused',
-          positionSec: this.player.currentTime || 0
+          positionSec: this.player.currentTime || 0,
+          isExplicitSeek: true
         });
       }
     };
@@ -1082,7 +1083,8 @@ class LyricsApp {
         this.player.seek(newTime);
         if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
           FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
-            positionSec: newTime
+            positionSec: newTime,
+            isExplicitSeek: true
           });
         }
       };
@@ -3571,10 +3573,11 @@ class LyricsApp {
       if (this.activeRoom && this.isRoomHost && this.player.isPlaying && !this._isApplyingRemoteSync) {
         FirebaseService.updateRoomPlayback(this.activeRoom.roomCode, {
           playbackState: 'playing',
-          positionSec: this.player.currentTime || 0
+          positionSec: this.player.currentTime || 0,
+          isExplicitSeek: false
         });
       }
-    }, 1500);
+    }, 4000); // Relaxed from aggressive 1.5s to gentle 4.0s for smooth, steady drift checking
   }
 
   stopHostHeartbeat() {
@@ -3696,6 +3699,7 @@ class LyricsApp {
         const eventServerTime = room.clientTimestamp || currentServerNow;
         const elapsedSec = Math.max(0, (currentServerNow - eventServerTime) / 1000);
         const targetTime = room.playbackState === 'playing' ? (room.positionSec + elapsedSec) : room.positionSec;
+        const isExplicitSeek = !!room.isExplicitSeek;
 
         if (room.playbackState === 'playing') {
           if (!this.player.isPlaying) {
@@ -3704,40 +3708,56 @@ class LyricsApp {
             this.player.play();
             this._isApplyingRemoteSync = false;
             if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+            this._smoothedDrift = 0;
           } else {
-            // High-precision adaptive drift compensation:
-            const drift = targetTime - this.player.currentTime; // positive = guest lags behind host
-            const absDrift = Math.abs(drift);
+            // Raw drift: positive means guest lags behind host; negative means guest is ahead
+            const rawDrift = targetTime - this.player.currentTime;
             
-            if (absDrift > 0.25) {
-              // Large gap (> 250ms): instant snappy seek to lock in immediately with zero delay
+            // Exponential moving average filter to suppress network jitter spikes
+            if (typeof this._smoothedDrift !== 'number' || isNaN(this._smoothedDrift)) {
+              this._smoothedDrift = rawDrift;
+            } else {
+              this._smoothedDrift = this._smoothedDrift * 0.65 + rawDrift * 0.35;
+            }
+
+            const drift = this._smoothedDrift;
+            const absDrift = Math.abs(drift);
+
+            // Large discrepancy (> 1.25s) or deliberate user action by host: snap directly
+            if (isExplicitSeek || absDrift > 1.25) {
               this._isApplyingRemoteSync = true;
               this.player.seek(targetTime);
               this._isApplyingRemoteSync = false;
               if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
-            } else if (drift > 0.08) {
-              // Behind by 80ms - 250ms: decisive speedup (+12%) to catch up in under 0.8s
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.12;
-            } else if (drift > 0.02) {
-              // Behind by 20ms - 80ms: gentle speedup (+5%)
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.05;
-            } else if (drift < -0.08) {
-              // Ahead by 80ms - 250ms: decisive slowdown (-12%)
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.88;
-            } else if (drift < -0.02) {
-              // Ahead by 20ms - 80ms: gentle slowdown (-5%)
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.95;
-            } else {
-              // Locked in tight (< 20ms drift! Virtually exact atomic sync)
-              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
+              this._smoothedDrift = 0;
+            } else if (absDrift < 0.07) {
+              // Deadband (within ±70ms of host): in tight sync, keep neutral 1.0x rate
+              if (this.player.audioElement && this.player.audioElement.playbackRate !== 1.0) {
+                this.player.audioElement.playbackRate = 1.0;
+              }
+            } else if (drift > 0.30) {
+              // Moderate lag (300ms to 1250ms behind): gentle +3.5% speedup
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.035;
+            } else if (drift > 0.07) {
+              // Minor lag (70ms to 300ms behind): imperceptible +1.8% micro-nudge
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 1.018;
+            } else if (drift < -0.30) {
+              // Moderate lead (300ms to 1250ms ahead): gentle -3.5% slowdown
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.965;
+            } else if (drift < -0.07) {
+              // Minor lead (70ms to 300ms ahead): imperceptible -1.8% micro-nudge
+              if (this.player.audioElement) this.player.audioElement.playbackRate = 0.982;
             }
           }
         } else if (room.playbackState === 'paused') {
+          this._smoothedDrift = 0;
           if (this.player.isPlaying) {
             this._isApplyingRemoteSync = true;
             this.player.pause();
             this.player.seek(targetTime);
             this._isApplyingRemoteSync = false;
+          } else if (isExplicitSeek || Math.abs(targetTime - this.player.currentTime) > 0.4) {
+            this.player.seek(targetTime);
           }
           if (this.player.audioElement) this.player.audioElement.playbackRate = 1.0;
         }
