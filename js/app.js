@@ -136,7 +136,8 @@ class LyricsApp {
       }
       if (roomCode) {
         const cleanCode = roomCode.trim().toUpperCase();
-        if (this.inputJoinRoomCode) this.inputJoinRoomCode.value = cleanCode;
+        const suffix = cleanCode.replace(/^ETHIO-?/i, '').replace(/[^A-Z0-9]/g, '').slice(0, 4);
+        if (this.inputJoinRoomCode) this.inputJoinRoomCode.value = suffix;
         this.openListenTogetherModal();
         setTimeout(() => {
           this.handleJoinRoom(cleanCode);
@@ -1111,6 +1112,16 @@ class LyricsApp {
       this.btnJoinRoom.addEventListener('click', () => this.handleJoinRoom());
     }
     if (this.inputJoinRoomCode) {
+      this.inputJoinRoomCode.addEventListener('input', (e) => {
+        let val = (e.target.value || '').toUpperCase();
+        if (val.includes('ETHIO-')) {
+          val = val.replace(/ETHIO-?/gi, '');
+        }
+        val = val.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+        e.target.value = val;
+        if (this.joinRoomError) this.joinRoomError.style.display = 'none';
+      });
+
       this.inputJoinRoomCode.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -3326,9 +3337,22 @@ class LyricsApp {
   async handleJoinRoom(code = null) {
     const rawCode = code || (this.inputJoinRoomCode ? this.inputJoinRoomCode.value : '');
     const cleanCode = (rawCode || '').trim().toUpperCase();
-    if (!cleanCode) {
+
+    // Extract the 4-char suffix (e.g. S4XS) whether user typed S4XS or ETHIO-S4XS
+    const suffix = cleanCode.replace(/^ETHIO-?/i, '').replace(/[^A-Z0-9]/g, '');
+    let fullTargetCode = '';
+
+    if (suffix.length === 4) {
+      fullTargetCode = `ETHIO-${suffix}`;
+    } else if (cleanCode.startsWith('ETHIO-') && cleanCode.length === 10) {
+      fullTargetCode = cleanCode;
+    } else if (suffix.length > 0) {
+      fullTargetCode = `ETHIO-${suffix}`;
+    }
+
+    if (!suffix || suffix.length < 4) {
       if (this.joinRoomError) {
-        this.joinRoomError.textContent = 'Please enter a 6-character room code.';
+        this.joinRoomError.textContent = 'Please enter a 4-character room code (e.g. S4XS).';
         this.joinRoomError.style.display = 'block';
       }
       return;
@@ -3342,7 +3366,7 @@ class LyricsApp {
 
     try {
       this.myParticipant = Storage.getParticipant(this.currentUser);
-      const room = await FirebaseService.joinListenRoom(cleanCode, this.myParticipant);
+      const room = await FirebaseService.joinListenRoom(fullTargetCode, this.myParticipant);
 
       this.activeRoom = room;
       this.isRoomHost = room.hostId === this.myParticipant.id;
@@ -3485,6 +3509,7 @@ class LyricsApp {
     this.activeRoom = null;
     this.isRoomHost = false;
     this._seenReactionIds.clear();
+    document.body.classList.remove('in-active-room');
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'none';
     if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.remove('active');
@@ -3496,6 +3521,7 @@ class LyricsApp {
 
   updateListenRoomUI(room) {
     if (!room) return;
+    document.body.classList.add('in-active-room');
 
     // Immediately toggle modal to Active Session View
     if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';

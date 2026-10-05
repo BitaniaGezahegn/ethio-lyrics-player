@@ -153,14 +153,20 @@ html, body {
 :fullscreen .top-bar,
 :-webkit-full-screen .top-bar,
 .is-fullscreen .top-bar {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 1.6rem);
-  height: calc(70px + env(safe-area-inset-top, 0px) + 1.6rem);
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+  height: calc(70px + max(env(safe-area-inset-top, 0px), 8px));
 }
 
-:fullscreen .main-stage,
-:-webkit-full-screen .main-stage,
-.is-fullscreen .main-stage {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 1.2rem);
+:fullscreen #tabViewHome,
+:-webkit-full-screen #tabViewHome,
+.is-fullscreen #tabViewHome,
+:fullscreen #tabViewLibrary,
+:-webkit-full-screen #tabViewLibrary,
+.is-fullscreen #tabViewLibrary,
+:fullscreen #tabViewSettings,
+:-webkit-full-screen #tabViewSettings,
+.is-fullscreen #tabViewSettings {
+  padding-top: calc(85px + max(env(safe-area-inset-top, 0px), 8px)) !important;
 }
 
 /* ==========================================================================
@@ -1239,8 +1245,20 @@ html, body {
   :fullscreen .top-bar,
   :-webkit-full-screen .top-bar,
   .is-fullscreen .top-bar {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 1.75rem);
-    height: calc(52px + env(safe-area-inset-top, 0px) + 1.75rem);
+    padding-top: max(env(safe-area-inset-top, 0px), 10px);
+    height: calc(52px + max(env(safe-area-inset-top, 0px), 10px));
+  }
+
+  :fullscreen #tabViewHome,
+  :-webkit-full-screen #tabViewHome,
+  .is-fullscreen #tabViewHome,
+  :fullscreen #tabViewLibrary,
+  :-webkit-full-screen #tabViewLibrary,
+  .is-fullscreen #tabViewLibrary,
+  :fullscreen #tabViewSettings,
+  :-webkit-full-screen #tabViewSettings,
+  .is-fullscreen #tabViewSettings {
+    padding-top: calc(70px + max(env(safe-area-inset-top, 0px), 10px)) !important;
   }
   .brand-badge {
     padding: 0.35rem 0.65rem;
@@ -3543,7 +3561,7 @@ html, body {
 /* Active Listen Together Floating Banner */
 .active-room-floating-bar {
   position: fixed;
-  bottom: 82px;
+  bottom: 98px; /* Sits nicely above desktop player dock (height 70px + bottom 16px = 86px) */
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 2.5rem);
@@ -3565,13 +3583,21 @@ html, body {
 
 @media (max-width: 680px) {
   .active-room-floating-bar {
-    bottom: 122px; /* Nicely situated above docked mini-player & mobile nav */
+    /* Mobile player dock is at bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px) with ~84px height.
+       Position active room bar with 10px clearance above player dock so play/pause is never obscured! */
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px + 86px + 10px) !important;
     width: calc(100% - 1rem);
     max-width: 440px;
     padding: 0.38rem 0.65rem;
     gap: 0.45rem;
     border-radius: 9999px;
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.7), 0 0 12px rgba(96, 165, 250, 0.2);
+  }
+
+  body.in-active-room #tabViewHome,
+  body.in-active-room #tabViewLibrary,
+  body.in-active-room #tabViewSettings {
+    padding-bottom: calc(56px + 86px + 52px + env(safe-area-inset-bottom, 0px) + 20px) !important;
   }
 
   .room-bar-left {
@@ -3867,6 +3893,12 @@ html, body {
 
 .room-action-card:hover {
   border-color: rgba(255, 255, 255, 0.18);
+}
+
+.room-code-input-group:focus-within {
+  border-color: rgba(96, 165, 250, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
 }
 
 .room-action-icon-wrap {

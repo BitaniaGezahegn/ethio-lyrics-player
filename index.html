@@ -925,13 +925,19 @@
 
             <!-- Join with Code Form -->
             <div class="room-action-card" style="flex-direction:column; gap:0.75rem; align-items:stretch;">
-              <div style="display:flex; align-items:center; gap:0.6rem;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                <span style="font-weight:600; font-size:0.9rem; color:#fff;">Join with Room Code</span>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                  <span style="font-weight:600; font-size:0.9rem; color:#fff;">Join with Room Code</span>
+                </div>
+                <span style="font-size:0.72rem; color:var(--color-text-dim);">Enter 4-character code</span>
               </div>
-              <div style="display:flex; gap:0.5rem;">
-                <input type="text" id="inputJoinRoomCode" class="form-input" placeholder="e.g. ETHIO-A49B" style="text-transform:uppercase; font-weight:700; letter-spacing:0.05em; font-size:0.95rem; flex:1;">
-                <button id="btnJoinRoom" class="btn-primary" style="padding:0.55rem 1.2rem; font-size:0.85rem;" type="button">
+              <div style="display:flex; gap:0.5rem; align-items:stretch;">
+                <div class="room-code-input-group" style="display:flex; align-items:center; flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; overflow:hidden; transition:border-color 0.2s ease, box-shadow 0.2s ease;">
+                  <span class="room-code-prefix-badge" style="padding:0.6rem 0.75rem; font-weight:800; font-size:0.85rem; color:var(--color-gold); background:rgba(255,255,255,0.04); border-right:1px solid rgba(255,255,255,0.1); user-select:none; letter-spacing:0.04em;">ETHIO-</span>
+                  <input type="text" id="inputJoinRoomCode" class="form-input room-code-input" placeholder="XXXX" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase; font-weight:800; letter-spacing:0.16em; font-size:1.05rem; flex:1; border:none; background:transparent; padding:0.6rem 0.8rem; outline:none; color:#fff; box-shadow:none;">
+                </div>
+                <button id="btnJoinRoom" class="btn-primary" style="padding:0.6rem 1.25rem; font-size:0.85rem; border-radius:12px; font-weight:600;" type="button">
                   Join
                 </button>
               </div>
