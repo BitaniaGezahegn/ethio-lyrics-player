@@ -528,6 +528,28 @@ class LyricsApp {
     this.btnDetailSaveOffline = document.getElementById('btnDetailSaveOffline');
     this.detailSaveLabel = document.getElementById('detailSaveLabel');
     this.btnDetailOpenLyricsEditor = document.getElementById('btnDetailOpenLyricsEditor');
+    this.btnDetailEditSong = document.getElementById('btnDetailEditSong');
+
+    // Community Metadata & Lyrics Review Modal
+    this.editSongReviewModal = document.getElementById('editSongReviewModal');
+    this.formEditSongReview = document.getElementById('formEditSongReview');
+    this.inputEditReviewTitle = document.getElementById('inputEditReviewTitle');
+    this.inputEditReviewTitleEn = document.getElementById('inputEditReviewTitleEn');
+    this.inputEditReviewArtist = document.getElementById('inputEditReviewArtist');
+    this.inputEditReviewArtistEn = document.getElementById('inputEditReviewArtistEn');
+    this.inputEditReviewAlbum = document.getElementById('inputEditReviewAlbum');
+    this.inputEditReviewYear = document.getElementById('inputEditReviewYear');
+    this.inputEditReviewCover = document.getElementById('inputEditReviewCover');
+    this.inputEditReviewLrc = document.getElementById('inputEditReviewLrc');
+    this.inputEditReviewLrcFile = document.getElementById('inputEditReviewLrcFile');
+    this.btnEditReviewOpenSyncStudio = document.getElementById('btnEditReviewOpenSyncStudio');
+    this.inputEditReviewNote = document.getElementById('inputEditReviewNote');
+    this.btnCancelEditReview = document.getElementById('btnCancelEditReview');
+    this.btnSubmitEditReview = document.getElementById('btnSubmitEditReview');
+    this.editReviewErrorMsg = document.getElementById('editReviewErrorMsg');
+    this.editReviewCurrentArt = document.getElementById('editReviewCurrentArt');
+    this.editReviewCurrentTitle = document.getElementById('editReviewCurrentTitle');
+    this.editReviewCurrentArtist = document.getElementById('editReviewCurrentArtist');
 
     // Attribution Watermark Overlay (Active in Fullscreen Record Mode)
     this.tiktokWatermark = document.getElementById('tiktokWatermark');
@@ -1428,7 +1450,7 @@ class LyricsApp {
     });
 
     // Modal Backdrop Close
-    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal, this.songDetailsModal].forEach(modal => {
+    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal, this.songDetailsModal, this.editSongReviewModal].forEach(modal => {
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) modal.classList.remove('active');
@@ -1514,6 +1536,54 @@ class LyricsApp {
           if (this.lrcEditor) this.lrcEditor.open();
         }
       });
+    }
+    if (this.btnDetailEditSong) {
+      this.btnDetailEditSong.addEventListener('click', () => {
+        const targetTrack = this._detailTrack || this._detailModalActiveTrack || this.currentTrack;
+        if (targetTrack) {
+          this.openEditSongReviewModal(targetTrack);
+        }
+      });
+    }
+
+    // Community Metadata & Lyrics Review Modal Bindings
+    if (this.btnCancelEditReview) {
+      this.btnCancelEditReview.addEventListener('click', () => {
+        if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
+      });
+    }
+
+    if (this.inputEditReviewLrcFile) {
+      this.inputEditReviewLrcFile.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          if (this.inputEditReviewLrc) {
+            this.inputEditReviewLrc.value = evt.target.result;
+          }
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    if (this.btnEditReviewOpenSyncStudio) {
+      this.btnEditReviewOpenSyncStudio.addEventListener('click', async () => {
+        if (this._editingReviewTrack) {
+          if (!this.currentTrack || this.currentTrack.id !== this._editingReviewTrack.id) {
+            await this.loadTrack(this._editingReviewTrack, false);
+          }
+          if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
+          if (this.lrcEditor) this.lrcEditor.open();
+        }
+      });
+    }
+
+    if (this.btnSubmitEditReview) {
+      this.btnSubmitEditReview.addEventListener('click', () => this.handleSubmitEditSongReview());
+    }
+    if (this.formEditSongReview) {
+      this.formEditSongReview.addEventListener('submit', (e) => this.handleSubmitEditSongReview(e));
     }
 
     // Listen Together Event Bindings
@@ -3421,25 +3491,31 @@ class LyricsApp {
       }
 
       list.forEach(sub => {
+        const isMetadataEdit = sub.type === 'metadata_edit';
         const item = document.createElement('div');
         item.className = 'admin-submission-item';
         item.innerHTML = `
           <div class="submission-meta-row">
             <img src="${sub.cover || 'assets/weleta_cover.jpg'}" class="submission-thumb" alt="${sub.title}" crossorigin="anonymous">
             <div style="flex:1; min-width:0;">
-              <div style="font-weight:700; font-size:0.95rem; color:#fff;">${sub.title} - ${sub.artist}</div>
+              <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:2px;">
+                ${isMetadataEdit ? '<span style="background:rgba(229,185,90,0.2); color:var(--color-gold); font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700; border:1px solid rgba(229,185,90,0.4);">COMMUNITY EDIT</span>' : '<span style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700;">NEW TRACK</span>'}
+                <span style="font-weight:700; font-size:0.95rem; color:#fff;">${sub.title} - ${sub.artist}</span>
+              </div>
               <div style="font-size:0.75rem; color:var(--color-text-dim);">
+                ${isMetadataEdit && sub.originalTitle ? `Original: <span style="color:#d1d5db;">${sub.originalTitle} (${sub.originalArtist || ''})</span> • ` : ''}
                 Album: ${sub.album || 'Single'} (${sub.year || '2024'}) • By: <b style="color:#fce7b2;">${sub.submittedByEmail || 'Visitor'}</b>
               </div>
-              <div style="font-size:0.72rem; color:var(--color-accent); margin-top:2px;">
-                ${sub.lrc ? 'Has Timed Lyrics' : 'No Lyrics'} • Audio: ${sub.audioUrl ? 'Direct Link' : (sub.audioFileName || 'Local File')}
+              ${sub.contributorNote ? `<div style="font-size:0.73rem; color:#fce7b2; background:rgba(255,255,255,0.04); padding:0.3rem 0.55rem; border-radius:6px; margin-top:4px; border-left:2px solid var(--color-gold);"><b>Contributor Note:</b> ${sub.contributorNote}</div>` : ''}
+              <div style="font-size:0.72rem; color:var(--color-accent); margin-top:3px;">
+                ${sub.lrc ? '✓ Timed LRC Lyrics Included' : 'No Lyrics'} • Audio: ${isMetadataEdit ? 'Retains Original Audio Stream' : (sub.audioUrl ? 'Direct Link' : (sub.audioFileName || 'Local File'))}
               </div>
             </div>
           </div>
 
           <div style="display:flex; flex-direction:column; gap:0.4rem;">
-            <label style="font-size:0.75rem; color:var(--color-gold);">Cloudflare R2 Audio URL:</label>
-            <input type="text" class="form-input r2-url-input" value="${sub.audioUrl || `${R2_PUBLIC_BASE}/`}" style="font-size:0.8rem; padding:0.4rem 0.6rem;">
+            <label style="font-size:0.75rem; color:var(--color-gold);">${isMetadataEdit ? 'Audio URL (Optional Override - Leave empty to keep catalog audio):' : 'Cloudflare R2 Audio URL:'}</label>
+            <input type="text" class="form-input r2-url-input" value="${sub.audioUrl && !isMetadataEdit ? sub.audioUrl : (isMetadataEdit ? '' : `${R2_PUBLIC_BASE}/`)}" placeholder="${isMetadataEdit ? 'Leave blank to preserve existing audio file' : `${R2_PUBLIC_BASE}/song.mp3`}" style="font-size:0.8rem; padding:0.4rem 0.6rem;">
           </div>
 
           <div class="submission-actions-row">
@@ -3452,8 +3528,8 @@ class LyricsApp {
               </button>
             </div>
             <div style="display:flex; gap:0.4rem;">
-              <button class="btn-pill btn-approve-submission" data-id="${sub.id}">
-                Approve &amp; Publish
+              <button class="btn-pill btn-approve-submission" data-id="${sub.id}" style="${isMetadataEdit ? 'background:rgba(229,185,90,0.18); border-color:var(--color-gold); color:var(--color-gold); font-weight:700;' : ''}">
+                ${isMetadataEdit ? 'Approve &amp; Apply Edits' : 'Approve &amp; Publish'}
               </button>
               <button class="btn-pill btn-reject-submission" data-id="${sub.id}">
                 Reject
@@ -3464,7 +3540,7 @@ class LyricsApp {
 
         item.querySelector('.btn-sub-preview-audio').addEventListener('click', () => {
           const url = item.querySelector('.r2-url-input').value.trim();
-          this.player.loadTrack({ ...sub, audioUrl: url });
+          this.player.loadTrack({ ...sub, audioUrl: url || sub.audioUrl });
           this.player.play();
         });
 
@@ -3475,12 +3551,14 @@ class LyricsApp {
         item.querySelector('.btn-approve-submission').addEventListener('click', async () => {
           const customUrl = item.querySelector('.r2-url-input').value.trim();
           try {
-            await FirebaseService.approveSubmission(sub, customUrl);
+            await FirebaseService.approveSubmission(sub, customUrl || null);
             item.remove();
             await this.loadPublicCatalog();
             this.checkPendingSubmissionsCount();
             this.renderHomePage();
-            alert(`Approved "${sub.title}" and published to Global Cloud Catalog!`);
+            alert(isMetadataEdit 
+              ? `Applied community edits and lyrics to "${sub.title}" successfully!` 
+              : `Approved "${sub.title}" and published to Global Cloud Catalog!`);
           } catch (err) {
             alert('Approve error: ' + err.message);
           }
@@ -3824,6 +3902,7 @@ class LyricsApp {
   async openSongDetails(track) {
     if (!track || !this.songDetailsModal) return;
     this._detailTrack = track;
+    this._detailModalActiveTrack = track;
 
     if (this.detailModalCover) {
       this.detailModalCover.src = track.cover || 'assets/weleta_cover.jpg';
@@ -3897,6 +3976,105 @@ class LyricsApp {
     }
 
     this.songDetailsModal.classList.add('active');
+  }
+
+  // --------------------------------------------------------------------------
+  // Community Metadata & Synchronized Lyrics Review Flow
+  // --------------------------------------------------------------------------
+  openEditSongReviewModal(track) {
+    if (!track || !this.editSongReviewModal) return;
+    this._editingReviewTrack = track;
+
+    // Close song details modal if it was open
+    if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+
+    // Target song preview
+    if (this.editReviewCurrentArt) {
+      this.editReviewCurrentArt.src = track.cover || 'assets/weleta_cover.jpg';
+    }
+    if (this.editReviewCurrentTitle) {
+      this.editReviewCurrentTitle.textContent = track.title || 'Untitled Track';
+    }
+    if (this.editReviewCurrentArtist) {
+      this.editReviewCurrentArtist.textContent = track.artist || 'Unknown Artist';
+    }
+
+    // Pre-populate input fields
+    if (this.inputEditReviewTitle) this.inputEditReviewTitle.value = track.title || '';
+    if (this.inputEditReviewTitleEn) this.inputEditReviewTitleEn.value = track.titleEn || '';
+    if (this.inputEditReviewArtist) this.inputEditReviewArtist.value = track.artist || '';
+    if (this.inputEditReviewArtistEn) this.inputEditReviewArtistEn.value = track.artistEn || '';
+    if (this.inputEditReviewAlbum) this.inputEditReviewAlbum.value = track.album || '';
+    if (this.inputEditReviewYear) this.inputEditReviewYear.value = track.year || '';
+    if (this.inputEditReviewCover) this.inputEditReviewCover.value = track.cover || '';
+    if (this.inputEditReviewLrc) this.inputEditReviewLrc.value = track.lrc || '';
+    if (this.inputEditReviewNote) this.inputEditReviewNote.value = '';
+    if (this.editReviewErrorMsg) {
+      this.editReviewErrorMsg.style.display = 'none';
+      this.editReviewErrorMsg.textContent = '';
+    }
+
+    this.editSongReviewModal.classList.add('active');
+  }
+
+  async handleSubmitEditSongReview(e) {
+    if (e) e.preventDefault();
+    if (!this._editingReviewTrack) return;
+
+    const title = this.inputEditReviewTitle ? this.inputEditReviewTitle.value.trim() : '';
+    const artist = this.inputEditReviewArtist ? this.inputEditReviewArtist.value.trim() : '';
+    if (!title || !artist) {
+      if (this.editReviewErrorMsg) {
+        this.editReviewErrorMsg.textContent = 'Please enter both Song Title and Artist Name.';
+        this.editReviewErrorMsg.style.display = 'block';
+      }
+      return;
+    }
+
+    const payload = {
+      type: 'metadata_edit',
+      targetTrackId: this._editingReviewTrack.id,
+      originalTitle: this._editingReviewTrack.title || 'Untitled',
+      originalArtist: this._editingReviewTrack.artist || 'Unknown Artist',
+      title: title,
+      titleEn: this.inputEditReviewTitleEn ? this.inputEditReviewTitleEn.value.trim() : title,
+      artist: artist,
+      artistEn: this.inputEditReviewArtistEn ? this.inputEditReviewArtistEn.value.trim() : artist,
+      album: this.inputEditReviewAlbum ? this.inputEditReviewAlbum.value.trim() : 'Single',
+      year: this.inputEditReviewYear ? this.inputEditReviewYear.value.trim() : '2024',
+      cover: this.inputEditReviewCover ? this.inputEditReviewCover.value.trim() : (this._editingReviewTrack.cover || 'assets/weleta_cover.jpg'),
+      lrc: this.inputEditReviewLrc ? this.inputEditReviewLrc.value.trim() : '',
+      audioUrl: this._editingReviewTrack.audioUrl || '',
+      audioFileName: this._editingReviewTrack.audioFileName || '',
+      contributorNote: this.inputEditReviewNote ? this.inputEditReviewNote.value.trim() : ''
+    };
+
+    try {
+      if (this.btnSubmitEditReview) {
+        this.btnSubmitEditReview.disabled = true;
+        this.btnSubmitEditReview.innerHTML = '<span>Submitting to Admin Queue...</span>';
+      }
+      await FirebaseService.submitForReview(payload);
+      
+      if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
+      alert(`Thank you! Your proposed corrections and lyrics for "${title}" have been submitted for admin review.`);
+      this.checkPendingSubmissionsCount();
+    } catch (err) {
+      if (this.editReviewErrorMsg) {
+        this.editReviewErrorMsg.textContent = 'Submission error: ' + (err.message || 'Unknown error');
+        this.editReviewErrorMsg.style.display = 'block';
+      }
+    } finally {
+      if (this.btnSubmitEditReview) {
+        this.btnSubmitEditReview.disabled = false;
+        this.btnSubmitEditReview.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>Submit for Admin Review</span>
+        `;
+      }
+    }
   }
 
   // --------------------------------------------------------------------------

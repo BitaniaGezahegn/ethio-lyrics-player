@@ -189,7 +189,7 @@ export const FirebaseService = {
   },
 
   // -------------------------------------------------------------
-  // Community Submissions (Queue awaiting Admin Approval)
+  // Community Submissions & Metadata Review Pipeline
   // -------------------------------------------------------------
   async submitForReview(submission) {
     if (!db) throw new Error('Firestore not initialized');
@@ -197,6 +197,10 @@ export const FirebaseService = {
     const user = this.getCurrentUser();
 
     const payload = {
+      type: submission.type || (submission.targetTrackId ? 'metadata_edit' : 'new_song'),
+      targetTrackId: submission.targetTrackId || submission.originalTrackId || null,
+      originalTitle: submission.originalTitle || null,
+      originalArtist: submission.originalArtist || null,
       title: submission.title || 'Untitled',
       titleEn: submission.titleEn || submission.title || 'Untitled',
       artist: submission.artist || 'Unknown Artist',
@@ -207,6 +211,7 @@ export const FirebaseService = {
       lrc: submission.lrc || '',
       audioUrl: submission.audioUrl || '',
       audioFileName: submission.audioFileName || '',
+      contributorNote: submission.contributorNote || '',
       submittedByEmail: user ? user.email : 'Anonymous Visitor',
       submittedByName: user ? user.displayName || 'Visitor' : 'Visitor',
       submittedAt: serverTimestamp(),
@@ -240,6 +245,34 @@ export const FirebaseService = {
 
   async approveSubmission(submission, customAudioUrl = null) {
     if (!db) throw new Error('Firestore not initialized');
+
+    // If this submission is an edit of an existing catalog track, update that track directly!
+    const targetId = submission.targetTrackId || submission.originalTrackId;
+    if (submission.type === 'metadata_edit' && targetId) {
+      const docRef = doc(db, 'public_tracks', targetId);
+      const updateData = {
+        title: submission.title,
+        titleEn: submission.titleEn || submission.title,
+        artist: submission.artist,
+        artistEn: submission.artistEn || submission.artist,
+        album: submission.album || 'Single',
+        year: submission.year || '2024',
+        lrc: submission.lrc || '',
+        updatedAt: serverTimestamp()
+      };
+      if (submission.cover && submission.cover !== 'assets/weleta_cover.jpg') {
+        updateData.cover = submission.cover;
+        updateData.discCenter = submission.cover;
+      }
+      if (customAudioUrl) {
+        updateData.audioUrl = customAudioUrl;
+      }
+      await setDoc(docRef, updateData, { merge: true });
+      await deleteDoc(doc(db, 'submissions', submission.id));
+      return { id: targetId, ...updateData };
+    }
+
+    // Otherwise, publish as a new public catalog track
     const trackPayload = {
       title: submission.title,
       titleEn: submission.titleEn || submission.title,

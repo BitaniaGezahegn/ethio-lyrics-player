@@ -5209,6 +5209,30 @@ body.is-party-guest .guest-locked-control:hover::after {
   }
 }
 
+.btn-suggest-edit {
+  background: rgba(229, 185, 90, 0.08);
+  border: 1px dashed rgba(229, 185, 90, 0.4);
+  color: var(--color-gold);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-suggest-edit:hover {
+  background: rgba(229, 185, 90, 0.18);
+  border-color: var(--color-gold);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229, 185, 90, 0.2);
+}
+
+.edit-review-modal-card {
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(229, 185, 90, 0.22);
+  border-radius: 16px;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+
 /* ==========================================================================
 /* ==========================================================================
    Fullscreen / Creator Screen-Recording Mode & Attribution Watermark

@@ -144,6 +144,8 @@ export class RecommendationEngine {
     // Score and filter each track
     const scored = allTracks.map(track => {
       let score = 0;
+      const meta = this.parseFallbackMetadata(track);
+      const artistName = meta.artist;
 
       // 1. Synchronized Lyrics Richness (+14 pts) - Flagship experience!
       if (track.lrc && typeof track.lrc === 'string' && track.lrc.length > 25) {
@@ -151,9 +153,9 @@ export class RecommendationEngine {
         if (track.lrc.length > 150) score += 4; // Extensive full lyrics
       }
 
-      // 2. Artist Affinity
-      if (track.artist && artistScores[track.artist]) {
-        score += Math.min(20, artistScores[track.artist]);
+      // 2. Artist Affinity (works even with fallback parsed artist name!)
+      if (artistName && artistScores[artistName]) {
+        score += Math.min(22, artistScores[artistName]);
       }
 
       // 3. User Engagement (Favorites)
@@ -166,27 +168,43 @@ export class RecommendationEngine {
         score += 5;
       }
 
-      // 5. Diversity / Anti-Fatigue: Slight reduction if it was the EXACT last played track
+      // 5. Authentic Ethiopic Fidel presence bonus
+      if (meta.hasEthiopic) {
+        score += 3;
+      }
+
+      // 6. Diversity / Anti-Fatigue: Slight reduction if it was the EXACT last played track
       if (currentTrack && currentTrack.id === track.id) {
         score -= 8;
       } else if (recentList.length > 0 && recentList[0] === track.id) {
         score -= 4;
       }
 
-      // 6. Time of Day affinity bonus
+      // 7. Time of Day & Ethiopian Musical Scale/Vibe Match
       const hour = new Date().getHours();
       const isLateOrEvening = hour >= 18 || hour < 6;
       const isClassic = (track.year && parseInt(track.year) < 2010) || 
+                        meta.vibe === 'tizita' ||
                         (track.album && /tizita|classic|vintage|memories|ትዝታ/i.test(track.album)) ||
                         (track.title && /tizita|ትዝታ/i.test(track.title));
 
-      if (isLateOrEvening && isClassic) {
-        score += 6; // Evening & night bonus for Tizita
-      } else if (!isLateOrEvening && !isClassic) {
-        score += 4; // Daytime modern groove bonus
+      if (isLateOrEvening) {
+        if (isClassic || meta.vibe === 'tizita' || meta.vibe === 'bati' || meta.vibe === 'anchihoye') {
+          score += 7; // Evening & night bonus for Tizita / Bati / Soul
+        }
+      } else {
+        if (meta.vibe === 'eskista' || meta.vibe === 'gurage' || meta.vibe === 'pop' || meta.vibe === 'reggae') {
+          score += 6; // Daytime energetic groove bonus
+        }
       }
 
-      // 7. Subtle dynamic jitter (±2.5) to keep discovery fresh each time
+      // 8. Cold-Start Novelty Exploration (Multi-Armed Bandit):
+      // If a song has zero plays and sparse metadata, give it an exploration lift so it surfaces for users to discover!
+      if (!recentSet.has(track.id) && !favSet.has(track.id)) {
+        score += 3.5;
+      }
+
+      // 9. Subtle dynamic jitter (±2.5) to keep discovery fresh each time
       const jitter = (Math.random() * 5) - 2.5;
       score += jitter;
 
@@ -282,6 +300,76 @@ export class RecommendationEngine {
   }
 
   /**
+   * Parse fallback metadata from title, filename, or raw string when tags are missing
+   */
+  static parseFallbackMetadata(track) {
+    if (!track) return { title: 'Untitled', artist: 'Unknown Artist', hasEthiopic: false, vibe: 'general' };
+
+    let title = (track.title || '').trim();
+    let artist = (track.artist || '').trim();
+
+    // If artist is unknown or missing, try splitting title pattern "Artist - Song"
+    if ((!artist || artist.toLowerCase() === 'unknown artist') && title) {
+      if (title.includes(' - ')) {
+        const parts = title.split(' - ');
+        artist = parts[0].trim();
+        title = parts.slice(1).join(' - ').trim();
+      } else if (title.includes(' — ')) {
+        const parts = title.split(' — ');
+        artist = parts[0].trim();
+        title = parts.slice(1).join(' — ').trim();
+      } else if (title.includes('_') && !title.includes(' ')) {
+        const parts = title.split('_');
+        if (parts.length >= 2) {
+          artist = parts[0].trim();
+          title = parts.slice(1).join(' ').trim();
+        }
+      }
+    }
+
+    // Clean up audio file extensions from title
+    title = title.replace(/\.(mp3|m4a|wav|aac|flac|ogg)$/i, '').trim();
+
+    // Check for Ethiopic Fidel characters (\u1200-\u137F)
+    const hasEthiopic = /[\u1200-\u137F]/.test(title + ' ' + artist + ' ' + (track.lrc || ''));
+
+    // Detect Ethiopian traditional scales & regional rhythms
+    const vibe = this.detectEthioVibe(track, title);
+
+    return {
+      title: title || 'Untitled Track',
+      artist: artist || 'Ethiopian Artist',
+      hasEthiopic,
+      vibe
+    };
+  }
+
+  /**
+   * Detect Ethiopian musical scale / style from available text clues or LRC structure
+   */
+  static detectEthioVibe(track, cleanTitle = '') {
+    const combined = `${cleanTitle} ${track.title || ''} ${track.artist || ''} ${track.album || ''}`.toLowerCase();
+
+    if (/tizita|tezita|ትዝታ/i.test(combined)) return 'tizita';
+    if (/bati|ባቲ/i.test(combined)) return 'bati';
+    if (/ambassel|ambasel|አምባሰል/i.test(combined)) return 'ambassel';
+    if (/anchihoye|anchi hoye|አንቺሆዬ/i.test(combined)) return 'anchihoye';
+    if (/eskista|iskista|እስክስታ/i.test(combined)) return 'eskista';
+    if (/gurage|guragigna|ጉራጌ/i.test(combined)) return 'gurage';
+    if (/oromo|oromiffa|oromiyaa|ኦሮሞ/i.test(combined)) return 'oromo';
+    if (/wollo|manzuma|ወሎ/i.test(combined)) return 'wollo';
+    if (/tigrigna|tigray|ትግርኛ/i.test(combined)) return 'tigrigna';
+    if (/jazz|mulatu|instrumental/i.test(combined)) return 'ethiojazz';
+    if (/reggae|teddy afro|ዳውን/i.test(combined)) return 'reggae';
+
+    // Acoustic / duration structural clue: Longer tracks (> 5 mins) are typically nostalgic Tizita ballads
+    if (track.duration && track.duration > 320) return 'tizita';
+    if (track.duration && track.duration < 210) return 'pop';
+
+    return 'general';
+  }
+
+  /**
    * Extract iconic Ethiopian artists represented in the catalog
    */
   static getIconicArtists(allTracks) {
@@ -289,38 +377,53 @@ export class RecommendationEngine {
     const artistMap = {};
 
     allTracks.forEach(track => {
-      const artist = (track.artist || 'Unknown Artist').trim();
+      const parsed = this.parseFallbackMetadata(track);
+      const artist = parsed.artist;
       if (!artistMap[artist]) {
         artistMap[artist] = {
           name: artist,
           cover: track.cover || 'assets/weleta_cover.jpg',
-          count: 0,
+          trackCount: 0,
           sampleTrack: track
         };
       }
-      artistMap[artist].count++;
+      artistMap[artist].trackCount++;
     });
 
     return Object.values(artistMap)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
+      .sort((a, b) => b.trackCount - a.trackCount)
+      .slice(0, 12);
   }
 
   /**
    * High-level catalog statistics for the Listening DNA bar
    */
   static getListeningStats(allTracks = [], userFavorites = [], offlineTracks = []) {
+    // Handle both array arguments and object configuration arguments
+    let favList = userFavorites;
+    let offList = offlineTracks;
+    if (userFavorites && typeof userFavorites === 'object' && !Array.isArray(userFavorites)) {
+      favList = userFavorites.favoriteIds || userFavorites.favorites || [];
+      offList = userFavorites.recentIds || userFavorites.offlineTracks || [];
+    }
+
     const total = allTracks.length;
-    const lrcCount = allTracks.filter(t => t.lrc && t.lrc.length > 20).length;
-    const favCount = (userFavorites || []).length;
-    const offlineCount = (offlineTracks || []).length;
+    const lrcCount = allTracks.filter(t => t.lrc && typeof t.lrc === 'string' && t.lrc.length > 20).length;
+    const favCount = (favList || []).length;
+    const offlineCount = (offList || []).length;
 
     // Distinct artists count
-    const artists = new Set(allTracks.map(t => (t.artist || '').trim()).filter(Boolean));
+    const artists = new Set(allTracks.map(t => {
+      const meta = this.parseFallbackMetadata(t);
+      return meta.artist;
+    }).filter(Boolean));
 
     return {
+      totalTracks: total,
       total,
+      syncedLyricsCount: lrcCount,
       lrcCount,
+      favoriteCount: favCount,
       favCount,
       offlineCount,
       artistCount: artists.size
