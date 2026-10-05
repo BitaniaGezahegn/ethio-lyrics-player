@@ -704,156 +704,165 @@
     <!-- Reaction Floating Particles Stage -->
     <div id="reactionFloatingStage" class="reaction-floating-stage" pointer-events="none"></div>
 
-    <!-- Active Listen Together Floating Banner (Shows when in a room) -->
-    <div id="activeListenRoomBar" class="active-room-floating-bar" style="display:none;">
-      <div class="room-bar-left">
-        <span class="live-dot-pulse"></span>
-        <div class="room-bar-info">
-          <div class="room-bar-title">
-            <span id="roomBarCodeLabel">ETHIO-XXXX</span>
-            <span class="room-role-pill" id="roomBarRolePill">Host</span>
+    <!-- Docked Controls Wrapper (Contains Relative Party Bar & Player Bar Dock) -->
+    <div id="dockedControlsWrapper" class="docked-controls-wrapper">
+      <!-- Active Listen Together Floating Banner (Positioned relative to player dock) -->
+      <div id="activeListenRoomBar" class="active-room-floating-bar" style="display:none;">
+        <div class="room-bar-left">
+          <span class="live-dot-pulse"></span>
+          <div class="room-bar-info">
+            <div class="room-bar-title">
+              <span id="roomBarCodeLabel">ETHIO-XXXX</span>
+              <span class="room-role-pill" id="roomBarRolePill">Host</span>
+            </div>
+            <div class="room-bar-listeners" id="roomBarListenersLabel">1 listening together</div>
           </div>
-          <div class="room-bar-listeners" id="roomBarListenersLabel">1 listening together</div>
         </div>
-      </div>
-      <!-- Expandable Reaction Drawer Widget -->
-      <div class="room-reactions-wrapper">
-        <button id="btnToggleReactions" class="btn-reaction-toggle" title="Send Live Reaction" type="button" aria-expanded="false">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span class="reaction-toggle-label">React</span>
-        </button>
+        <!-- Expandable Reaction Drawer Widget -->
+        <div class="room-reactions-wrapper">
+          <button id="btnToggleReactions" class="btn-reaction-toggle" title="Send Live Reaction" type="button" aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span class="reaction-toggle-label">React</span>
+          </button>
 
-        <div id="reactionsDropdown" class="reactions-popover-tray" style="display:none;">
-          <button class="btn-reaction" data-reaction="fire" title="Fire Beat" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-          </button>
-          <button class="btn-reaction" data-reaction="heart" title="Love Song" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          </button>
-          <button class="btn-reaction" data-reaction="music" title="Groove Vibes" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </button>
-          <button class="btn-reaction" data-reaction="sparkle" title="Cheers" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-          </button>
+          <div id="reactionsDropdown" class="reactions-popover-tray" style="display:none;">
+            <button class="btn-reaction" data-reaction="fire" title="Fire Beat" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            </button>
+            <button class="btn-reaction" data-reaction="heart" title="Love Song" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button class="btn-reaction" data-reaction="music" title="Groove Vibes" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </button>
+            <button class="btn-reaction" data-reaction="sparkle" title="Cheers" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="room-bar-actions">
-        <button id="btnCopyRoomLink" class="btn-pill btn-sm" title="Copy Invite Link" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <span id="copyLinkBtnText">Invite</span>
-        </button>
-        <button id="btnManageActiveRoom" class="btn-pill btn-sm" title="Room Details &amp; People" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>People</span>
-        </button>
-        <button id="btnLeaveRoom" class="btn-pill btn-sm btn-danger-pill" title="Leave Session" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <span>Leave</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Persistent Docked Mini-Player Bar -->
-    <footer class="player-bar-dock">
-      <!-- Left Track Info (Clicking opens Lyrics) -->
-      <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
-        <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
-        <div class="track-text-meta">
-          <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
-          <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
-        </div>
-        <div class="dock-track-quick-actions" onclick="event.stopPropagation();">
-          <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
-            <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <div class="room-bar-actions">
+          <button id="btnShareRoomLink" class="btn-pill btn-sm" title="Share Session Invite" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <span id="shareLinkBtnText">Share</span>
           </button>
-          <button id="btnDockAddToPlaylist" class="btn-dock-action" title="Add to Playlist" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+          <button id="btnManageActiveRoom" class="btn-pill btn-sm" title="Room Details &amp; People" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>People</span>
+          </button>
+          <button id="btnLeaveRoom" class="btn-pill btn-sm btn-danger-pill" title="Leave Session" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Leave</span>
           </button>
         </div>
       </div>
 
-      <!-- Center Audio Controls & Scrubber -->
-      <div class="playback-controls-center">
-        <div class="buttons-row">
-          <!-- Shuffle Button -->
-          <button id="btnShuffle" class="ctrl-btn btn-mode-toggle" title="Shuffle (Off)" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-            <span class="mode-dot"></span>
-          </button>
-
-          <!-- Prev Track Button -->
-          <button id="btnPrevTrack" class="ctrl-btn" title="Previous Track" type="button">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
-          </button>
-
-          <!-- Rewind 5s Button -->
-          <button id="btnRewind" class="ctrl-btn ctrl-btn-seek" title="Rewind 5s" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
-          </button>
-
-          <!-- Center Play/Pause Button -->
-          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause" type="button">
-            <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-            <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-          </button>
-
-          <!-- Fast Forward 5s Button -->
-          <button id="btnForward" class="ctrl-btn ctrl-btn-seek" title="Fast Forward 5s" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
-          </button>
-
-          <!-- Next Track Button -->
-          <button id="btnNextTrack" class="ctrl-btn" title="Next Track" type="button">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
-          </button>
-
-          <!-- Repeat Mode Button -->
-          <button id="btnRepeat" class="ctrl-btn btn-mode-toggle" title="Repeat (Off)" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
-            <span class="mode-badge-one">1</span>
-            <span class="mode-dot"></span>
-          </button>
+      <!-- Persistent Docked Mini-Player Bar -->
+      <footer class="player-bar-dock">
+        <!-- Left Track Info (Clicking opens Lyrics) -->
+        <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
+          <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art" crossorigin="anonymous">
+          <div class="track-text-meta">
+            <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
+            <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
+          </div>
+          <div class="dock-track-quick-actions" onclick="event.stopPropagation();">
+            <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
+              <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" stroke="#ffffff" stroke-width="2" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
+            <button id="btnDockAddToPlaylist" class="btn-dock-action" title="Add to Playlist" type="button">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+            </button>
+          </div>
         </div>
 
-        <div class="timeline-container">
-          <span id="currentTimeLabel" class="time-label">0:00</span>
-          <div id="scrubberTrack" class="scrubber-track">
-            <div id="scrubberFill" class="scrubber-fill">
-              <div class="scrubber-thumb"></div>
+        <!-- Center Audio Controls & Scrubber -->
+        <div class="playback-controls-center">
+          <div class="buttons-row">
+            <!-- Shuffle Button -->
+            <button id="btnShuffle" class="ctrl-btn btn-mode-toggle" title="Shuffle (Off)" type="button">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+              <span class="mode-dot"></span>
+            </button>
+
+            <!-- Prev Track Button -->
+            <button id="btnPrevTrack" class="ctrl-btn" title="Previous Track" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
+            </button>
+
+            <!-- Rewind 5s Button -->
+            <button id="btnRewind" class="ctrl-btn ctrl-btn-seek" title="Rewind 5s" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+            </button>
+
+            <!-- Center Play/Pause Button -->
+            <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause" type="button">
+              <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+
+            <!-- Fast Forward 5s Button -->
+            <button id="btnForward" class="ctrl-btn ctrl-btn-seek" title="Fast Forward 5s" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+            </button>
+
+            <!-- Next Track Button -->
+            <button id="btnNextTrack" class="ctrl-btn" title="Next Track" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
+            </button>
+
+            <!-- Repeat Mode Button -->
+            <button id="btnRepeat" class="ctrl-btn btn-mode-toggle" title="Repeat (Off)" type="button">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+              <span class="mode-badge-one">1</span>
+              <span class="mode-dot"></span>
+            </button>
+          </div>
+
+          <div class="timeline-container">
+            <span id="currentTimeLabel" class="time-label">0:00</span>
+            <div id="scrubberTrack" class="scrubber-track">
+              <div id="scrubberFill" class="scrubber-fill">
+                <div class="scrubber-thumb"></div>
+              </div>
+            </div>
+            <span id="durationLabel" class="time-label">0:00</span>
+          </div>
+        </div>
+
+        <!-- Right Controls: Sleep Timer, Queue, Speed & Volume -->
+        <div class="player-controls-right">
+          <!-- Sleep Timer -->
+          <button id="btnSleepTimer" class="ctrl-btn btn-sleep-timer" title="Sleep Timer" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <span id="sleepTimerBadge" class="sleep-timer-badge" style="display:none;"></span>
+          </button>
+
+          <!-- Queue Drawer Button -->
+          <button id="btnQueue" class="ctrl-btn btn-queue-toggle" title="Up Next Queue" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span id="queueCountBadge" class="queue-count-badge">0</span>
+          </button>
+
+          <!-- Playback Speed -->
+          <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">1.0x</button>
+
+          <!-- Volume Container (Desktop & Mobile Touch-Friendly Floating Tray) -->
+          <div class="volume-container" id="volumeContainer">
+            <button id="btnMute" class="ctrl-btn btn-volume-toggle" title="Volume (Tap to adjust)" type="button">
+              <svg id="volumeIconHigh" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+              <svg id="volumeIconMuted" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+            </button>
+            <div id="volumePopupTray" class="volume-popup-tray">
+              <span class="vol-icon-min">🔈</span>
+              <input type="range" id="volumeSlider" class="volume-slider-range" min="0" max="1" step="0.01" value="0.8" aria-label="Volume">
+              <span class="vol-icon-max">🔊</span>
+              <span id="volumePercentBadge" class="volume-percent-badge">80%</span>
             </div>
           </div>
-          <span id="durationLabel" class="time-label">0:00</span>
         </div>
-      </div>
-
-      <!-- Right Controls: Sleep Timer, Queue, Speed & Volume -->
-      <div class="player-controls-right">
-        <!-- Sleep Timer -->
-        <button id="btnSleepTimer" class="ctrl-btn btn-sleep-timer" title="Sleep Timer" type="button">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-          <span id="sleepTimerBadge" class="sleep-timer-badge" style="display:none;"></span>
-        </button>
-
-        <!-- Queue Drawer Button -->
-        <button id="btnQueue" class="ctrl-btn btn-queue-toggle" title="Up Next Queue" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-          <span id="queueCountBadge" class="queue-count-badge">0</span>
-        </button>
-
-        <!-- Playback Speed -->
-        <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">1.0x</button>
-
-        <!-- Volume Container (Desktop) -->
-        <div class="volume-container">
-          <button id="btnMute" class="ctrl-btn" title="Mute/Unmute">
-            <svg id="volumeIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-          </button>
-          <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.05" value="0.8">
-        </div>
-      </div>
-    </footer>
+      </footer>
+    </div>
 
     <!-- Mobile Bottom Navigation Bar (Fixed at bottom on phones) -->
     <nav class="mobile-bottom-nav">
@@ -1094,9 +1103,9 @@
                 <h3 id="activeRoomCodeTitle" style="font-size:1.4rem; font-weight:800; letter-spacing:0.06em; color:#fff; margin:0.4rem 0 0.1rem 0;">ETHIO-XXXX</h3>
                 <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Host (DJ)</div>
               </div>
-              <button id="btnCopyInviteLinkModal" class="btn-pill" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 0.9rem; font-size:0.8rem;" type="button">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span id="copyInviteLinkModalLabel">Copy Link</span>
+              <button id="btnShareInviteLinkModal" class="btn-pill" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 0.9rem; font-size:0.8rem;" type="button" title="Share Session Invite">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span id="shareInviteLinkModalLabel">Share Session</span>
               </button>
             </div>
 

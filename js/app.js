@@ -209,8 +209,10 @@ class LyricsApp {
     this.btnEditParticipantName = document.getElementById('btnEditParticipantName');
     this.activeRoomCodeTitle = document.getElementById('activeRoomCodeTitle');
     this.activeRoomRoleText = document.getElementById('activeRoomRoleText');
-    this.btnCopyInviteLinkModal = document.getElementById('btnCopyInviteLinkModal');
-    this.copyInviteLinkModalLabel = document.getElementById('copyInviteLinkModalLabel');
+    this.btnShareInviteLinkModal = document.getElementById('btnShareInviteLinkModal') || document.getElementById('btnCopyInviteLinkModal');
+    this.shareInviteLinkModalLabel = document.getElementById('shareInviteLinkModalLabel') || document.getElementById('copyInviteLinkModalLabel');
+    this.btnCopyInviteLinkModal = this.btnShareInviteLinkModal;
+    this.copyInviteLinkModalLabel = this.shareInviteLinkModalLabel;
     this.activeRoomTrackArt = document.getElementById('activeRoomTrackArt');
     this.activeRoomTrackTitle = document.getElementById('activeRoomTrackTitle');
     this.activeRoomTrackArtist = document.getElementById('activeRoomTrackArtist');
@@ -222,8 +224,10 @@ class LyricsApp {
     this.roomBarCodeLabel = document.getElementById('roomBarCodeLabel');
     this.roomBarRolePill = document.getElementById('roomBarRolePill');
     this.roomBarListenersLabel = document.getElementById('roomBarListenersLabel');
-    this.btnCopyRoomLink = document.getElementById('btnCopyRoomLink');
-    this.copyLinkBtnText = document.getElementById('copyLinkBtnText');
+    this.btnShareRoomLink = document.getElementById('btnShareRoomLink') || document.getElementById('btnCopyRoomLink');
+    this.shareLinkBtnText = document.getElementById('shareLinkBtnText') || document.getElementById('copyLinkBtnText');
+    this.btnCopyRoomLink = this.btnShareRoomLink;
+    this.copyLinkBtnText = this.shareLinkBtnText;
     this.btnManageActiveRoom = document.getElementById('btnManageActiveRoom');
     this.btnLeaveRoom = document.getElementById('btnLeaveRoom');
     this.btnToggleReactions = document.getElementById('btnToggleReactions');
@@ -285,7 +289,12 @@ class LyricsApp {
     this.btnForward = document.getElementById('btnForward');
     this.btnSpeed = document.getElementById('btnSpeed');
     this.btnMute = document.getElementById('btnMute');
+    this.volumeContainer = document.getElementById('volumeContainer');
+    this.volumePopupTray = document.getElementById('volumePopupTray');
     this.volumeSlider = document.getElementById('volumeSlider');
+    this.volumePercentBadge = document.getElementById('volumePercentBadge');
+    this.volumeIconHigh = document.getElementById('volumeIconHigh');
+    this.volumeIconMuted = document.getElementById('volumeIconMuted');
     this.scrubberTrack = document.getElementById('scrubberTrack');
     this.scrubberFill = document.getElementById('scrubberFill');
     this.currentTimeLabel = document.getElementById('currentTimeLabel');
@@ -1051,27 +1060,65 @@ class LyricsApp {
       await this.playNextTrack();
     };
 
-    // Volume & Mute
+    // Volume & Mute (Desktop and Mobile Touch Support)
+    let lastVolume = 0.8;
+    const updateVolumeUI = (val) => {
+      const clamped = Math.max(0, Math.min(1, val));
+      if (this.volumeSlider) this.volumeSlider.value = clamped;
+      if (this.volumePercentBadge) this.volumePercentBadge.textContent = `${Math.round(clamped * 100)}%`;
+      if (this.volumeIconHigh && this.volumeIconMuted) {
+        if (clamped <= 0.01) {
+          this.volumeIconHigh.style.display = 'none';
+          this.volumeIconMuted.style.display = 'block';
+        } else {
+          this.volumeIconHigh.style.display = 'block';
+          this.volumeIconMuted.style.display = 'none';
+        }
+      }
+    };
+
     if (this.volumeSlider) {
-      let lastVolume = 0.8;
       this.volumeSlider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         this.player.setVolume(val);
-        if (val > 0) lastVolume = val;
+        if (val > 0.02) lastVolume = val;
+        updateVolumeUI(val);
       });
-
-      if (this.btnMute) {
-        this.btnMute.addEventListener('click', () => {
-          if (this.player.volume > 0) {
-            this.player.setVolume(0);
-            this.volumeSlider.value = 0;
-          } else {
-            this.player.setVolume(lastVolume);
-            this.volumeSlider.value = lastVolume;
-          }
-        });
-      }
     }
+
+    if (this.btnMute) {
+      this.btnMute.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // On touch screens or small devices, tap opens/toggles the slider tray
+        if (this.volumeContainer && window.innerWidth <= 768) {
+          const wasOpen = this.volumeContainer.classList.contains('tray-active');
+          if (!wasOpen) {
+            this.volumeContainer.classList.add('tray-active');
+            return;
+          }
+        }
+
+        // Toggle mute or restore volume
+        if (this.player.volume > 0.01) {
+          lastVolume = this.player.volume || 0.8;
+          this.player.setVolume(0);
+          updateVolumeUI(0);
+        } else {
+          const restored = lastVolume > 0.05 ? lastVolume : 0.8;
+          this.player.setVolume(restored);
+          updateVolumeUI(restored);
+        }
+      });
+    }
+
+    // Dismiss floating volume tray when tapping anywhere outside
+    document.addEventListener('click', (e) => {
+      if (this.volumeContainer && this.volumeContainer.classList.contains('tray-active')) {
+        if (!this.volumeContainer.contains(e.target)) {
+          this.volumeContainer.classList.remove('tray-active');
+        }
+      }
+    });
 
     // Timeline Scrubber
     if (this.scrubberTrack) {
@@ -1340,14 +1387,19 @@ class LyricsApp {
         }
       });
     }
-    if (this.btnCopyInviteLinkModal) {
-      this.btnCopyInviteLinkModal.addEventListener('click', () => {
-        this.copyRoomInviteLink(this.btnCopyInviteLinkModal, this.copyInviteLinkModalLabel);
+    const shareModalBtn = this.btnShareInviteLinkModal || this.btnCopyInviteLinkModal;
+    const shareModalLabel = this.shareInviteLinkModalLabel || this.copyInviteLinkModalLabel;
+    if (shareModalBtn) {
+      shareModalBtn.addEventListener('click', () => {
+        this.shareRoomInvite(shareModalBtn, shareModalLabel);
       });
     }
-    if (this.btnCopyRoomLink) {
-      this.btnCopyRoomLink.addEventListener('click', () => {
-        this.copyRoomInviteLink(this.btnCopyRoomLink, this.copyLinkBtnText);
+
+    const shareRoomBtn = this.btnShareRoomLink || this.btnCopyRoomLink;
+    const shareRoomLabel = this.shareLinkBtnText || this.copyLinkBtnText;
+    if (shareRoomBtn) {
+      shareRoomBtn.addEventListener('click', () => {
+        this.shareRoomInvite(shareRoomBtn, shareRoomLabel);
       });
     }
     if (this.btnLeaveRoomModal) {
@@ -4643,22 +4695,57 @@ class LyricsApp {
     });
   }
 
-  copyRoomInviteLink(buttonEl, labelEl) {
+  async shareRoomInvite(buttonEl, labelEl) {
     if (!this.activeRoom) return;
-    const url = `${window.location.origin}${window.location.pathname}?room=${this.activeRoom.roomCode}`;
+    const roomCode = this.activeRoom.roomCode;
+    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+    const trackTitle = (this.activeRoom.currentTrack && this.activeRoom.currentTrack.title) 
+      ? this.activeRoom.currentTrack.title 
+      : 'Ethiopian Music';
+    
+    const shareData = {
+      title: `Listen with me on ELM (${roomCode})`,
+      text: `🎵 Join my live Ethiopian music session on ELM! We're playing "${trackTitle}". Room: ${roomCode}`,
+      url: url
+    };
+
+    // 1. Try native Web Share API (mobile devices, Safari, Chrome)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        if (labelEl) {
+          const origText = labelEl.textContent;
+          labelEl.textContent = 'Shared!';
+          setTimeout(() => { if (labelEl) labelEl.textContent = origText; }, 2000);
+        }
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // User cancelled share dialog
+      }
+    }
+
+    // 2. Clipboard fallback if Web Share is unavailable or declined
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        const origText = labelEl ? labelEl.textContent : 'Invite';
-        if (labelEl) labelEl.textContent = 'Copied!';
+      try {
+        await navigator.clipboard.writeText(url);
+        const origText = labelEl ? labelEl.textContent : 'Share';
+        if (labelEl) labelEl.textContent = 'Link Copied!';
+        if (this.showToast) this.showToast('Room link copied to clipboard!');
         setTimeout(() => {
           if (labelEl) labelEl.textContent = origText;
-        }, 2000);
-      }).catch(() => {
+        }, 2200);
+        return;
+      } catch (e) {
         prompt('Copy Room Invite Link:', url);
-      });
+      }
     } else {
       prompt('Copy Room Invite Link:', url);
     }
+  }
+
+  // Backwards compatibility alias
+  copyRoomInviteLink(buttonEl, labelEl) {
+    return this.shareRoomInvite(buttonEl, labelEl);
   }
 }
 

@@ -222,7 +222,9 @@ export class AudioPlayer {
       if (!this.isPlaying) return;
       if (!this.isSynthetic && this.audioElement && !this.audioElement.paused) {
         this.currentTime = this.audioElement.currentTime;
-        this.duration = this.audioElement.duration || this.duration || 180;
+        if (this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0) {
+          this.duration = this.audioElement.duration;
+        }
         if (this.onTimeUpdate) {
           this.onTimeUpdate(this.currentTime, this.duration);
         }

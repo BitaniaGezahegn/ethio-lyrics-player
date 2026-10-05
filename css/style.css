@@ -561,14 +561,29 @@ html, body {
 }
 
 /* ==========================================================================
-   Docked Audio Player Controls Bar (Bottom)
+   Docked Controls Wrapper & Audio Player Dock (Bottom)
    ========================================================================== */
-.player-bar-dock {
-  position: absolute;
+.docked-controls-wrapper {
+  position: fixed;
   bottom: 1rem;
   left: 50%;
   transform: translate3d(-50%, 0, 0);
   width: calc(100% - 4rem);
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  z-index: 85;
+  pointer-events: none;
+}
+
+.player-bar-dock {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  width: 100% !important;
   max-width: 1100px;
   height: 76px;
   background: rgba(18, 12, 16, 0.92);
@@ -581,6 +596,7 @@ html, body {
   z-index: 40;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
   contain: layout style;
+  pointer-events: auto;
 }
 
 @supports (backdrop-filter: blur(8px)) {
@@ -773,29 +789,108 @@ html, body {
 }
 
 .volume-container {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.volume-slider {
+.btn-volume-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.volume-popup-tray {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  background: rgba(18, 12, 16, 0.95);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 0.5rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(229, 185, 90, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 120;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px) scale(0.94);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.volume-container:hover .volume-popup-tray,
+.volume-container.tray-active .volume-popup-tray {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.vol-icon-min,
+.vol-icon-max {
+  font-size: 0.85rem;
+  user-select: none;
+  opacity: 0.85;
+}
+
+.volume-slider-range {
   -webkit-appearance: none;
   appearance: none;
-  width: 75px;
-  height: 4px;
+  width: 90px;
+  height: 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
   outline: none;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.volume-slider::-webkit-slider-thumb {
+.volume-slider-range:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.volume-slider-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.volume-slider-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: var(--color-gold);
+}
+
+.volume-slider-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.volume-percent-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
 }
 
 /* ==========================================================================
@@ -1223,15 +1318,18 @@ html, body {
   .artist-amharic { font-size: 2.1rem; }
   .song-title-amharic { font-size: 2.3rem; }
   .lyric-line { font-size: 1.6rem; }
-  .player-bar-dock {
+  .docked-controls-wrapper {
     width: calc(100% - 1.5rem);
+  }
+  .player-bar-dock {
+    width: 100% !important;
     padding: 0 1rem;
   }
   .track-pill-info {
     width: 140px;
   }
   .volume-container {
-    display: none !important;
+    display: flex !important;
   }
 }
 
@@ -1364,7 +1462,23 @@ html, body {
   .no-lyrics-actions { justify-content: center; }
 
   /* 4. Docked Bottom Audio Bar (Spacious Native Mobile 3-Row Layout) */
+  .docked-controls-wrapper {
+    position: fixed !important;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100% - 1rem) !important;
+    max-width: 480px;
+    gap: 0.45rem;
+    z-index: 75 !important;
+    pointer-events: none;
+  }
+
   .player-bar-dock {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
     display: grid !important;
     grid-template-areas:
       "track rightctrl"
@@ -1375,12 +1489,12 @@ html, body {
     gap: 0.45rem 0.5rem;
     height: auto !important;
     min-height: auto;
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px) !important;
     z-index: 55 !important;
-    width: calc(100% - 1rem);
+    width: 100% !important;
     padding: 0.6rem 0.85rem;
     border-radius: 18px;
     box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75);
+    pointer-events: auto;
   }
 
   /* Row 1 - Left: Track Thumbnail, Title, Artist & Quick Favorite */
@@ -1462,7 +1576,10 @@ html, body {
     border-radius: 6px;
   }
   .volume-container {
-    display: none !important;
+    display: flex !important;
+    position: relative;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Promote center children to direct grid items */
@@ -3645,15 +3762,15 @@ html, body {
   margin-right: 4px;
 }
 
-/* Active Listen Together Floating Banner */
+/* Active Listen Together Floating Banner (Stacked relative to player dock inside docked-controls-wrapper) */
 .active-room-floating-bar {
-  position: fixed;
-  bottom: 98px; /* Sits nicely above desktop player dock (height 70px + bottom 16px = 86px) */
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 2.5rem);
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  width: 100% !important;
   max-width: 720px;
-  background: rgba(16, 9, 14, 0.92);
+  background: rgba(16, 9, 14, 0.94);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
   border: 1px solid rgba(96, 165, 250, 0.35);
@@ -3666,19 +3783,22 @@ html, body {
   z-index: 85;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(96, 165, 250, 0.15);
   animation: slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
 }
 
 @media (max-width: 680px) {
   .active-room-floating-bar {
-    /* Mobile player dock is at bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px) with ~84px height.
-       Position active room bar with 10px clearance above player dock so play/pause is never obscured! */
-    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 6px + 86px + 10px) !important;
-    width: calc(100% - 1rem);
-    max-width: 440px;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
     padding: 0.38rem 0.65rem;
     gap: 0.45rem;
     border-radius: 9999px;
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.7), 0 0 12px rgba(96, 165, 250, 0.2);
+    pointer-events: auto;
   }
 
   body.in-active-room #tabViewHome,
@@ -4299,12 +4419,14 @@ html, body {
 }
 
 /* In Fullscreen Mode, hide bottom playback dock, tabs, party button & login so it's a clean recording stage */
+#app.is-fullscreen .docked-controls-wrapper,
 #app.is-fullscreen .player-bar-dock,
 #app.is-fullscreen .mobile-bottom-nav,
 #app.is-fullscreen .active-room-floating-bar,
 #app.is-fullscreen .desktop-nav-tabs,
 #app.is-fullscreen #btnOpenListenTogether,
 #app.is-fullscreen #authContainer,
+:fullscreen .docked-controls-wrapper,
 :fullscreen .player-bar-dock,
 :fullscreen .mobile-bottom-nav,
 :fullscreen .active-room-floating-bar,
