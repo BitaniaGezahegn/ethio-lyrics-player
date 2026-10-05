@@ -390,6 +390,11 @@ class LyricsApp {
     this.btnDetailSaveOffline = document.getElementById('btnDetailSaveOffline');
     this.detailSaveLabel = document.getElementById('detailSaveLabel');
     this.btnDetailOpenLyricsEditor = document.getElementById('btnDetailOpenLyricsEditor');
+
+    // TikTok Creator Screen-Recording Mode Elements
+    this.btnToggleCreatorMode = document.getElementById('btnToggleCreatorMode');
+    this.tiktokWatermark = document.getElementById('tiktokWatermark');
+    this.btnExitCreatorMode = document.getElementById('btnExitCreatorMode');
   }
 
   handleUserAuthenticated(user, isAdmin) {
@@ -553,6 +558,10 @@ class LyricsApp {
       });
     } else if (tabId === 'settings') {
       this.renderSettingsView();
+    }
+
+    if (tabId !== 'lyrics') {
+      this.setCreatorMode(false);
     }
   }
 
@@ -934,6 +943,8 @@ class LyricsApp {
         if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
       } else if (e.code === 'KeyF') {
         if (this.btnToggleFullscreen) this.btnToggleFullscreen.click();
+      } else if (e.code === 'KeyC') {
+        this.toggleCreatorMode();
       }
     });
 
@@ -1076,6 +1087,14 @@ class LyricsApp {
           if (this.lrcEditor) this.lrcEditor.open();
         }
       });
+    }
+
+    // TikTok Creator Screen-Recording Mode Bindings
+    if (this.btnToggleCreatorMode) {
+      this.btnToggleCreatorMode.addEventListener('click', () => this.toggleCreatorMode());
+    }
+    if (this.btnExitCreatorMode) {
+      this.btnExitCreatorMode.addEventListener('click', () => this.setCreatorMode(false));
     }
 
     // Listen Together Event Bindings
@@ -1686,7 +1705,7 @@ class LyricsApp {
 
     if (this.artistAmharic) this.artistAmharic.textContent = 'የሙዚቃ ማጫወቻ';
     if (this.artistEnglish) {
-      this.artistEnglish.textContent = 'ETHIO LYRICS PLAYER';
+      this.artistEnglish.textContent = 'ELM • ETHIO LYRICS MEDIA';
       this.artistEnglish.style.display = 'block';
     }
     if (this.songTitleAmharic) this.songTitleAmharic.textContent = 'ሙዚቃ ይምረጡ';
@@ -3200,6 +3219,30 @@ class LyricsApp {
     }
 
     this.songDetailsModal.classList.add('active');
+  }
+
+  // --------------------------------------------------------------------------
+  // TikTok Creator Screen-Recording Mode
+  // --------------------------------------------------------------------------
+  toggleCreatorMode() {
+    const isNow = !this.appEl.classList.contains('creator-recording-mode');
+    this.setCreatorMode(isNow);
+  }
+
+  setCreatorMode(active) {
+    if (!this.appEl) return;
+    this.appEl.classList.toggle('creator-recording-mode', active);
+    if (this.tiktokWatermark) {
+      this.tiktokWatermark.style.display = active ? 'block' : 'none';
+    }
+    if (this.btnExitCreatorMode) {
+      this.btnExitCreatorMode.style.display = active ? 'inline-flex' : 'none';
+    }
+    if (active) {
+      requestAnimationFrame(() => {
+        this.syncLyrics(this.player.currentTime);
+      });
+    }
   }
 
   // --------------------------------------------------------------------------

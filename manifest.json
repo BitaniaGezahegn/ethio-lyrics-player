@@ -1,11 +1,12 @@
 {
-  "name": "Ethio Lyrics Player",
-  "short_name": "EthioLyrics",
+  "name": "ELM - Ethio Lyrics Media",
+  "short_name": "ELM",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0b0507",
   "theme_color": "#160910",
-  "description": "Synchronized Ethiopian Music Lyrics Player with real-time dynamic artwork ambient themes and offline library.",
+  "description": "ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player with real-time dynamic artwork ambient themes and offline library.",
+  "categories": ["music", "entertainment"],
   "icons": [
     {
       "src": "assets/weleta_cover.jpg",
@@ -15,3 +16,4 @@
     }
   ]
 }
+

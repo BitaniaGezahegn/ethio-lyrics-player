@@ -3,8 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Ethio Lyrics Player | Synced Ethiopian Music</title>
-  <meta name="description" content="Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
+  <title>ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics</title>
+  <meta name="description" content="ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
+
+  <!-- Open Graph / TikTok / Social Previews -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ethio-lyrics-player.pages.dev/">
+  <meta property="og:site_name" content="ELM - Ethio Lyrics Media">
+  <meta property="og:title" content="ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics">
+  <meta property="og:description" content="Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork themes, and listening parties.">
+  <meta property="og:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ELM | Ethio Lyrics Media">
+  <meta name="twitter:description" content="Synchronized Ethiopian Music Lyrics with live listening rooms and dynamic ambient themes.">
+  <meta name="twitter:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
 
   <!-- PWA & Mobile Web Meta -->
   <link rel="manifest" href="manifest.json">
@@ -42,13 +56,16 @@
 
     <!-- Top Navigation Bar -->
     <header class="top-bar">
-      <div class="brand-badge">
+      <div class="brand-badge" title="ELM - Ethio Lyrics Media">
         <svg class="brand-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18V5l12-2v13"></path>
           <circle cx="6" cy="18" r="3"></circle>
           <circle cx="18" cy="16" r="3"></circle>
         </svg>
-        <span class="brand-title">Ethio Lyrics</span>
+        <div class="brand-text-lockup">
+          <span class="brand-title">ELM</span>
+          <span class="brand-tagline">Ethio Lyrics Media</span>
+        </div>
       </div>
 
       <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
@@ -170,7 +187,7 @@
                   <span id="heroBadgeText">Featured Spotlight</span>
                 </div>
                 <h2 id="heroTitle" class="hero-title">Select a Song to Begin</h2>
-                <div id="heroArtist" class="hero-artist">Ethio Lyrics Player</div>
+                <div id="heroArtist" class="hero-artist">ELM — Ethio Lyrics Media</div>
                 <p id="heroDescription" class="hero-description">
                   Stream Ethiopian music with synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and offline listening.
                 </p>
@@ -390,6 +407,31 @@
            TAB 3: LYRICS (Now Playing Synced Lyrics Stage & Vinyl Visualizer)
            ==================================================================== -->
       <section id="tabViewLyrics" class="tab-view stage-content" style="display:none;">
+        <!-- TikTok / Creator Clean Screen-Recording Watermark & Mode Controls -->
+        <div class="lyrics-creator-controls">
+          <button id="btnToggleCreatorMode" class="btn-creator-mode" title="TikTok Screen-Record Mode (Clean recording view with @handle watermark)" type="button">
+            <svg class="tiktok-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46V12.9a8.27 8.27 0 0 0 5.77 2.3v-3.45a4.83 4.83 0 0 1-3.77-1.92V6.69z"/>
+            </svg>
+            <span>Record Mode</span>
+          </button>
+        </div>
+
+        <!-- Floating TikTok Screen-Record Watermark Overlay -->
+        <div id="tiktokWatermark" class="tiktok-watermark-overlay" style="display:none;">
+          <div class="watermark-pill">
+            <span class="watermark-dot"></span>
+            <span class="watermark-brand">ELM</span>
+            <span class="watermark-sep">•</span>
+            <span class="watermark-handle">@EthioLyricsMedia</span>
+          </div>
+        </div>
+
+        <button id="btnExitCreatorMode" class="btn-exit-creator" title="Exit Screen-Record Mode" style="display:none;" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span>Exit Clean Mode</span>
+        </button>
+
         <!-- Song Header Metadata -->
         <div class="song-header-section">
           <div class="artist-heading">
@@ -547,6 +589,28 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Service Worker &amp; IndexedDB Persistent Cache</div>
                 </div>
                 <span class="badge-status-active">Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Card 4: Official Community & TikTok Promotion -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64c.298-.002.595.042.88.13V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.82 4.46V12.9a8.27 8.27 0 0 0 5.77 2.3v-3.45a4.83 4.83 0 0 1-3.77-1.92V6.69z"/>
+              </svg>
+              <h2>Official Media &amp; Community</h2>
+            </div>
+            <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; padding:0.6rem 0;">
+                <div>
+                  <div style="font-weight:600; font-size:0.9rem;">Follow on TikTok</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);">Daily synchronized lyric drops, music discovery &amp; sound clips</div>
+                </div>
+                <a href="https://www.tiktok.com/@EthioLyricsMedia" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size:0.8rem; padding:0.45rem 1rem; text-decoration:none; display:inline-flex; align-items:center; gap:0.45rem;">
+                  <span>@EthioLyricsMedia</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
               </div>
             </div>
           </div>
