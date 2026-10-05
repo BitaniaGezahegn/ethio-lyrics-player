@@ -235,11 +235,28 @@ export const Storage = {
     this.setRecentlyPlayed(recent);
   },
 
-  // Playlists Storage
+  // Playlists Storage & Management
   getPlaylists() {
     try {
       const data = localStorage.getItem('ethio_lyrics_playlists');
-      return data ? JSON.parse(data) : [];
+      if (data) {
+        return JSON.parse(data);
+      }
+      // Initialize with a default favorite mix if first time
+      const starterPlaylists = [
+        {
+          id: 'playlist_vibes',
+          title: 'Ethio Chill & Tizita',
+          description: 'Soothing Ethiopian melodies and acoustic vibes with synchronized lyrics.',
+          cover: 'assets/weleta_cover.jpg',
+          gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)',
+          trackIds: [],
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
+      ];
+      this.setPlaylists(starterPlaylists);
+      return starterPlaylists;
     } catch (e) {
       return [];
     }
@@ -248,6 +265,118 @@ export const Storage = {
   setPlaylists(playlists) {
     try {
       localStorage.setItem('ethio_lyrics_playlists', JSON.stringify(playlists || []));
+    } catch (e) {}
+  },
+
+  getPlaylist(playlistId) {
+    if (!playlistId) return null;
+    const all = this.getPlaylists();
+    return all.find(p => p.id === playlistId) || null;
+  },
+
+  createPlaylist(title, description = '', cover = null) {
+    const playlists = this.getPlaylists();
+    const gradients = [
+      'linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6)',
+      'linear-gradient(135deg, #e5b95a, #d97706, #b45309)',
+      'linear-gradient(135deg, #10b981, #059669, #047857)',
+      'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
+      'linear-gradient(135deg, #f43f5e, #fb923c, #facc15)'
+    ];
+    const randomGrad = gradients[Math.floor(Math.random() * gradients.length)];
+    const newPlaylist = {
+      id: 'playlist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      title: (title || 'New Playlist').trim(),
+      description: (description || '').trim(),
+      cover: cover || '',
+      gradient: randomGrad,
+      trackIds: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    playlists.unshift(newPlaylist);
+    this.setPlaylists(playlists);
+    return newPlaylist;
+  },
+
+  updatePlaylist(playlistId, updates = {}) {
+    const playlists = this.getPlaylists();
+    const idx = playlists.findIndex(p => p.id === playlistId);
+    if (idx === -1) return null;
+    playlists[idx] = {
+      ...playlists[idx],
+      ...updates,
+      updatedAt: Date.now()
+    };
+    this.setPlaylists(playlists);
+    return playlists[idx];
+  },
+
+  deletePlaylist(playlistId) {
+    let playlists = this.getPlaylists();
+    playlists = playlists.filter(p => p.id !== playlistId);
+    this.setPlaylists(playlists);
+    return true;
+  },
+
+  addTrackToPlaylist(playlistId, trackId) {
+    if (!playlistId || !trackId) return false;
+    const playlists = this.getPlaylists();
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) return false;
+    if (!playlist.trackIds) playlist.trackIds = [];
+    if (!playlist.trackIds.includes(trackId)) {
+      playlist.trackIds.push(trackId);
+      playlist.updatedAt = Date.now();
+      this.setPlaylists(playlists);
+      return true;
+    }
+    return false; // Already present
+  },
+
+  removeTrackFromPlaylist(playlistId, trackId) {
+    if (!playlistId || !trackId) return false;
+    const playlists = this.getPlaylists();
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist || !playlist.trackIds) return false;
+    playlist.trackIds = playlist.trackIds.filter(id => id !== trackId);
+    playlist.updatedAt = Date.now();
+    this.setPlaylists(playlists);
+    return true;
+  },
+
+  isTrackInPlaylist(playlistId, trackId) {
+    if (!playlistId || !trackId) return false;
+    const playlist = this.getPlaylist(playlistId);
+    return !!(playlist && playlist.trackIds && playlist.trackIds.includes(trackId));
+  },
+
+  // Playback Mode Persistence
+  getShuffleState() {
+    try {
+      return localStorage.getItem('ethio_lyrics_shuffle') === 'true';
+    } catch (e) {
+      return false;
+    }
+  },
+
+  setShuffleState(val) {
+    try {
+      localStorage.setItem('ethio_lyrics_shuffle', val ? 'true' : 'false');
+    } catch (e) {}
+  },
+
+  getRepeatState() {
+    try {
+      return localStorage.getItem('ethio_lyrics_repeat') || 'off'; // 'off' | 'all' | 'one'
+    } catch (e) {
+      return 'off';
+    }
+  },
+
+  setRepeatState(val) {
+    try {
+      localStorage.setItem('ethio_lyrics_repeat', val || 'off');
     } catch (e) {}
   },
 

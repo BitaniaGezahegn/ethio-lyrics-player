@@ -249,13 +249,17 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                 <span>Global Catalog</span>
               </button>
+              <button id="tabPlaylists" class="library-tab">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span>Playlists</span>
+              </button>
               <button id="tabOfflineLibrary" class="library-tab">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>Saved Offline</span>
               </button>
             </div>
 
-            <!-- Search Bar in Library -->
+            <!-- Search Bar in Library (Global & Offline) -->
             <div class="library-search-bar" id="catalogSearchWrap">
               <div class="home-search-input-wrap">
                 <svg class="home-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -268,6 +272,100 @@
               <div class="loading-catalog-spinner" style="text-align:center; padding:3rem; color:var(--color-text-dim);">
                 <div>Loading catalog...</div>
               </div>
+            </div>
+
+            <!-- Playlists Section Container -->
+            <div id="playlistsContainer" style="display:none; flex-direction:column; gap:1.4rem;">
+              <!-- Playlist Action Header -->
+              <div class="playlists-action-header">
+                <div>
+                  <h3 style="font-size:1.15rem; font-weight:700; color:#fff; margin:0;">Your Playlists</h3>
+                  <div style="font-size:0.8rem; color:var(--color-text-dim);">Create customized collections and listen seamlessly</div>
+                </div>
+                <button id="btnOpenCreatePlaylistModal" class="btn-primary" style="padding:0.5rem 1rem; font-size:0.82rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>New Playlist</span>
+                </button>
+              </div>
+
+              <!-- Curated / Smart Playlists Row -->
+              <div class="smart-playlists-grid">
+                <!-- Liked Songs Smart Card -->
+                <div class="smart-playlist-card smart-card-liked" id="cardSmartLikedSongs">
+                  <div class="smart-card-bg-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </div>
+                  <div class="smart-card-content">
+                    <div class="smart-card-badge">Auto Playlist</div>
+                    <h4 class="smart-card-title">Liked Songs</h4>
+                    <div class="smart-card-meta" id="smartLikedSongsCount">0 songs</div>
+                  </div>
+                  <button class="smart-card-play-btn" title="Play Liked Songs" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  </button>
+                </div>
+
+                <!-- Recently Played Smart Card -->
+                <div class="smart-playlist-card smart-card-recent" id="cardSmartRecentSongs">
+                  <div class="smart-card-bg-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="smart-card-content">
+                    <div class="smart-card-badge">History</div>
+                    <h4 class="smart-card-title">Recently Played</h4>
+                    <div class="smart-card-meta" id="smartRecentSongsCount">0 songs</div>
+                  </div>
+                  <button class="smart-card-play-btn" title="Play Recently Played" type="button">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Custom Playlists Grid -->
+              <div id="playlistsGrid" class="playlists-grid"></div>
+            </div>
+
+            <!-- Single Playlist Detail View (Sub-view) -->
+            <div id="singlePlaylistView" style="display:none; flex-direction:column; gap:1.4rem;">
+              <button id="btnBackToPlaylistsList" class="btn-pill" style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
+                &larr; Back to Playlists
+              </button>
+
+              <!-- Playlist Banner Header -->
+              <div class="playlist-banner-header">
+                <div class="playlist-banner-art" id="playlistBannerArt">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                </div>
+                <div class="playlist-banner-info">
+                  <div class="playlist-banner-type">PLAYLIST</div>
+                  <h2 id="playlistBannerTitle" class="playlist-banner-title">Playlist Title</h2>
+                  <p id="playlistBannerDesc" class="playlist-banner-desc">Playlist Description</p>
+                  <div class="playlist-banner-meta" id="playlistBannerMeta">0 songs • 0 min</div>
+                </div>
+              </div>
+
+              <!-- Playlist Action Bar -->
+              <div class="playlist-actions-bar">
+                <button id="btnPlaylistPlayAll" class="btn-primary" style="padding:0.6rem 1.4rem; font-size:0.88rem; gap:0.55rem;" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  <span>Play All</span>
+                </button>
+                <button id="btnPlaylistShuffle" class="btn-pill" style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                  <span>Shuffle</span>
+                </button>
+                <button id="btnPlaylistAddTracks" class="btn-pill" style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>Add Songs</span>
+                </button>
+                <button id="btnPlaylistDelete" class="btn-pill btn-danger-pill" style="margin-left:auto; padding:0.6rem 0.9rem; font-size:0.82rem;" title="Delete Playlist" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <span>Delete</span>
+                </button>
+              </div>
+
+              <!-- Playlist Tracks List -->
+              <div id="playlistTracksList" class="playlist-tracks-list"></div>
             </div>
 
             <!-- Local Offline Library Container -->
@@ -680,26 +778,57 @@
           <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
           <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
         </div>
-        <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
-          <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
+        <div class="dock-track-quick-actions" onclick="event.stopPropagation();">
+          <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
+            <svg class="heart-icon-outline" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <svg class="heart-icon-filled" width="18" height="18" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <button id="btnDockAddToPlaylist" class="btn-dock-action" title="Add to Playlist" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+          </button>
+        </div>
       </div>
 
       <!-- Center Audio Controls & Scrubber -->
       <div class="playback-controls-center">
         <div class="buttons-row">
-          <button id="btnRewind" class="ctrl-btn" title="Rewind 5s">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+          <!-- Shuffle Button -->
+          <button id="btnShuffle" class="ctrl-btn btn-mode-toggle" title="Shuffle (Off)" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            <span class="mode-dot"></span>
           </button>
 
-          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause">
+          <!-- Prev Track Button -->
+          <button id="btnPrevTrack" class="ctrl-btn" title="Previous Track" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
+          </button>
+
+          <!-- Rewind 5s Button -->
+          <button id="btnRewind" class="ctrl-btn ctrl-btn-seek" title="Rewind 5s" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+          </button>
+
+          <!-- Center Play/Pause Button -->
+          <button id="btnPlayPause" class="ctrl-btn btn-play-pause" title="Play or Pause" type="button">
             <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
             <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
           </button>
 
-          <button id="btnForward" class="ctrl-btn" title="Fast Forward 5s">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+          <!-- Fast Forward 5s Button -->
+          <button id="btnForward" class="ctrl-btn ctrl-btn-seek" title="Fast Forward 5s" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>
+          </button>
+
+          <!-- Next Track Button -->
+          <button id="btnNextTrack" class="ctrl-btn" title="Next Track" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
+          </button>
+
+          <!-- Repeat Mode Button -->
+          <button id="btnRepeat" class="ctrl-btn btn-mode-toggle" title="Repeat (Off)" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            <span class="mode-badge-one">1</span>
+            <span class="mode-dot"></span>
           </button>
         </div>
 
@@ -714,9 +843,24 @@
         </div>
       </div>
 
-      <!-- Right Controls: Speed & Volume (Desktop Only) -->
+      <!-- Right Controls: Sleep Timer, Queue, Speed & Volume -->
       <div class="player-controls-right">
+        <!-- Sleep Timer -->
+        <button id="btnSleepTimer" class="ctrl-btn btn-sleep-timer" title="Sleep Timer" type="button">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span id="sleepTimerBadge" class="sleep-timer-badge" style="display:none;"></span>
+        </button>
+
+        <!-- Queue Drawer Button -->
+        <button id="btnQueue" class="ctrl-btn btn-queue-toggle" title="Up Next Queue" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span id="queueCountBadge" class="queue-count-badge">0</span>
+        </button>
+
+        <!-- Playback Speed -->
         <button id="btnSpeed" class="ctrl-btn" title="Playback Speed" style="font-size:0.75rem; font-weight:700;">1.0x</button>
+
+        <!-- Volume Container (Desktop) -->
         <div class="volume-container">
           <button id="btnMute" class="ctrl-btn" title="Mute/Unmute">
             <svg id="volumeIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
@@ -1056,6 +1200,10 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               <span>Lyrics Stage</span>
             </button>
+            <button id="btnDetailAddToPlaylist" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;" title="Add to Playlist">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+              <span>Add to Playlist</span>
+            </button>
             <button id="btnDetailToggleFavorite" class="btn-pill btn-fav-toggle" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;" title="Toggle Favorite">
               <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" style="display:none;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -1067,6 +1215,146 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         MODALS & DRAWERS (Playlists, Queue, Sleep Timer)
+         ==================================================================== -->
+
+    <!-- 1. Create Playlist Modal -->
+    <div id="createPlaylistModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 460px; width: 92%;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Create Playlist</h3>
+          </div>
+          <button class="modal-close-btn" data-close="createPlaylistModal">&times;</button>
+        </div>
+        <form id="formCreatePlaylist" class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.1rem;">
+          <div class="form-group">
+            <label for="inputPlaylistTitle">Playlist Name <span class="required-badge">* Required</span></label>
+            <input type="text" id="inputPlaylistTitle" class="form-input" placeholder="e.g. My Tizita Favorites" required maxlength="50">
+          </div>
+          <div class="form-group">
+            <label for="inputPlaylistDesc">Description <span class="optional-badge">(Optional)</span></label>
+            <textarea id="inputPlaylistDesc" class="form-input" rows="2" placeholder="Give your playlist a vibe or notes..." maxlength="140" style="resize:none;"></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:0.65rem; margin-top:0.4rem;">
+            <button type="button" class="btn-pill" data-close="createPlaylistModal" style="padding:0.55rem 1rem;">Cancel</button>
+            <button type="submit" class="btn-primary" style="padding:0.55rem 1.3rem; font-weight:600;">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Add to Playlist Picker Modal -->
+    <div id="addToPlaylistModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 480px; width: 92%;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add to Playlist</h3>
+          </div>
+          <button class="modal-close-btn" data-close="addToPlaylistModal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:1.25rem; display:flex; flex-direction:column; gap:1.1rem;">
+          <!-- Target Song Preview -->
+          <div id="addToPlaylistTrackPreview" class="add-to-playlist-track-banner">
+            <img id="addToPlaylistCover" src="assets/weleta_cover.jpg" alt="Art" style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
+            <div style="flex:1; min-width:0;">
+              <div id="addToPlaylistTitle" style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Song Title</div>
+              <div id="addToPlaylistArtist" style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Artist</div>
+            </div>
+          </div>
+
+          <!-- Create New Playlist Quick Action -->
+          <button id="btnQuickCreatePlaylist" class="btn-pill" style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Create New Playlist</span>
+          </button>
+
+          <!-- Playlist Choice Rows -->
+          <div id="addToPlaylistChoicesList" class="add-to-playlist-choices" style="max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:0.45rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Up Next Queue Slide-Over Drawer -->
+    <div id="queueDrawerModal" class="modal-overlay queue-drawer-overlay">
+      <div class="queue-drawer-sheet">
+        <div class="queue-drawer-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Up Next Queue</h3>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button id="btnClearQueue" class="btn-pill btn-sm" title="Clear Up Next" type="button" style="font-size:0.75rem; padding:0.3rem 0.65rem;">Clear Queue</button>
+            <button class="modal-close-btn" data-close="queueDrawerModal">&times;</button>
+          </div>
+        </div>
+
+        <div class="queue-drawer-body">
+          <!-- Now Playing Card -->
+          <div class="queue-section-label">Now Playing</div>
+          <div id="queueNowPlayingCard" class="queue-track-item active-queue-item">
+            <img id="queueNowPlayingArt" src="assets/weleta_cover.jpg" alt="Art" class="queue-thumb-img">
+            <div style="flex:1; min-width:0;">
+              <div id="queueNowPlayingTitle" style="font-weight:700; font-size:0.9rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">No Track Playing</div>
+              <div id="queueNowPlayingArtist" style="font-size:0.78rem; color:var(--color-text-dim);">Select a song to start listening</div>
+            </div>
+            <div class="queue-equalizer-bars">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <!-- Upcoming Queue List -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem;">
+            <div class="queue-section-label" style="margin:0;">Next in Queue</div>
+            <span id="queueUpcomingCount" style="font-size:0.72rem; color:var(--color-text-dim);">0 tracks</span>
+          </div>
+          <div id="queueUpcomingList" class="queue-tracks-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Sleep Timer Popover / Modal -->
+    <div id="sleepTimerModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 400px; width: 90%;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Sleep Timer</h3>
+          </div>
+          <button class="modal-close-btn" data-close="sleepTimerModal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:0.75rem;">
+          <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0 0 0.4rem 0;">Music will automatically fade out and pause after the chosen duration.</p>
+          <button class="btn-timer-option" data-timer="15" type="button">15 Minutes</button>
+          <button class="btn-timer-option" data-timer="30" type="button">30 Minutes</button>
+          <button class="btn-timer-option" data-timer="45" type="button">45 Minutes</button>
+          <button class="btn-timer-option" data-timer="60" type="button">1 Hour</button>
+          <button class="btn-timer-option" data-timer="end_of_track" type="button">End of Current Song</button>
+          <button id="btnTurnOffSleepTimer" class="btn-timer-option btn-timer-off" style="display:none; color:#f87171; border-color:rgba(239,68,68,0.3);" type="button">Turn Off Timer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Add Songs to Playlist Modal (Catalog Picker) -->
+    <div id="addTracksToPlaylistPickerModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 540px; width: 92%; max-height:85vh; display:flex; flex-direction:column;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add Songs to Playlist</h3>
+          </div>
+          <button class="modal-close-btn" data-close="addTracksToPlaylistPickerModal">&times;</button>
+        </div>
+        <div style="padding:0.75rem 1.25rem 0 1.25rem;">
+          <input type="text" id="inputPlaylistSongSearch" class="form-input" placeholder="Search song title or artist...">
+        </div>
+        <div id="playlistSongPickerList" class="modal-body" style="padding:1rem 1.25rem; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
       </div>
     </div>
 
