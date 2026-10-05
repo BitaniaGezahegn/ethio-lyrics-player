@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v20';
+const CACHE_NAME = 'ethio-lyrics-cache-v22';
 
 const STATIC_ASSETS = [
   './',
@@ -9,6 +9,10 @@ const STATIC_ASSETS = [
   './js/app.js',
   './js/recommendation-engine.js',
   './js/party-sync.js',
+  './js/local-sync-service.js',
+  './js/webrtc-p2p.js',
+  './js/camera-scanner.js',
+  './js/qr-code.js',
   './js/player.js',
   './js/lyrics-parser.js',
   './js/palette.js',
@@ -47,12 +51,14 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip Firebase, Google APIs, and Cloudflare R2 audio streaming requests from Cache API
+  // Skip Firebase, Google APIs, Cloudflare R2, and local hub /api/ and /ws endpoints
   if (
     url.origin.includes('firebase') ||
     url.origin.includes('googleapis') ||
     url.origin.includes('gstatic') ||
     url.origin.includes('r2.dev') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/ws') ||
     event.request.method !== 'GET'
   ) {
     return;

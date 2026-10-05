@@ -1562,6 +1562,89 @@
 
         <div class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem;">
 
+          <!-- Sync Mode Switcher: Cloud vs Local (Offline) -->
+          <div id="syncModeSelectorBar" class="sync-mode-selector-bar">
+            <button type="button" id="btnSyncModeCloud" class="sync-mode-tab active" data-mode="cloud">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+              </svg>
+              <span>Cloud (Online)</span>
+            </button>
+            <button type="button" id="btnSyncModeLocal" class="sync-mode-tab" data-mode="local">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <line x1="12" y1="20" x2="12.01" y2="20" />
+              </svg>
+              <span>Local Sync (Offline)</span>
+            </button>
+          </div>
+
+          <!-- Local Hub Status Banner (Shown in Local Mode) -->
+          <div id="localHubInfoBanner" class="local-hub-banner" style="display:none;">
+            <div class="local-hub-status-row">
+              <span id="localHubStatusBadge" class="local-hub-badge">
+                <span class="live-pulse-dot-green"></span>
+                <span id="localHubStatusText">Local LAN Hub</span>
+              </span>
+              <span id="localTransportBadge" class="local-transport-tag">⚡ Fast LAN</span>
+            </div>
+            <div id="localHubAddressText" class="local-hub-address">Host Wi-Fi: http://localhost:3000</div>
+            <div class="local-hub-tip">No internet needed! Connect friends to the same Wi-Fi or phone hotspot.</div>
+
+            <!-- Submode Toggle: Phone-to-Phone P2P vs Local Hub Server -->
+            <div id="p2pSubmodeSelector" class="p2p-submode-selector">
+              <button type="button" id="btnSubmodeP2p" class="p2p-submode-btn active" data-submode="p2p">
+                <span>📱 Phone-to-Phone (No PC)</span>
+              </button>
+              <button type="button" id="btnSubmodeServer" class="p2p-submode-btn" data-submode="server">
+                <span>💻 Wi-Fi Hub Server</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- View P2P Lobby: Phone-to-Phone Direct (No PC Needed / Up to 8 Phones) -->
+          <div id="p2pLobbyView" style="display:none; flex-direction:column; gap:0.9rem;">
+            <!-- Host Phone Card -->
+            <div class="room-action-card">
+              <div class="room-action-icon-wrap" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.35);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                  <line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Host Phone Party (DJ)</div>
+                <div style="font-size:0.76rem; color:var(--color-text-dim); margin-top:2px;">
+                  Turn on hotspot. Up to 8 friends can join and stream your songs!
+                </div>
+              </div>
+              <button id="btnStartP2pHost" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap; background:#10b981; border-color:#059669;" type="button">
+                Host P2P
+              </button>
+            </div>
+
+            <!-- Join Friend Phone Card -->
+            <div class="room-action-card">
+              <div class="room-action-icon-wrap" style="background:rgba(96,165,250,0.15); border-color:rgba(96,165,250,0.35);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Join Friend's Party</div>
+                <div style="font-size:0.76rem; color:var(--color-text-dim); margin-top:2px;">
+                  Connect to friend's hotspot, scan their QR code, and listen in sync.
+                </div>
+              </div>
+              <button id="btnScanJoinP2p" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
+                Scan to Join
+              </button>
+            </div>
+          </div>
+
           <!-- View 1: Lobby (Not in a room) -->
           <div id="roomLobbyView" style="display:flex; flex-direction:column; gap:1rem;">
 
@@ -1666,6 +1749,42 @@
               </button>
             </div>
 
+            <!-- Local Wi-Fi Pairing Card (QR Code & Quick Join) -->
+            <div id="localRoomPairingCard" class="local-pairing-card" style="display:none;">
+              <div class="local-pairing-header">
+                <div style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                  <span>Scan to Join on Wi-Fi / Hotspot</span>
+                </div>
+                <button type="button" id="btnToggleQrCode" class="btn-pill btn-sm" style="font-size:0.7rem; padding:0.2rem 0.55rem;">Hide QR</button>
+              </div>
+              <div id="localQrContainer" class="local-qr-wrapper"></div>
+              <div id="localQrUrlLabel" class="local-qr-url">http://192.168.1.15:3000/?join=ETHIO-XXXX</div>
+              <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Point any phone camera at this QR code to join in sync without internet!</div>
+            </div>
+
+            <!-- P2P Connected Phones Card (Star Mesh: Up to 8 Phones) -->
+            <div id="p2pPeersManagerCard" class="local-pairing-card" style="display:none;">
+              <div class="local-pairing-header">
+                <div style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                  </svg>
+                  <span id="p2pPeersCountTitle">Connected Phones (0 / 8)</span>
+                </div>
+                <button type="button" id="btnAddP2pFriend" class="btn-pill btn-sm" style="font-size:0.75rem; padding:0.25rem 0.6rem; color:#6ee7b7; border-color:rgba(16,185,129,0.35);">
+                  + Pair Phone
+                </button>
+              </div>
+              <div id="p2pPeersList" class="p2p-phone-list" style="width:100%;"></div>
+            </div>
+
             <!-- Synchronized Track Box -->
             <div
               style="display:flex; align-items:center; gap:0.85rem; padding:0.75rem 0.9rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
@@ -1732,6 +1851,58 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Camera QR Scanner -->
+    <div id="p2pCameraModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 400px; width: 92%;">
+        <div class="modal-header">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <h3 id="p2pCameraTitle" style="font-size:1.05rem; margin:0; font-weight:700;">Scan QR Code</h3>
+          </div>
+          <button class="modal-close-btn" id="btnCloseP2pCamera">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:1rem; align-items:center;">
+          <div class="p2p-scanner-box">
+            <video id="p2pScannerVideo" class="p2p-scanner-video" playsinline autoplay muted></video>
+            <div class="p2p-scanner-laser"></div>
+            <div class="p2p-target-reticle"></div>
+          </div>
+          <div id="p2pScannerInstructions" style="font-size:0.76rem; color:var(--color-text-dim); text-align:center;">
+            Point your camera at the QR code on the other phone's screen.
+          </div>
+          <!-- Manual Code Fallback -->
+          <div style="width:100%; display:flex; flex-direction:column; gap:0.4rem;">
+            <div style="font-size:0.72rem; color:var(--color-text-muted); text-align:center;">Or paste pairing code below:</div>
+            <textarea id="p2pManualCodeInput" class="form-input" rows="2" placeholder="Paste code here..." style="font-family:monospace; font-size:0.75rem; width:100%; border-radius:8px;"></textarea>
+            <button type="button" id="btnSubmitP2pManualCode" class="btn-primary" style="padding:0.45rem; font-size:0.8rem;">Submit Pairing Code</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Phone-to-Phone Pairing Dialog (QR Code Display) -->
+    <div id="p2pPairingModal" class="modal-overlay">
+      <div class="modal-card" style="max-width: 400px; width: 92%;">
+        <div class="modal-header">
+          <h3 id="p2pPairingModalTitle" style="font-size:1.05rem; margin:0; font-weight:700;">Pair Phone</h3>
+          <button class="modal-close-btn" id="btnCloseP2pPairingModal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:0.85rem; align-items:center;">
+          <div id="p2pPairingQrContainer" class="local-qr-wrapper"></div>
+          <div id="p2pPairingStepText" style="font-size:0.78rem; color:#fff; text-align:center; font-weight:600;">
+            Friend: scan this QR code with their phone
+          </div>
+          <button type="button" id="btnP2pCopyCode" class="btn-pill btn-sm" style="font-size:0.72rem; padding:0.25rem 0.6rem;">Copy Code</button>
+          <button type="button" id="btnP2pScanFriendAnswer" class="btn-primary" style="width:100%; padding:0.55rem; font-size:0.82rem; margin-top:0.4rem;">
+            📸 Next: Scan Friend's Answer QR
+          </button>
         </div>
       </div>
     </div>

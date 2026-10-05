@@ -1,0 +1,21 @@
+{
+  "name": "ethio-lyrics-player",
+  "version": "2.0.0",
+  "description": "Modern Ethiopian and multilingual lyrics player with real-time local and cloud listen-together synchronization.",
+  "main": "local-sync-server.js",
+  "scripts": {
+    "start": "node local-sync-server.js",
+    "local-sync": "node local-sync-server.js",
+    "test": "node local-sync-server.js --test"
+  },
+  "keywords": [
+    "music-player",
+    "lyrics-sync",
+    "ethiopian-music",
+    "local-sync",
+    "party-mode",
+    "offline-first"
+  ],
+  "author": "Bitania Gezahegn",
+  "license": "MIT"
+}

@@ -6,6 +6,9 @@ import { Storage } from './storage.js';
 import { PaletteExtractor } from './palette.js';
 import { AmbientParticles } from './particles.js';
 import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service.js';
+import { LocalSyncService } from './local-sync-service.js';
+import { QRCodeGenerator } from './qr-code.js';
+import { CameraScanner } from './camera-scanner.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
 
@@ -51,6 +54,17 @@ class LyricsApp {
     this.currentPendingPlaylistTrack = null;
 
     // Listen Together (Party Room & Synced Playback v2) State
+    this.syncMode = 'cloud'; // 'cloud' | 'local'
+    this.localSubmode = 'p2p'; // 'p2p' | 'server'
+    this.pendingP2pCode = null;
+    this.pendingP2pScanRole = null;
+    this.localLanUrl = null;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'local' || window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.') || window.location.hostname.startsWith('10.') || window.location.hostname.startsWith('172.')) {
+        this.syncMode = 'local';
+      }
+    } catch (e) {}
     this.activeRoom = null;
     this.isRoomHost = false;
     this.roomUnsubscribe = null;
@@ -149,10 +163,14 @@ class LyricsApp {
     // 4. Render Home Music Suggestion & Discovery View
     this.renderHomePage();
 
-    // 5. Check if user opened via Room Invite link (?room=ETHIO-XXXX or #room=ETHIO-XXXX)
+    // 5. Check if user opened via Room Invite link (?room=ETHIO-XXXX or #room=ETHIO-XXXX or ?join=ETHIO-XXXX)
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      let roomCode = urlParams.get('room');
+      let roomCode = urlParams.get('room') || urlParams.get('join');
+      const modeParam = urlParams.get('mode');
+      if (modeParam === 'local') {
+        this.syncMode = 'local';
+      }
       if (!roomCode && window.location.hash.includes('room=')) {
         roomCode = window.location.hash.split('room=')[1];
       }
@@ -258,6 +276,42 @@ class LyricsApp {
     this.dbgEpochAction = document.getElementById('dbgEpochAction');
     this.dbgSeekStats = document.getElementById('dbgSeekStats');
     this.dbgSparkline = document.getElementById('dbgSparkline');
+
+    // Local Sync Mode Selector & Local Hub elements
+    this.btnSyncModeCloud = document.getElementById('btnSyncModeCloud');
+    this.btnSyncModeLocal = document.getElementById('btnSyncModeLocal');
+    this.localHubInfoBanner = document.getElementById('localHubInfoBanner');
+    this.localHubStatusBadge = document.getElementById('localHubStatusBadge');
+    this.localHubStatusText = document.getElementById('localHubStatusText');
+    this.localTransportBadge = document.getElementById('localTransportBadge');
+    this.localHubAddressText = document.getElementById('localHubAddressText');
+    this.localRoomPairingCard = document.getElementById('localRoomPairingCard');
+    this.localQrContainer = document.getElementById('localQrContainer');
+    this.localQrUrlLabel = document.getElementById('localQrUrlLabel');
+    this.btnToggleQrCode = document.getElementById('btnToggleQrCode');
+
+    // Mobile P2P Elements
+    this.btnSubmodeP2p = document.getElementById('btnSubmodeP2p');
+    this.btnSubmodeServer = document.getElementById('btnSubmodeServer');
+    this.p2pLobbyView = document.getElementById('p2pLobbyView');
+    this.btnStartP2pHost = document.getElementById('btnStartP2pHost');
+    this.btnScanJoinP2p = document.getElementById('btnScanJoinP2p');
+    this.p2pPeersManagerCard = document.getElementById('p2pPeersManagerCard');
+    this.p2pPeersCountTitle = document.getElementById('p2pPeersCountTitle');
+    this.btnAddP2pFriend = document.getElementById('btnAddP2pFriend');
+    this.p2pPeersList = document.getElementById('p2pPeersList');
+    this.p2pCameraModal = document.getElementById('p2pCameraModal');
+    this.p2pScannerVideo = document.getElementById('p2pScannerVideo');
+    this.btnCloseP2pCamera = document.getElementById('btnCloseP2pCamera');
+    this.p2pManualCodeInput = document.getElementById('p2pManualCodeInput');
+    this.btnSubmitP2pManualCode = document.getElementById('btnSubmitP2pManualCode');
+    this.p2pPairingModal = document.getElementById('p2pPairingModal');
+    this.p2pPairingModalTitle = document.getElementById('p2pPairingModalTitle');
+    this.btnCloseP2pPairingModal = document.getElementById('btnCloseP2pPairingModal');
+    this.p2pPairingQrContainer = document.getElementById('p2pPairingQrContainer');
+    this.p2pPairingStepText = document.getElementById('p2pPairingStepText');
+    this.btnP2pCopyCode = document.getElementById('btnP2pCopyCode');
+    this.btnP2pScanFriendAnswer = document.getElementById('btnP2pScanFriendAnswer');
 
     // Hero Spotlight Section
     this.heroCard = document.getElementById('heroCard');
@@ -1652,6 +1706,86 @@ class LyricsApp {
       this.btnLeaveRoom.addEventListener('click', () => this.handleLeaveRoom(true));
     }
 
+    // Sync Mode Switcher (Cloud vs Local)
+    if (this.btnSyncModeCloud) {
+      this.btnSyncModeCloud.addEventListener('click', () => {
+        this.setSyncMode('cloud');
+      });
+    }
+    if (this.btnSyncModeLocal) {
+      this.btnSyncModeLocal.addEventListener('click', () => {
+        this.setSyncMode('local');
+      });
+    }
+    if (this.btnToggleQrCode) {
+      this.btnToggleQrCode.addEventListener('click', () => {
+        if (!this.localQrContainer) return;
+        const isHidden = this.localQrContainer.style.display === 'none';
+        this.localQrContainer.style.display = isHidden ? 'flex' : 'none';
+        this.btnToggleQrCode.textContent = isHidden ? 'Hide QR' : 'Show QR';
+      });
+    }
+
+    // P2P Mobile Submode Switcher & Actions
+    if (this.btnSubmodeP2p) {
+      this.btnSubmodeP2p.addEventListener('click', () => {
+        this.setLocalSubmode('p2p');
+      });
+    }
+    if (this.btnSubmodeServer) {
+      this.btnSubmodeServer.addEventListener('click', () => {
+        this.setLocalSubmode('server');
+      });
+    }
+    if (this.btnStartP2pHost) {
+      this.btnStartP2pHost.addEventListener('click', () => {
+        this.handleStartP2pHost();
+      });
+    }
+    if (this.btnScanJoinP2p) {
+      this.btnScanJoinP2p.addEventListener('click', () => {
+        this.handleScanJoinP2p();
+      });
+    }
+    if (this.btnAddP2pFriend) {
+      this.btnAddP2pFriend.addEventListener('click', () => {
+        this.handleGenerateP2pInvite();
+      });
+    }
+    if (this.btnP2pScanFriendAnswer) {
+      this.btnP2pScanFriendAnswer.addEventListener('click', () => {
+        this.handleScanFriendAnswer();
+      });
+    }
+    if (this.btnCloseP2pCamera) {
+      this.btnCloseP2pCamera.addEventListener('click', () => {
+        this.closeP2pCameraScanner();
+      });
+    }
+    if (this.btnCloseP2pPairingModal) {
+      this.btnCloseP2pPairingModal.addEventListener('click', () => {
+        if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
+      });
+    }
+    if (this.btnP2pCopyCode) {
+      this.btnP2pCopyCode.addEventListener('click', () => {
+        if (this.pendingP2pCode) {
+          navigator.clipboard.writeText(this.pendingP2pCode).then(() => {
+            this.btnP2pCopyCode.textContent = 'Copied!';
+            setTimeout(() => { if (this.btnP2pCopyCode) this.btnP2pCopyCode.textContent = 'Copy Code'; }, 1500);
+          });
+        }
+      });
+    }
+    if (this.btnSubmitP2pManualCode) {
+      this.btnSubmitP2pManualCode.addEventListener('click', () => {
+        const code = this.p2pManualCodeInput ? this.p2pManualCodeInput.value.trim() : '';
+        if (!code) return;
+        this.closeP2pCameraScanner();
+        if (this.onP2pScanSuccess) this.onP2pScanSuccess(code);
+      });
+    }
+
     // Listen Together Audio Latency & Resync Controls
     if (this.sliderAudioDelay) {
       const currentDelay = Storage.getAudioDelayMs();
@@ -2414,6 +2548,18 @@ class LyricsApp {
 
     // Broadcast track change if Host
     if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
+      if (this.syncMode === 'local') {
+        const blob = track.audioBlob || track._audioFile;
+        if (blob) {
+          if (LocalSyncService.isP2pActive) {
+            LocalSyncService.broadcastP2pAudio(track.id, blob, (percent) => {
+              this.showToast(`Streaming song to friends... ${percent}%`);
+            });
+          } else {
+            LocalSyncService.uploadLocalAudio(track.id, blob);
+          }
+        }
+      }
       this.hostBroadcaster?.notify('track', { bumpEpoch: true });
     }
 
@@ -4124,6 +4270,266 @@ class LyricsApp {
     return false;
   }
 
+  getSyncService() {
+    return this.syncMode === 'local' ? LocalSyncService : FirebaseService;
+  }
+
+  setSyncMode(mode) {
+    if (this.activeRoom) {
+      alert('Please leave the current session before switching modes.');
+      return;
+    }
+    this.syncMode = mode;
+    this.updateSyncModeUI();
+  }
+
+  async updateSyncModeUI() {
+    if (this.btnSyncModeCloud) {
+      this.btnSyncModeCloud.classList.toggle('active', this.syncMode === 'cloud');
+    }
+    if (this.btnSyncModeLocal) {
+      this.btnSyncModeLocal.classList.toggle('active', this.syncMode === 'local');
+    }
+
+    if (this.syncMode === 'local') {
+      if (this.localHubInfoBanner) this.localHubInfoBanner.style.display = 'flex';
+      this.updateLocalSubmodeUI();
+
+      const isServerOnline = await LocalSyncService.checkServerAvailable();
+      if (isServerOnline) {
+        const lanInfo = await LocalSyncService.fetchLanInfo();
+        const firstLan = lanInfo.addresses.find(a => a.interface !== 'loopback') || lanInfo.addresses[0];
+        const hostIp = firstLan ? firstLan.address : 'localhost';
+        const port = lanInfo.port || 3000;
+
+        if (this.localHubStatusBadge) {
+          this.localHubStatusBadge.innerHTML = `<span class="live-pulse-dot-green"></span> Local Server Online`;
+        }
+        if (this.localTransportBadge) {
+          this.localTransportBadge.textContent = '⚡ Low-Latency WS';
+        }
+        if (this.localHubAddressText) {
+          this.localHubAddressText.textContent = `Wi-Fi URL: http://${hostIp}:${port}`;
+        }
+        this.localLanUrl = `http://${hostIp}:${port}`;
+      } else {
+        if (this.localHubStatusBadge) {
+          this.localHubStatusBadge.innerHTML = `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-right:4px;"></span> Multi-Tab Offline Mode`;
+        }
+        if (this.localTransportBadge) {
+          this.localTransportBadge.textContent = 'Multi-Window';
+        }
+        if (this.localHubAddressText) {
+          this.localHubAddressText.textContent = `Tip: Run 'npm run local-sync' or double-click start-local-sync.bat for phone Wi-Fi sync`;
+        }
+        this.localLanUrl = window.location.origin;
+      }
+    } else {
+      if (this.localHubInfoBanner) this.localHubInfoBanner.style.display = 'none';
+      if (this.localRoomPairingCard) this.localRoomPairingCard.style.display = 'none';
+      if (this.p2pLobbyView) this.p2pLobbyView.style.display = 'none';
+      if (this.p2pPeersManagerCard) this.p2pPeersManagerCard.style.display = 'none';
+    }
+  }
+
+  setLocalSubmode(submode) {
+    this.localSubmode = submode;
+    this.updateLocalSubmodeUI();
+  }
+
+  updateLocalSubmodeUI() {
+    if (this.btnSubmodeP2p) {
+      this.btnSubmodeP2p.classList.toggle('active', this.localSubmode === 'p2p');
+    }
+    if (this.btnSubmodeServer) {
+      this.btnSubmodeServer.classList.toggle('active', this.localSubmode === 'server');
+    }
+
+    if (this.p2pLobbyView && this.roomLobbyView) {
+      if (this.syncMode === 'local' && this.localSubmode === 'p2p' && !this.activeRoom) {
+        this.p2pLobbyView.style.display = 'flex';
+        this.roomLobbyView.style.display = 'none';
+      } else if (!this.activeRoom) {
+        this.p2pLobbyView.style.display = 'none';
+        this.roomLobbyView.style.display = 'flex';
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Direct Phone-to-Phone WebRTC P2P Handlers (Up to 8 Phones)
+  // --------------------------------------------------------------------------
+  async handleStartP2pHost() {
+    try {
+      this.myParticipant = Storage.getParticipant(this.currentUser);
+      const currentTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
+
+      const room = await LocalSyncService.createP2pHostRoom(
+        this.myParticipant,
+        currentTrack,
+        this.player.isPlaying ? 'playing' : 'paused',
+        this.player.currentTime || 0,
+        this.player.getEffectivePlaybackRate ? this.player.getEffectivePlaybackRate() : 1.0
+      );
+
+      this.activeRoom = room;
+      this.isRoomHost = true;
+      document.body.classList.remove('is-party-guest');
+
+      this.initHostBroadcaster();
+      this.subscribeToRoom(room.roomCode);
+
+      this.updateListenRoomUI(room);
+      this.updateSyncChipUI({ state: 'host' });
+
+      // Show P2P Peer Manager Card
+      if (this.p2pPeersManagerCard) {
+        this.p2pPeersManagerCard.style.display = 'flex';
+        this.renderP2pPeersList([]);
+      }
+
+      this.showToast('Mobile P2P Hub Active! Tap "+ Pair Phone" to add friends 📱');
+      this.handleGenerateP2pInvite();
+    } catch (err) {
+      alert('Failed to start P2P Party: ' + err.message);
+    }
+  }
+
+  async handleGenerateP2pInvite() {
+    try {
+      const invite = await LocalSyncService.createP2pInvite();
+      this.pendingP2pCode = invite.inviteCode;
+
+      if (this.p2pPairingModal) {
+        if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = `Pair Phone (${LocalSyncService.p2pConnectedCount + 1}/8)`;
+        if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Friend: tap <strong>"Join Friend's Party"</strong> and scan this QR code:`;
+        if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = invite.qrSvg;
+        if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'block';
+        this.p2pPairingModal.classList.add('active');
+      }
+    } catch (err) {
+      alert('Cannot pair phone: ' + err.message);
+    }
+  }
+
+  handleScanFriendAnswer() {
+    if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
+    this.openP2pCameraScanner('host_answer', 'Scan Friend\'s Answer QR Code', (answerCode) => {
+      LocalSyncService.acceptP2pAnswer(answerCode).then(() => {
+        this.showToast('Friend joined the party! 🎧');
+        if (this.p2pPeersManagerCard) {
+          this.renderP2pPeersList(this.activeRoom.participants || []);
+        }
+      }).catch(err => {
+        alert('Pairing failed: ' + err.message);
+      });
+    });
+  }
+
+  handleScanJoinP2p() {
+    this.openP2pCameraScanner('join_offer', 'Scan Host DJ\'s QR Code', async (offerCode) => {
+      try {
+        this.myParticipant = Storage.getParticipant(this.currentUser);
+        this.showToast('Generating answer QR code...');
+        const result = await LocalSyncService.joinP2pRoom(offerCode, this.myParticipant);
+
+        // Show Guest Answer QR to Host
+        if (this.p2pPairingModal) {
+          if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = 'Show Answer to Host DJ';
+          if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Hold this QR code up so the <strong>Host DJ</strong> can scan it:`;
+          if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = result.qrSvg;
+          this.pendingP2pCode = result.answerCode;
+          if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'none';
+          this.p2pPairingModal.classList.add('active');
+        }
+
+        // Initialize Guest Engine
+        this.isRoomHost = false;
+        document.body.classList.add('is-party-guest');
+        this.initGuestSyncEngine();
+        this.subscribeToRoom('P2P-PARTY');
+      } catch (err) {
+        alert('Could not join P2P party: ' + err.message);
+      }
+    });
+  }
+
+  openP2pCameraScanner(role, title, onCodeReceived) {
+    if (!this.p2pCameraModal || !this.p2pScannerVideo) return;
+    this.pendingP2pScanRole = role;
+    if (this.p2pCameraTitle) this.p2pCameraTitle.textContent = title;
+    this.p2pCameraModal.classList.add('active');
+
+    this.onP2pScanSuccess = onCodeReceived;
+
+    CameraScanner.start(
+      this.p2pScannerVideo,
+      (detectedCode) => {
+        this.closeP2pCameraScanner();
+        if (this.onP2pScanSuccess) this.onP2pScanSuccess(detectedCode.trim());
+      },
+      (err) => {
+        console.warn('Camera error:', err);
+      }
+    );
+  }
+
+  closeP2pCameraScanner() {
+    CameraScanner.stop();
+    if (this.p2pCameraModal) this.p2pCameraModal.classList.remove('active');
+  }
+
+  renderP2pPeersList(participants) {
+    if (!this.p2pPeersList) return;
+    const list = participants.filter(p => !p.isHost);
+    const count = list.length;
+    if (this.p2pPeersCountTitle) {
+      this.p2pPeersCountTitle.textContent = `Connected Phones (${count} / 8)`;
+    }
+
+    if (list.length === 0) {
+      this.p2pPeersList.innerHTML = `<div style="font-size:0.75rem; color:var(--color-text-dim); text-align:center; padding:0.4rem;">No other phones connected yet. Tap "+ Pair Phone" to add up to 8 friends!</div>`;
+      return;
+    }
+
+    this.p2pPeersList.innerHTML = '';
+    list.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'p2p-phone-card';
+      card.innerHTML = `
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+          <span style="font-weight:600; font-size:0.82rem; color:#fff;">📱 ${p.name || 'Friend'}</span>
+        </div>
+        <span class="badge-status-sync" style="font-size:0.68rem; color:#6ee7b7; border-color:rgba(16,185,129,0.3);">In Sync</span>
+      `;
+      this.p2pPeersList.appendChild(card);
+    });
+  }
+
+  async renderLocalPairingQr(roomCode) {
+    if (!this.localRoomPairingCard || !this.localQrContainer) return;
+    this.localRoomPairingCard.style.display = 'flex';
+
+    let baseUrl = this.localLanUrl;
+    if (!baseUrl) {
+      const lanInfo = await LocalSyncService.fetchLanInfo();
+      const firstLan = lanInfo.addresses.find(a => a.interface !== 'loopback') || lanInfo.addresses[0];
+      const hostIp = firstLan ? firstLan.address : window.location.hostname;
+      const port = lanInfo.port || window.location.port || 3000;
+      baseUrl = `http://${hostIp}:${port}`;
+      this.localLanUrl = baseUrl;
+    }
+
+    const joinUrl = `${baseUrl}/?room=${encodeURIComponent(roomCode)}&mode=local`;
+    if (this.localQrUrlLabel) {
+      this.localQrUrlLabel.textContent = joinUrl;
+    }
+
+    const svgMarkup = QRCodeGenerator.generateSVG(joinUrl, 160, '#000000', '#ffffff');
+    this.localQrContainer.innerHTML = svgMarkup;
+  }
+
   openListenTogetherModal() {
     if (!this.listenTogetherModal) return;
     this.myParticipant = Storage.getParticipant(this.currentUser);
@@ -4131,10 +4537,15 @@ class LyricsApp {
       this.currentParticipantNameLabel.textContent = this.myParticipant.name;
     }
 
+    this.updateSyncModeUI();
+
     if (this.activeRoom) {
       if (this.roomLobbyView) this.roomLobbyView.style.display = 'none';
       if (this.roomActiveView) this.roomActiveView.style.display = 'flex';
       this.updateListenRoomUI(this.activeRoom);
+      if (this.syncMode === 'local' && this.isRoomHost) {
+        this.renderLocalPairingQr(this.activeRoom.roomCode);
+      }
     } else {
       if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
       if (this.roomActiveView) this.roomActiveView.style.display = 'none';
@@ -4151,10 +4562,24 @@ class LyricsApp {
         this.btnCreateRoom.textContent = 'Starting...';
       }
 
-      await FirebaseService.calibrateServerTime();
+      const syncService = this.getSyncService();
+      await syncService.calibrateServerTime();
 
       const currentTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-      const room = await FirebaseService.createListenRoom(
+
+      // In Local Mode: if track has local audio file or blob, upload to local hub relay so guests can stream it over Wi-Fi
+      if (this.syncMode === 'local' && currentTrack) {
+        try {
+          const blobToUpload = currentTrack.audioBlob || currentTrack._audioFile;
+          if (blobToUpload) {
+            await LocalSyncService.uploadLocalAudio(currentTrack.id, blobToUpload);
+          }
+        } catch (e) {
+          console.warn('[LocalSync] Audio relay upload warning:', e);
+        }
+      }
+
+      const room = await syncService.createListenRoom(
         this.myParticipant,
         currentTrack,
         this.player.isPlaying ? 'playing' : 'paused',
@@ -4173,6 +4598,10 @@ class LyricsApp {
       this.updateListenRoomUI(room);
       this.updateSyncChipUI({ state: 'host' });
 
+      if (this.syncMode === 'local') {
+        this.renderLocalPairingQr(room.roomCode);
+      }
+
       if (this.btnCreateRoom) {
         this.btnCreateRoom.disabled = false;
         this.btnCreateRoom.textContent = 'Start Session';
@@ -4190,6 +4619,7 @@ class LyricsApp {
     if (this.hostBroadcaster) {
       this.hostBroadcaster.stop();
     }
+    const syncService = this.getSyncService();
     this.hostBroadcaster = new HostBroadcaster({
       getState: () => ({
         trackId: this.currentTrack ? this.currentTrack.id : null,
@@ -4206,10 +4636,12 @@ class LyricsApp {
           album: this.currentTrack.album || 'Single',
           year: this.currentTrack.year || '2024',
           cover: this.currentTrack.cover || 'assets/weleta_cover.jpg',
-          audioUrl: this.currentTrack.audioUrl || '',
+          audioUrl: this.syncMode === 'local'
+            ? (this.currentTrack.audioUrl || LocalSyncService.getStreamAudioUrl(this.currentTrack.id))
+            : (this.currentTrack.audioUrl || ''),
           lrc: this.currentTrack.lrc || ''
         } : null;
-        await FirebaseService.publishPlaybackAnchor(this.activeRoom.roomCode, anchor, {
+        await syncService.publishPlaybackAnchor(this.activeRoom.roomCode, anchor, {
           currentTrack: currentTrack,
           playbackState: anchor.state,
           positionSec: anchor.positionSec,
@@ -4217,7 +4649,7 @@ class LyricsApp {
           epoch: anchor.epoch
         });
       },
-      clock: { now: () => FirebaseService.getServerNow() },
+      clock: { now: () => syncService.getServerNow() },
       getLatencySec: () => this.audioDelaySec || 0,
     });
     this.hostBroadcaster.start();
@@ -4227,6 +4659,7 @@ class LyricsApp {
     if (this.guestSync) {
       this.guestSync.stop();
     }
+    const syncService = this.getSyncService();
     const playerAdapter = {
       getPosition: () => this.player.currentTime || 0,
       isPlaying: () => !!this.player.isPlaying,
@@ -4239,7 +4672,7 @@ class LyricsApp {
     };
     this.guestSync = new GuestSyncEngine({
       player: playerAdapter,
-      clock: { now: () => FirebaseService.getServerNow() },
+      clock: { now: () => syncService.getServerNow() },
       getLatencySec: () => this.audioDelaySec || 0,
       onStatus: (status) => {
         this.updateSyncChipUI(status);
@@ -4255,10 +4688,11 @@ class LyricsApp {
 
   startPresenceHeartbeat(roomCode, isHost) {
     this.stopPresenceHeartbeat();
+    const syncService = this.getSyncService();
     const sendPulse = async () => {
       if (!this.activeRoom || !this.myParticipant) return;
       const drift = this.guestSync ? Math.round(this.guestSync.lastDriftSec * 1000) : 0;
-      await FirebaseService.heartbeatPresence(roomCode, this.myParticipant.id, drift);
+      await syncService.heartbeatPresence(roomCode, this.myParticipant.id, drift);
     };
 
     sendPulse();
@@ -4271,17 +4705,17 @@ class LyricsApp {
       if (!this.isRoomHost && Array.isArray(this.presenceParticipants) && this.presenceParticipants.length > 0) {
         const now = Date.now();
         const hostP = this.presenceParticipants.find(p => p.isHost);
-        const hostIsDark = !hostP || (now - (hostP.lastSeen?.toMillis ? hostP.lastSeen.toMillis() : (hostP.lastSeenMs || 0)) > 90000);
+        const hostIsDark = !hostP || (now - (hostP.lastSeen?.toMillis ? hostP.lastSeen.toMillis() : (hostP.lastSeen || hostP.lastSeenMs || 0)) > 90000);
         if (hostIsDark) {
           const alive = this.presenceParticipants.filter(p => {
-            const seen = p.lastSeen?.toMillis ? p.lastSeen.toMillis() : (p.lastSeenMs || 0);
+            const seen = p.lastSeen?.toMillis ? p.lastSeen.toMillis() : (p.lastSeen || p.lastSeenMs || 0);
             return (now - seen) <= 90000;
           });
           alive.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
           if (alive.length > 0 && alive[0].id === this.myParticipant.id) {
             console.log('[PartySync] Host timed out. Claiming host as oldest active participant...');
             try {
-              const claimed = await FirebaseService.claimHost(roomCode, this.myParticipant);
+              const claimed = await syncService.claimHost(roomCode, this.myParticipant);
               if (claimed) {
                 this.isRoomHost = true;
                 document.body.classList.remove('is-party-guest');
@@ -4296,7 +4730,7 @@ class LyricsApp {
           }
         }
       }
-    }, 30000);
+    }, 15000);
   }
 
   stopPresenceHeartbeat() {
@@ -4338,9 +4772,10 @@ class LyricsApp {
 
     try {
       this.myParticipant = Storage.getParticipant(this.currentUser);
-      await FirebaseService.calibrateServerTime();
+      const syncService = this.getSyncService();
+      await syncService.calibrateServerTime();
 
-      const room = await FirebaseService.joinListenRoom(fullTargetCode, this.myParticipant);
+      const room = await syncService.joinListenRoom(fullTargetCode, this.myParticipant);
 
       this.activeRoom = room;
       this.isRoomHost = room.hostId === this.myParticipant.id;
@@ -4390,8 +4825,10 @@ class LyricsApp {
       this.roomReactionsUnsubscribe = null;
     }
 
+    const syncService = this.getSyncService();
+
     // 1. Room document listener (state & anchor)
-    this.roomUnsubscribe = FirebaseService.subscribeListenRoom(roomCode, async (room) => {
+    this.roomUnsubscribe = syncService.subscribeListenRoom(roomCode, async (room) => {
       if (!room || room.isActive === false) {
         alert('The host has ended this Listen Together session.');
         this.handleLeaveRoom(false);
@@ -4424,6 +4861,17 @@ class LyricsApp {
         if (!this.currentTrack || this.currentTrack.id !== room.currentTrack.id) {
           this._isApplyingRemoteSync = true;
           const existing = [...this.publicTracks, ...this.tracks].find(t => t.id === room.currentTrack.id);
+
+          let trackAudioUrl = room.currentTrack.audioUrl || '';
+          let trackAudioBlob = null;
+          if (this.syncMode === 'local') {
+            if (LocalSyncService.isP2pActive) {
+              trackAudioBlob = LocalSyncService.getP2pGuestAudioBlob(room.currentTrack.id);
+            } else if (!existing?.audioBlob && !trackAudioUrl) {
+              trackAudioUrl = LocalSyncService.getStreamAudioUrl(room.currentTrack.id);
+            }
+          }
+
           const trackToLoad = existing || {
             id: room.currentTrack.id,
             title: room.currentTrack.title,
@@ -4431,7 +4879,8 @@ class LyricsApp {
             album: room.currentTrack.album || 'Single',
             year: room.currentTrack.year || '2024',
             cover: room.currentTrack.cover || 'assets/weleta_cover.jpg',
-            audioUrl: room.currentTrack.audioUrl || '',
+            audioUrl: trackAudioUrl,
+            audioBlob: trackAudioBlob,
             lrc: room.currentTrack.lrc || ''
           };
 
@@ -4444,7 +4893,7 @@ class LyricsApp {
           trackId: room.currentTrack?.id,
           state: room.playbackState || 'paused',
           positionSec: room.positionSec || 0,
-          anchorServerMs: room.anchorServerMs !== undefined ? room.anchorServerMs : (room.clientTimestamp || FirebaseService.getServerNow()),
+          anchorServerMs: room.anchorServerMs !== undefined ? room.anchorServerMs : (room.clientTimestamp || syncService.getServerNow()),
           rate: room.playbackRate || 1.0,
           epoch: room.epoch || 1
         };
@@ -4454,7 +4903,7 @@ class LyricsApp {
             trackId: pb.trackId || room.currentTrack?.id,
             state: pb.state || room.playbackState || 'paused',
             positionSec: pb.positionSec ?? (room.positionSec || 0),
-            anchorServerMs: pb.anchorServerMs ?? (room.clientTimestamp || FirebaseService.getServerNow()),
+            anchorServerMs: pb.anchorServerMs ?? (room.clientTimestamp || syncService.getServerNow()),
             rate: pb.rate ?? (room.playbackRate || 1.0),
             epoch: pb.epoch ?? (room.epoch || 1),
           });
@@ -4463,13 +4912,13 @@ class LyricsApp {
     });
 
     // 2. Participants subcollection listener
-    this.roomParticipantsUnsubscribe = FirebaseService.subscribeParticipants(roomCode, (participants) => {
+    this.roomParticipantsUnsubscribe = syncService.subscribeParticipants(roomCode, (participants) => {
       this.presenceParticipants = participants;
       this.renderParticipantsList(participants);
     });
 
     // 3. Reactions subcollection listener
-    this.roomReactionsUnsubscribe = FirebaseService.subscribeReactions(roomCode, Date.now() - 1000, (rx) => {
+    this.roomReactionsUnsubscribe = syncService.subscribeReactions(roomCode, Date.now() - 1000, (rx) => {
       if (!this._seenReactionIds.has(rx.id)) {
         this._seenReactionIds.add(rx.id);
         const myName = this.myParticipant ? this.myParticipant.name : '';
@@ -4510,6 +4959,9 @@ class LyricsApp {
         `;
         this.activeRoomParticipantsList.appendChild(pEl);
       });
+    }
+    if (this.syncMode === 'local' && this.isRoomHost && this.p2pPeersManagerCard) {
+      this.renderP2pPeersList(list);
     }
   }
 
@@ -4666,11 +5118,12 @@ class LyricsApp {
       this.hostBroadcaster = null;
     }
 
+    const syncService = this.getSyncService();
     if (this.activeRoom && notifyCloud && this.myParticipant) {
       if (this.isRoomHost) {
-        await FirebaseService.endListenRoom(this.activeRoom.roomCode);
+        await syncService.endListenRoom(this.activeRoom.roomCode);
       } else {
-        await FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
+        await syncService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
       }
     }
     if (this.roomUnsubscribe) {
@@ -4695,8 +5148,10 @@ class LyricsApp {
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'none';
     if (this.roomBarSyncChip) this.roomBarSyncChip.style.display = 'none';
-    if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.remove('active');
     if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'none';
+    if (this.partySyncDebugOverlay) this.partySyncDebugOverlay.style.display = 'none';
+    if (this.localRoomPairingCard) this.localRoomPairingCard.style.display = 'none';
+    if (this.p2pPeersManagerCard) this.p2pPeersManagerCard.style.display = 'none';
     if (this.roomLobbyView) this.roomLobbyView.style.display = 'flex';
     if (this.roomActiveView) this.roomActiveView.style.display = 'none';
     if (this.listenTogetherModal) this.listenTogetherModal.classList.remove('active');
@@ -4754,11 +5209,16 @@ class LyricsApp {
       setTimeout(() => { if (btn) btn.style.transform = ''; }, 180);
     }
     const name = this.myParticipant ? this.myParticipant.name : 'Friend';
-    FirebaseService.sendRoomReaction(this.activeRoom.roomCode, {
+    const rxPayload = {
       type: type,
       from: name,
       fromId: this.myParticipant ? this.myParticipant.id : ''
-    });
+    };
+    if (this.syncMode === 'local') {
+      LocalSyncService.sendReaction(this.activeRoom.roomCode, rxPayload);
+    } else {
+      FirebaseService.sendRoomReaction(this.activeRoom.roomCode, rxPayload);
+    }
     this.renderFloatingReaction(type, 'You');
   }
 
@@ -5536,7 +5996,11 @@ class LyricsApp {
   async shareRoomInvite(buttonEl, labelEl) {
     if (!this.activeRoom) return;
     const roomCode = this.activeRoom.roomCode;
-    const url = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+    let baseUrl = window.location.origin;
+    if (this.syncMode === 'local' && this.localLanUrl) {
+      baseUrl = this.localLanUrl;
+    }
+    const url = `${baseUrl}${window.location.pathname}?room=${roomCode}&mode=${this.syncMode}`;
     const trackTitle = (this.activeRoom.currentTrack && this.activeRoom.currentTrack.title) 
       ? this.activeRoom.currentTrack.title 
       : 'Ethiopian Music';
