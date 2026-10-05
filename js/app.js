@@ -465,10 +465,8 @@ class LyricsApp {
     this.detailSaveLabel = document.getElementById('detailSaveLabel');
     this.btnDetailOpenLyricsEditor = document.getElementById('btnDetailOpenLyricsEditor');
 
-    // TikTok Creator Screen-Recording Mode Elements
-    this.btnToggleCreatorMode = document.getElementById('btnToggleCreatorMode');
+    // Attribution Watermark Overlay (Active in Fullscreen Record Mode)
     this.tiktokWatermark = document.getElementById('tiktokWatermark');
-    this.btnExitCreatorMode = document.getElementById('btnExitCreatorMode');
   }
 
   handleUserAuthenticated(user, isAdmin) {
@@ -634,8 +632,9 @@ class LyricsApp {
       this.renderSettingsView();
     }
 
-    if (tabId !== 'lyrics') {
-      this.setCreatorMode(false);
+    if (this.tiktokWatermark) {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || (this.appEl && this.appEl.classList.contains('is-fullscreen')));
+      this.tiktokWatermark.style.display = (isFs && tabId === 'lyrics') ? 'block' : 'none';
     }
   }
 
@@ -1095,21 +1094,34 @@ class LyricsApp {
       });
     }
 
-    // Fullscreen Toggle & Punchhole Protection
+    // Fullscreen / Clean Record Mode Toggle & Punchhole Protection
     if (this.btnToggleFullscreen) {
       this.btnToggleFullscreen.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || (this.appEl && this.appEl.classList.contains('is-fullscreen')));
+        if (!isFs) {
+          if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {
+              this.setFullscreenMode(true);
+            });
+          } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+          } else {
+            this.setFullscreenMode(true);
+          }
         } else {
-          document.exitFullscreen().catch(() => {});
+          if (document.exitFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
+            document.exitFullscreen().catch(() => {});
+          } else if (document.webkitExitFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
+            document.webkitExitFullscreen();
+          }
+          this.setFullscreenMode(false);
         }
       });
     }
 
     const updateFullscreenState = () => {
       const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (this.appEl) this.appEl.classList.toggle('is-fullscreen', isFs);
-      document.body.classList.toggle('is-fullscreen', isFs);
+      this.setFullscreenMode(isFs);
     };
     document.addEventListener('fullscreenchange', updateFullscreenState);
     document.addEventListener('webkitfullscreenchange', updateFullscreenState);
@@ -1126,10 +1138,8 @@ class LyricsApp {
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
         if (this.currentTrack) this.player.seek(this.player.currentTime + 5);
-      } else if (e.code === 'KeyF') {
+      } else if (e.code === 'KeyF' || e.code === 'KeyC') {
         if (this.btnToggleFullscreen) this.btnToggleFullscreen.click();
-      } else if (e.code === 'KeyC') {
-        this.toggleCreatorMode();
       }
     });
 
@@ -1272,14 +1282,6 @@ class LyricsApp {
           if (this.lrcEditor) this.lrcEditor.open();
         }
       });
-    }
-
-    // TikTok Creator Screen-Recording Mode Bindings
-    if (this.btnToggleCreatorMode) {
-      this.btnToggleCreatorMode.addEventListener('click', () => this.toggleCreatorMode());
-    }
-    if (this.btnExitCreatorMode) {
-      this.btnExitCreatorMode.addEventListener('click', () => this.setCreatorMode(false));
     }
 
     // Listen Together Event Bindings
@@ -3438,23 +3440,35 @@ class LyricsApp {
   }
 
   // --------------------------------------------------------------------------
-  // TikTok Creator Screen-Recording Mode
+  // Fullscreen / Clean Screen-Recording Mode
   // --------------------------------------------------------------------------
-  toggleCreatorMode() {
-    const isNow = !this.appEl.classList.contains('creator-recording-mode');
-    this.setCreatorMode(isNow);
+  toggleFullscreenMode() {
+    if (this.btnToggleFullscreen) {
+      this.btnToggleFullscreen.click();
+    }
   }
 
-  setCreatorMode(active) {
+  setFullscreenMode(active) {
     if (!this.appEl) return;
+    this.appEl.classList.toggle('is-fullscreen', active);
     this.appEl.classList.toggle('creator-recording-mode', active);
+    document.body.classList.toggle('is-fullscreen', active);
+
     if (this.tiktokWatermark) {
-      this.tiktokWatermark.style.display = active ? 'block' : 'none';
+      this.tiktokWatermark.style.display = (active && (!this.activeTab || this.activeTab === 'lyrics')) ? 'block' : 'none';
     }
-    if (this.btnExitCreatorMode) {
-      this.btnExitCreatorMode.style.display = active ? 'inline-flex' : 'none';
+
+    if (this.btnToggleFullscreen) {
+      this.btnToggleFullscreen.title = active ? 'Exit Fullscreen / Record Mode' : 'Fullscreen / Record Mode';
+      this.btnToggleFullscreen.innerHTML = active
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
     }
+
     if (active) {
+      if (this.currentTrack && this.activeTab !== 'lyrics') {
+        this.switchTab('lyrics');
+      }
       requestAnimationFrame(() => {
         this.syncLyrics(this.player.currentTime);
       });

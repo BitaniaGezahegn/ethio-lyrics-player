@@ -4162,47 +4162,10 @@ html, body {
 }
 
 /* ==========================================================================
-   TikTok Creator Mode & Screen-Recording Attribution Watermark
+/* ==========================================================================
+   Fullscreen / Creator Screen-Recording Mode & Attribution Watermark
    ========================================================================== */
-.lyrics-creator-controls {
-  position: absolute;
-  top: 1rem;
-  right: 1.5rem;
-  z-index: 25;
-}
-
-.btn-creator-mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #fff;
-  border-radius: 9999px;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-
-.btn-creator-mode:hover {
-  background: rgba(255, 255, 255, 0.26);
-  border-color: rgba(255, 255, 255, 0.55);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-}
-
-.tiktok-icon-svg {
-  color: #fff;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
-}
-
-/* Floating TikTok Attribution Watermark */
+/* Floating ELM Attribution Watermark */
 .tiktok-watermark-overlay {
   position: fixed;
   bottom: 28px;
@@ -4258,63 +4221,82 @@ html, body {
   letter-spacing: 0.02em;
 }
 
-/* Floating Exit Button for Creator Mode */
-.btn-exit-creator {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 1000;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(14, 8, 12, 0.6);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.85);
-  border-radius: 9999px;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.btn-exit-creator:hover {
-  background: rgba(239, 68, 68, 0.35);
-  border-color: rgba(239, 68, 68, 0.7);
-  color: #fff;
-  transform: scale(1.04);
-}
-
-/* Active Creator Screen-Recording State */
-#app.creator-recording-mode .top-bar,
-#app.creator-recording-mode .player-bar-dock,
-#app.creator-recording-mode .mobile-bottom-nav,
-#app.creator-recording-mode .desktop-nav-tabs,
-#app.creator-recording-mode .lyrics-creator-controls,
-#app.creator-recording-mode .active-room-floating-bar {
+/* In Fullscreen Mode, hide bottom playback dock, tabs, party button & login so it's a clean recording stage */
+#app.is-fullscreen .player-bar-dock,
+#app.is-fullscreen .mobile-bottom-nav,
+#app.is-fullscreen .active-room-floating-bar,
+#app.is-fullscreen .desktop-nav-tabs,
+#app.is-fullscreen #btnOpenListenTogether,
+#app.is-fullscreen #authContainer,
+:fullscreen .player-bar-dock,
+:fullscreen .mobile-bottom-nav,
+:fullscreen .active-room-floating-bar,
+:fullscreen .desktop-nav-tabs,
+:fullscreen #btnOpenListenTogether,
+:fullscreen #authContainer {
   opacity: 0 !important;
   pointer-events: none !important;
-  transform: translateY(12px);
+  transform: translateY(16px);
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
-#app.creator-recording-mode .main-stage {
+/* Top bar transparent in Fullscreen so it doesn't obstruct recording */
+#app.is-fullscreen .top-bar,
+:fullscreen .top-bar {
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none;
+}
+
+#app.is-fullscreen .top-bar .brand-lockup,
+#app.is-fullscreen .top-bar #btnToggleFullscreen,
+:fullscreen .top-bar .brand-lockup,
+:fullscreen .top-bar #btnToggleFullscreen {
+  pointer-events: auto;
+}
+
+/* Fullscreen toggle button at the top acts as the clean toggle */
+#app.is-fullscreen #btnToggleFullscreen,
+:fullscreen #btnToggleFullscreen {
+  background: rgba(14, 8, 12, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  opacity: 0.75;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+#app.is-fullscreen #btnToggleFullscreen:hover,
+:fullscreen #btnToggleFullscreen:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.65);
+  transform: scale(1.06);
+}
+
+#app.is-fullscreen .main-stage,
+:fullscreen .main-stage {
   padding-bottom: 0 !important;
 }
 
-#app.creator-recording-mode .stage-split {
+#app.is-fullscreen .stage-split,
+:fullscreen .stage-split {
   height: 100vh !important;
   align-items: center;
 }
 
 @media (max-width: 680px) {
-  #app.creator-recording-mode .song-header-section {
-    padding-top: 2.2rem;
+  #app.is-fullscreen .song-header-section,
+  :fullscreen .song-header-section {
+    padding-top: max(env(safe-area-inset-top, 0px), 14px);
   }
-  .tiktok-watermark-overlay {
+  #app.is-fullscreen .tiktok-watermark-overlay,
+  :fullscreen .tiktok-watermark-overlay {
     bottom: 22px;
     left: 14px;
   }
