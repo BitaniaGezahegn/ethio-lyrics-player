@@ -110,9 +110,23 @@ class LyricsApp {
   }
 
   initServiceWorker() {
+    this.appVersion = 'v2.5.0';
+    this.cacheVersion = 'v25';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((err) => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          this.swRegistration = reg;
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  this.showToast('🚀 New app version installed! Reload to apply.', 4000);
+                }
+              });
+            }
+          });
+        }).catch((err) => {
           console.warn('Service worker registration failed:', err);
         });
       });
@@ -910,6 +924,35 @@ class LyricsApp {
       this.btnOpenLrcEditorFromSettings.addEventListener('click', () => {
         if (this.lrcEditor) {
           this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+        }
+      });
+    }
+
+    // Check for App Update Trigger
+    const btnCheckUpdate = document.getElementById('btnCheckForAppUpdate');
+    if (btnCheckUpdate) {
+      btnCheckUpdate.addEventListener('click', async () => {
+        btnCheckUpdate.disabled = true;
+        btnCheckUpdate.textContent = 'Checking...';
+        try {
+          if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+              await reg.update();
+              if (reg.installing || reg.waiting) {
+                this.showToast('🚀 New version downloaded! Reloading...');
+                setTimeout(() => window.location.reload(), 1200);
+                return;
+              }
+            }
+          }
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.5.0'})!`);
+        } catch (err) {
+          console.warn('Update check failed:', err);
+          this.showToast('Unable to check for updates right now.');
+        } finally {
+          btnCheckUpdate.disabled = false;
+          btnCheckUpdate.textContent = 'Check for Updates';
         }
       });
     }

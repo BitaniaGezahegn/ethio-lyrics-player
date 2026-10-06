@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v24';
+const CACHE_NAME = 'ethio-lyrics-cache-v25';
 
 const STATIC_ASSETS = [
   './',
@@ -25,9 +25,7 @@ const STATIC_ASSETS = [
   './js/firebase-service.js',
   './js/data/sample-songs.js',
   './assets/weleta_cover.jpg',
-  './assets/abinet_portrait.jpg',
-  './assets/lrc/abinet_athijibegn.lrc',
-  './assets/lrc/ethio_tizita.lrc'
+  './assets/abinet_portrait.jpg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,6 +46,12 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
