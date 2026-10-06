@@ -253,10 +253,13 @@ export class WebRtcHostHub {
     };
 
     dc.onclose = () => {
-      console.log(`[WebRTC-P2P] Guest disconnected: ${guestId}`);
+      const wasConnected = this.peers.has(guestId);
       this.peers.delete(guestId);
-      if (this.callbacks.onGuestLeft) {
-        this.callbacks.onGuestLeft(guestId);
+      if (wasConnected) {
+        console.log(`[WebRTC-P2P] Guest disconnected: ${guestId}`);
+        if (this.callbacks.onGuestLeft) {
+          this.callbacks.onGuestLeft(guestId);
+        }
       }
     };
   }

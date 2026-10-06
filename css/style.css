@@ -946,12 +946,14 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform: translateY(20px) scale(0.97);
+  transform: translate3d(0, 20px, 0) scale(0.97);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .modal-overlay.active .modal-card {
-  transform: translateY(0) scale(1);
+  transform: translate3d(0, 0, 0) scale(1);
 }
 
 .modal-header {
@@ -1670,17 +1672,22 @@ html, body {
 
   /* 5. Modals on Mobile */
   .modal-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 5, 8, 0.92) !important;
     padding: 0.5rem;
   }
   .modal-card {
-    width: 94vw !important;
-    max-width: 500px !important;
+    width: calc(100% - 1.25rem) !important;
+    max-width: 480px !important;
     max-height: 88vh;
     padding: 0 !important;
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
   .modal-header {
     padding: 1rem 1.2rem;

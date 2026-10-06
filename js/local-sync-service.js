@@ -523,11 +523,13 @@ export const LocalSyncService = {
     };
 
     webrtcHost.callbacks.onGuestLeft = (guestId) => {
+      if (!activeRoomData || !Array.isArray(activeRoomData.participants)) return;
       activeRoomData.participants = activeRoomData.participants.filter(p => p.id !== guestId);
       participantListeners.forEach(cb => cb(activeRoomData.participants));
     };
 
     webrtcHost.callbacks.onPresence = (guests) => {
+      if (!activeRoomData || !Array.isArray(activeRoomData.participants)) return;
       participantListeners.forEach(cb => cb(activeRoomData.participants));
     };
 
@@ -774,6 +776,14 @@ export const LocalSyncService = {
     isHost = false;
     activeTransport = 'none';
 
+    if (webrtcHost) {
+      try { webrtcHost.close(); } catch (e) {}
+      webrtcHost = null;
+    }
+    if (webrtcGuest) {
+      try { webrtcGuest.close(); } catch (e) {}
+      webrtcGuest = null;
+    }
     if (socket) {
       try { socket.close(); } catch (e) {}
       socket = null;

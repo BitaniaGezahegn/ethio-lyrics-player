@@ -38,21 +38,21 @@ export const QRCodeGenerator = {
       const margin = 2 * cellSize;
       const totalSize = count * cellSize + margin * 2;
 
-      let rects = '';
+      let pathData = '';
       for (let r = 0; r < count; r++) {
         for (let c = 0; c < count; c++) {
           if (qr.isDark(r, c)) {
             const x = margin + c * cellSize;
             const y = margin + r * cellSize;
-            rects += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${darkColor}"/>`;
+            pathData += `M${x},${y}h${cellSize}v${cellSize}h-${cellSize}z `;
           }
         }
       }
 
       return `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" width="${size}" height="${size}" style="border-radius:12px; background:${lightColor}; display:block; margin:0 auto; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" width="${size}" height="${size}" style="border-radius:12px; background:${lightColor}; display:block; margin:0 auto; box-shadow:0 4px 16px rgba(0,0,0,0.3); max-width:100%; height:auto;">
           <rect width="100%" height="100%" fill="${lightColor}"/>
-          ${rects}
+          <path d="${pathData}" fill="${darkColor}"/>
         </svg>
       `.trim();
     } catch (err) {

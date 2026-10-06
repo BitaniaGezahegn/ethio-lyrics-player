@@ -110,8 +110,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.5.0';
-    this.cacheVersion = 'v25';
+    this.appVersion = 'v2.5.1';
+    this.cacheVersion = 'v26';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -1812,6 +1812,10 @@ class LyricsApp {
     if (this.btnCloseP2pPairingModal) {
       this.btnCloseP2pPairingModal.addEventListener('click', () => {
         if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
+        if (this.listenTogetherModal && this._wasInListenTogetherModal) {
+          this.listenTogetherModal.classList.add('active');
+          this._wasInListenTogetherModal = false;
+        }
       });
     }
     if (this.btnP2pCopyCode) {
@@ -4503,6 +4507,10 @@ class LyricsApp {
       this.pendingP2pCode = invite.inviteCode;
 
       if (this.p2pPairingModal) {
+        if (this.listenTogetherModal && this.listenTogetherModal.classList.contains('active')) {
+          this._wasInListenTogetherModal = true;
+          this.listenTogetherModal.classList.remove('active');
+        }
         if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = `Pair Phone (${LocalSyncService.p2pConnectedCount + 1}/8)`;
         if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Friend: tap <strong>"Join Friend's Party"</strong> and scan this QR code:`;
         if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = invite.qrSvg;
@@ -4618,6 +4626,9 @@ class LyricsApp {
   closeP2pCameraScanner() {
     CameraScanner.stop();
     if (this.p2pCameraModal) this.p2pCameraModal.classList.remove('active');
+    if (this.pendingP2pScanRole === 'host_answer') {
+      if (this.p2pPairingModal) this.p2pPairingModal.classList.add('active');
+    }
   }
 
   renderP2pPeersList(participants) {
