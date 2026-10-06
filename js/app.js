@@ -110,8 +110,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.5.1';
-    this.cacheVersion = 'v26';
+    this.appVersion = 'v2.5.2';
+    this.cacheVersion = 'v27';
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -4534,6 +4534,8 @@ class LyricsApp {
 
   submitHostAnswerCode(answerCode) {
     if (!answerCode || !answerCode.trim()) return;
+    if (this._isSubmittingAnswer) return;
+    this._isSubmittingAnswer = true;
     this.showToast('Connecting to friend... ⏳');
     LocalSyncService.acceptP2pAnswer(answerCode.trim()).then(() => {
       this.showToast('Answer verified! Establishing direct link... 🎧');
@@ -4541,6 +4543,8 @@ class LyricsApp {
       this.closeP2pCameraScanner();
     }).catch(err => {
       alert('Pairing failed: ' + (err.message || 'Invalid code'));
+    }).finally(() => {
+      setTimeout(() => { this._isSubmittingAnswer = false; }, 1500);
     });
   }
 
@@ -4626,7 +4630,7 @@ class LyricsApp {
   closeP2pCameraScanner() {
     CameraScanner.stop();
     if (this.p2pCameraModal) this.p2pCameraModal.classList.remove('active');
-    if (this.pendingP2pScanRole === 'host_answer') {
+    if (this.pendingP2pScanRole === 'host_answer' && !this._isSubmittingAnswer) {
       if (this.p2pPairingModal) this.p2pPairingModal.classList.add('active');
     }
   }

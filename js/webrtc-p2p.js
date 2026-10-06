@@ -15,12 +15,71 @@
 
 import { QRCodeGenerator } from './qr-code.js';
 
-// Standard public STUN servers for when Internet/Wi-Fi is available
+// Standard public STUN and open TURN servers for NAT traversal & mobile carrier CGNAT
 const DEFAULT_ICE_SERVERS = [
+  // Google Public STUN
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
+  // Cloudflare Public STUN
+  { urls: 'stun:stun.cloudflare.com:3478' },
+  // Twilio Public STUN
+  { urls: 'stun:global.stun.twilio.com:3478' },
+  // OpenRelay Public TURN (Free WebRTC relay for symmetric NAT & mobile carrier traversal)
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp'
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject'
+  }
 ];
+
+/**
+ * Waits for ICE candidate gathering to complete or collect srflx/relay candidates.
+ * Uses event listeners for both 'icegatheringstatechange' and null candidate.
+ * Caps gathering to 2500ms so QR code generates swiftly without hanging.
+ */
+function waitForIceGathering(pc) {
+  if (pc.iceGatheringState === 'complete') return Promise.resolve();
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      pc.removeEventListener('icegatheringstatechange', onGatheringChange);
+      pc.removeEventListener('icecandidate', onIceCandidate);
+    };
+
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        resolve();
+      }
+    };
+
+    const onGatheringChange = () => {
+      if (pc.iceGatheringState === 'complete') finish();
+    };
+
+    const onIceCandidate = (e) => {
+      if (e.candidate === null) finish();
+    };
+
+    pc.addEventListener('icegatheringstatechange', onGatheringChange);
+    pc.addEventListener('icecandidate', onIceCandidate);
+
+    // Allow up to 2500ms for STUN / TURN servers to return reflexive & relay candidates
+    timer = setTimeout(finish, 2500);
+  });
+}
 
 /**
  * Injects known hotspot gateway IP candidates into SDP so mobile browsers that
@@ -176,9 +235,18 @@ export class WebRtcHostHub {
       throw new Error(`Party is full! Maximum ${this.maxPeers} phones can connect.`);
     }
 
+    if (this.pendingPc) {
+      try { this.pendingPc.close(); } catch (e) {}
+      this.pendingPc = null;
+    }
+
     const guestId = 'guest_' + Math.random().toString(36).slice(2, 8);
     const pc = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
     const dc = pc.createDataChannel('ethio_sync', { ordered: true });
+
+    pc.oniceconnectionstatechange = () => {
+      console.log(`[WebRTC-P2P] Host ICE connection state (${guestId}):`, pc.iceConnectionState);
+    };
 
     this.pendingGuestId = guestId;
     this.pendingPc = pc;
@@ -188,7 +256,7 @@ export class WebRtcHostHub {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // Wait for ICE gathering to complete (local + STUN candidates, up to 1000ms)
+    // Wait for ICE gathering to complete (local + STUN/TURN candidates, up to 2500ms)
     await this._waitForIceGathering(pc);
 
     let sdp = pc.localDescription.sdp;
@@ -210,13 +278,31 @@ export class WebRtcHostHub {
   async acceptGuestAnswer(answerCompactCode) {
     if (!this.pendingPc) throw new Error('No pending guest invitation found.');
 
+    // If already in 'stable' state, the answer was already accepted or connection is already set
+    if (this.pendingPc.signalingState === 'stable') {
+      console.log(`[WebRTC-P2P] Pending connection already in 'stable' state.`);
+      return this.pendingGuestId;
+    }
+    if (this.pendingPc.signalingState !== 'have-local-offer') {
+      console.warn(`[WebRTC-P2P] Pending connection in state: ${this.pendingPc.signalingState}`);
+      return this.pendingGuestId;
+    }
+
     const sdp = await SdpCompressor.decompress(answerCompactCode);
     if (!sdp || !sdp.includes('v=0')) {
       throw new Error('Invalid answer code provided.');
     }
 
-    await this.pendingPc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
-    console.log(`[WebRTC-P2P] Accepted answer for guest "${this.pendingGuestId}"`);
+    try {
+      await this.pendingPc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp }));
+      console.log(`[WebRTC-P2P] Accepted answer for guest "${this.pendingGuestId}"`);
+    } catch (err) {
+      if (this.pendingPc && this.pendingPc.signalingState === 'stable') {
+        console.log(`[WebRTC-P2P] State is stable despite exception:`, err.message);
+        return this.pendingGuestId;
+      }
+      throw err;
+    }
     return this.pendingGuestId;
   }
 
@@ -280,27 +366,7 @@ export class WebRtcHostHub {
   }
 
   _waitForIceGathering(pc) {
-    if (pc.iceGatheringState === 'complete') return Promise.resolve();
-    return new Promise((resolve) => {
-      let settled = false;
-      let timer = null;
-      const checkState = () => {
-        if (pc.iceGatheringState === 'complete' && !settled) {
-          settled = true;
-          if (timer) clearTimeout(timer);
-          pc.removeEventListener('icegatheringstatechange', checkState);
-          resolve();
-        }
-      };
-      pc.addEventListener('icegatheringstatechange', checkState);
-      timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          pc.removeEventListener('icegatheringstatechange', checkState);
-          resolve();
-        }
-      }, 1000);
-    });
+    return waitForIceGathering(pc);
   }
 
   /**
@@ -418,6 +484,10 @@ export class WebRtcGuestClient {
 
     const pc = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
     this.pc = pc;
+
+    pc.oniceconnectionstatechange = () => {
+      console.log('[WebRTC-P2P] Guest ICE connection state:', pc.iceConnectionState);
+    };
 
     pc.ondatachannel = (e) => {
       this.dc = e.channel;
@@ -567,27 +637,7 @@ export class WebRtcGuestClient {
   }
 
   _waitForIceGathering(pc) {
-    if (pc.iceGatheringState === 'complete') return Promise.resolve();
-    return new Promise((resolve) => {
-      let settled = false;
-      let timer = null;
-      const checkState = () => {
-        if (pc.iceGatheringState === 'complete' && !settled) {
-          settled = true;
-          if (timer) clearTimeout(timer);
-          pc.removeEventListener('icegatheringstatechange', checkState);
-          resolve();
-        }
-      };
-      pc.addEventListener('icegatheringstatechange', checkState);
-      timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          pc.removeEventListener('icegatheringstatechange', checkState);
-          resolve();
-        }
-      }, 1000);
-    });
+    return waitForIceGathering(pc);
   }
 
   destroy() {

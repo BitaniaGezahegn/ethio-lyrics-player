@@ -497,6 +497,7 @@ export const LocalSyncService = {
     webrtcHost = new WebRtcHostHub({ hostInfo });
 
     webrtcHost.callbacks.onGuestJoined = (peer) => {
+      if (!activeRoomData || !Array.isArray(activeRoomData.participants)) return;
       activeRoomData.participants.push({
         id: peer.id,
         name: peer.name,
