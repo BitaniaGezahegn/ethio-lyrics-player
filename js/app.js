@@ -3522,6 +3522,17 @@ class LyricsApp {
 
     window.addEventListener('touchstart', (e) => {
       if (isRefreshing) return;
+      // Only allow pull-to-refresh on scrollable list tabs (Home or Library), never inside lyrics stage, inputs, or overlays
+      const activeTab = document.querySelector('.tab-view.active');
+      if (!activeTab || (activeTab.id !== 'tabViewHome' && activeTab.id !== 'tabViewLibrary')) {
+        isPulling = false;
+        return;
+      }
+      if (e.target.closest('#dockedControlsWrapper, .mobile-bottom-nav, .modal-overlay, input, button, select, textarea, .seek-slider')) {
+        isPulling = false;
+        return;
+      }
+
       if (getScrollTop() <= 5 && e.touches && e.touches[0]) {
         startY = e.touches[0].clientY;
         isPulling = true;
@@ -3536,6 +3547,7 @@ class LyricsApp {
       const deltaY = currentY - startY;
 
       if (deltaY > 0 && getScrollTop() <= 5) {
+        indicator.classList.add('dragging');
         const pullDistance = Math.min(85, deltaY * 0.45);
         indicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
         indicator.style.opacity = Math.min(1, pullDistance / 40);
@@ -3548,6 +3560,7 @@ class LyricsApp {
           if (ptrSpinner) ptrSpinner.style.transform = `rotate(${(pullDistance / threshold) * 180}deg)`;
         }
       } else {
+        indicator.classList.remove('dragging');
         indicator.style.opacity = '0';
         indicator.style.transform = 'translateX(-50%) translateY(-65px)';
       }
@@ -3556,6 +3569,7 @@ class LyricsApp {
     window.addEventListener('touchend', async (e) => {
       if (!isPulling || isRefreshing) return;
       isPulling = false;
+      indicator.classList.remove('dragging');
       const touchEndY = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0;
       const deltaY = touchEndY - startY;
       const pullDistance = Math.min(85, deltaY * 0.45);
