@@ -279,16 +279,23 @@ export class WebRtcHostHub {
   _waitForIceGathering(pc) {
     if (pc.iceGatheringState === 'complete') return Promise.resolve();
     return new Promise((resolve) => {
+      let settled = false;
+      let timer = null;
       const checkState = () => {
-        if (pc.iceGatheringState === 'complete') {
+        if (pc.iceGatheringState === 'complete' && !settled) {
+          settled = true;
+          if (timer) clearTimeout(timer);
           pc.removeEventListener('icegatheringstatechange', checkState);
           resolve();
         }
       };
       pc.addEventListener('icegatheringstatechange', checkState);
-      setTimeout(() => {
-        pc.removeEventListener('icegatheringstatechange', checkState);
-        resolve();
+      timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          pc.removeEventListener('icegatheringstatechange', checkState);
+          resolve();
+        }
       }, 1000);
     });
   }
@@ -465,6 +472,10 @@ export class WebRtcGuestClient {
 
     dc.onclose = () => {
       console.log('[WebRTC-P2P] Disconnected from Host DJ.');
+      if (this._pingIntervalId) {
+        clearInterval(this._pingIntervalId);
+        this._pingIntervalId = null;
+      }
       if (this.callbacks.onDisconnected) {
         this.callbacks.onDisconnected();
       }
@@ -527,13 +538,19 @@ export class WebRtcGuestClient {
 
   _calibrateClock() {
     if (!this.isConnected) return;
+    if (this._pingIntervalId) {
+      clearInterval(this._pingIntervalId);
+      this._pingIntervalId = null;
+    }
     const sendPing = () => {
       if (this.isConnected) {
-        this.dc.send(JSON.stringify({ type: 'ping', clientTime: Date.now() }));
+        try {
+          this.dc.send(JSON.stringify({ type: 'ping', clientTime: Date.now() }));
+        } catch (e) {}
       }
     };
     sendPing();
-    setInterval(sendPing, 5000);
+    this._pingIntervalId = setInterval(sendPing, 5000);
   }
 
   sendReaction(rx) {
@@ -549,21 +566,32 @@ export class WebRtcGuestClient {
   _waitForIceGathering(pc) {
     if (pc.iceGatheringState === 'complete') return Promise.resolve();
     return new Promise((resolve) => {
+      let settled = false;
+      let timer = null;
       const checkState = () => {
-        if (pc.iceGatheringState === 'complete') {
+        if (pc.iceGatheringState === 'complete' && !settled) {
+          settled = true;
+          if (timer) clearTimeout(timer);
           pc.removeEventListener('icegatheringstatechange', checkState);
           resolve();
         }
       };
       pc.addEventListener('icegatheringstatechange', checkState);
-      setTimeout(() => {
-        pc.removeEventListener('icegatheringstatechange', checkState);
-        resolve();
+      timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          pc.removeEventListener('icegatheringstatechange', checkState);
+          resolve();
+        }
       }, 1000);
     });
   }
 
   destroy() {
+    if (this._pingIntervalId) {
+      clearInterval(this._pingIntervalId);
+      this._pingIntervalId = null;
+    }
     if (this.dc) {
       try { this.dc.close(); } catch (e) {}
       this.dc = null;

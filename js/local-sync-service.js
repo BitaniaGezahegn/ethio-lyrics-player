@@ -423,6 +423,9 @@ export const LocalSyncService = {
       activeRoomData.hostId = participant.id;
       activeRoomData.hostName = participant.name;
     }
+    if (activeTransport === 'websocket' && socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'claim_host', roomCode }));
+    }
     return true;
   },
 
@@ -441,7 +444,7 @@ export const LocalSyncService = {
 
   async endListenRoom(roomCode) {
     if (activeTransport === 'websocket' && socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: 'leave_room', roomCode }));
+      socket.send(JSON.stringify({ type: 'end_room', roomCode }));
       socket.close();
     }
     if (broadcastChannel) {
@@ -711,6 +714,24 @@ export const LocalSyncService = {
         if (currentParticipant) currentParticipant.isHost = true;
         if (activeRoomData) activeRoomData.hostId = currentParticipant.id;
         roomListeners.forEach(cb => cb(activeRoomData));
+        break;
+
+      case 'room_update':
+        if (msg.room) {
+          activeRoomData = { ...activeRoomData, ...msg.room };
+          roomListeners.forEach(cb => cb(activeRoomData));
+          if (msg.room.participants) {
+            participantListeners.forEach(cb => cb(msg.room.participants));
+          }
+        }
+        break;
+
+      case 'room_ended':
+        if (activeRoomData) {
+          activeRoomData.isActive = false;
+          roomListeners.forEach(cb => cb({ ...activeRoomData, isActive: false }));
+        }
+        this._cleanup();
         break;
 
       case 'error':

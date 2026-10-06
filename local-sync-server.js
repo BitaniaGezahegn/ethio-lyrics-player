@@ -132,11 +132,28 @@ function handleHttpRequest(req, res) {
   if (pathname.startsWith('/api/stream/upload/') && req.method === 'POST') {
     const trackId = decodeURIComponent(pathname.replace('/api/stream/upload/', ''));
     const chunks = [];
+    let receivedBytes = 0;
+    const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB limit per audio track
 
-    req.on('data', chunk => chunks.push(chunk));
+    req.on('data', chunk => {
+      receivedBytes += chunk.length;
+      if (receivedBytes > MAX_UPLOAD_BYTES) {
+        req.destroy(new Error('Audio upload payload exceeds maximum allowed size (50MB).'));
+        return;
+      }
+      chunks.push(chunk);
+    });
+
     req.on('end', () => {
       const buffer = Buffer.concat(chunks);
       const mime = req.headers['content-type'] || 'audio/mpeg';
+
+      // Keep cache size bounded to last 20 tracks
+      if (audioTrackStore.size >= 20) {
+        const oldestKey = audioTrackStore.keys().next().value;
+        if (oldestKey) audioTrackStore.delete(oldestKey);
+      }
+
       audioTrackStore.set(trackId, {
         buffer,
         mime,
@@ -146,6 +163,14 @@ function handleHttpRequest(req, res) {
       console.log(`[AudioRelay] Cached track "${trackId}" (${(buffer.length / (1024 * 1024)).toFixed(2)} MB)`);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, trackId, size: buffer.length }));
+    });
+
+    req.on('error', err => {
+      console.warn('[AudioRelay] Upload aborted:', err.message);
+      if (!res.headersSent) {
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
     });
     return;
   }
@@ -209,8 +234,8 @@ function serveStaticFile(pathname, req, res) {
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      // SPA Fallback: if not found, serve index.html for client routes
-      if (path.extname(safePath) === '') {
+      // SPA Fallback: if not found and not requesting index.html, serve index.html for client routes
+      if (path.extname(safePath) === '' && safePath !== '/index.html') {
         return serveStaticFile('/index.html', req, res);
       }
       res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -583,6 +608,40 @@ function processClientMessage(client, msg) {
       break;
     }
 
+    case 'claim_host': {
+      const room = rooms.get(client.roomCode);
+      if (!room) return;
+      client.isHost = true;
+      room.hostId = client.id;
+      room.hostName = client.name;
+      room.hostAvatar = client.avatar;
+      room.updatedAt = Date.now();
+      for (const [s, c] of wsClients.entries()) {
+        if (c.roomCode === client.roomCode && c.id !== client.id) {
+          c.isHost = false;
+        }
+      }
+      sendWsJson(client.socket, { type: 'host_promoted' });
+      broadcastRoomUpdate(client.roomCode);
+      broadcastParticipants(client.roomCode);
+      break;
+    }
+
+    case 'end_room': {
+      const roomCode = client.roomCode;
+      if (!roomCode) return;
+      const room = rooms.get(roomCode);
+      if (room && client.isHost) {
+        broadcastToRoom(roomCode, {
+          type: 'room_ended',
+          roomCode,
+        });
+        rooms.delete(roomCode);
+      }
+      handleWsDisconnect(client);
+      break;
+    }
+
     case 'leave_room': {
       handleWsDisconnect(client);
       break;
@@ -609,6 +668,8 @@ function handleWsDisconnect(client) {
         newHost.isHost = true;
         room.hostId = newHost.id;
         room.hostName = newHost.name;
+        room.hostAvatar = newHost.avatar;
+        room.updatedAt = Date.now();
 
         // Find the client socket for newHost
         for (const [s, c] of wsClients.entries()) {
@@ -618,6 +679,7 @@ function handleWsDisconnect(client) {
             break;
           }
         }
+        broadcastRoomUpdate(roomCode);
         broadcastParticipants(roomCode);
       } else {
         // No participants left: close room
@@ -630,6 +692,15 @@ function handleWsDisconnect(client) {
   }
 
   wsClients.delete(client.socket);
+}
+
+function broadcastRoomUpdate(roomCode) {
+  const room = rooms.get(roomCode);
+  if (!room) return;
+  broadcastToRoom(roomCode, {
+    type: 'room_update',
+    room: serializeRoom(room),
+  });
 }
 
 function broadcastParticipants(roomCode) {

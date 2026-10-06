@@ -4494,10 +4494,13 @@ class LyricsApp {
         };
 
         LocalSyncService.onP2pTrackReceived = (trackId, blob) => {
-          if (this.currentTrack && this.currentTrack.id === trackId) {
+          if (this.currentTrack && (this.currentTrack.id === trackId || !this.currentTrack.audioBlob)) {
             this.currentTrack.audioBlob = blob;
             this.player.loadAudioFile(blob);
-            if (this.guestSync) this.guestSync.setTrackReady(true);
+            if (this.guestSync) {
+              this.guestSync.setTrackReady(true);
+              this.guestSync.requestResync();
+            }
             this.showToast('Song audio ready! 🎵');
           }
         };
