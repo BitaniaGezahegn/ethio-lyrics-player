@@ -121,6 +121,51 @@ export const FirebaseService = {
   },
 
   // -------------------------------------------------------------
+  // Cloudflare R2 Direct Media Upload (via Pages Function /api/upload)
+  // -------------------------------------------------------------
+  async uploadMediaToR2(fileOrBlob, { kind = 'audio', fileName = 'media.bin', onProgress = null } = {}) {
+    if (!fileOrBlob) throw new Error('No file provided for upload.');
+    const user = this.getCurrentUser();
+    if (!user) {
+      throw new Error('Please sign in with Google first to upload media to Cloudflare R2.');
+    }
+
+    const idToken = await user.getIdToken();
+    const resolvedName = fileName || fileOrBlob.name || (kind === 'cover' ? 'cover.jpg' : 'track.mp3');
+    const mimeType = fileOrBlob.type || (kind === 'cover' ? 'image/jpeg' : 'audio/mpeg');
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload', true);
+      xhr.setRequestHeader('Authorization', `Bearer ${idToken}`);
+      xhr.setRequestHeader('Content-Type', mimeType);
+      xhr.setRequestHeader('X-Upload-Kind', kind);
+      xhr.setRequestHeader('X-File-Name', encodeURIComponent(resolvedName));
+
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.min(99, Math.round((evt.loaded / evt.total) * 100)));
+        }
+      };
+
+      xhr.onload = () => {
+        let parsed = null;
+        try { parsed = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+        if (xhr.status >= 200 && xhr.status < 300 && parsed && parsed.url) {
+          if (typeof onProgress === 'function') onProgress(100);
+          resolve(parsed.url);
+        } else {
+          const msg = (parsed && parsed.error) ? parsed.error : `R2 upload failed (HTTP ${xhr.status})`;
+          reject(new Error(msg));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Network error while uploading to Cloudflare R2.'));
+      xhr.send(fileOrBlob);
+    });
+  },
+
+  // -------------------------------------------------------------
   // Public Tracks (Global Catalog)
   // -------------------------------------------------------------
   async getPublicTracks() {
@@ -172,6 +217,7 @@ export const FirebaseService = {
       duration: trackData.duration || 180,
       lrc: trackData.lrc || '',
       audioUrl: trackData.audioUrl || '',
+      localSourceTrackId: trackData.localSourceTrackId || null,
       publishedBy: trackData.publishedBy || ADMIN_EMAIL,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -211,6 +257,7 @@ export const FirebaseService = {
       lrc: submission.lrc || '',
       audioUrl: submission.audioUrl || '',
       audioFileName: submission.audioFileName || '',
+      localSourceTrackId: submission.localSourceTrackId || null,
       contributorNote: submission.contributorNote || '',
       submittedByEmail: user ? user.email : 'Anonymous Visitor',
       submittedByName: user ? user.displayName || 'Visitor' : 'Visitor',
@@ -285,6 +332,7 @@ export const FirebaseService = {
       duration: submission.duration || 180,
       lrc: submission.lrc || '',
       audioUrl: customAudioUrl || submission.audioUrl || '',
+      localSourceTrackId: submission.localSourceTrackId || null,
       publishedBy: `Approved from ${submission.submittedByEmail || 'Community'}`
     };
 

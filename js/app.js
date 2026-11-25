@@ -88,7 +88,14 @@ class LyricsApp {
     // Track Form / Upload State
     this.editingTrackId = null;
     this.selectedCoverDataUrl = null;
+    this.selectedCoverFile = null;
     this.selectedAudioFile = null;
+    this.uploadedR2AudioUrl = null;
+    this.uploadedR2CoverUrl = null;
+    this.isUploadingToR2 = false;
+    this._r2UploadPromise = null;
+    this._volumeTrayHideTimer = null;
+    this._isDraggingVolume = false;
 
     this.initDOMElements();
 
@@ -429,6 +436,7 @@ class LyricsApp {
     this.volumeIconHigh = document.getElementById('volumeIconHigh');
     this.volumeIconMuted = document.getElementById('volumeIconMuted');
     this.scrubberTrack = document.getElementById('scrubberTrack');
+    this.scrubberBuffered = document.getElementById('scrubberBuffered');
     this.scrubberFill = document.getElementById('scrubberFill');
     this.currentTimeLabel = document.getElementById('currentTimeLabel');
     this.durationLabel = document.getElementById('durationLabel');
@@ -537,14 +545,13 @@ class LyricsApp {
     this.inputCustomLrc = document.getElementById('inputCustomLrc');
     this.btnApplyCustomTrack = document.getElementById('btnApplyCustomTrack');
 
-    // Public Submission Elements
+    // Public Submission Elements (Automatic Cloudflare R2 Upload)
     this.checkSubmitToPublic = document.getElementById('checkSubmitToPublic');
     this.publicSubmitCheckLabel = document.getElementById('publicSubmitCheckLabel');
-    this.publicAudioUrlField = document.getElementById('publicAudioUrlField');
-    this.inputPublicAudioUrl = document.getElementById('inputPublicAudioUrl');
-    this.btnPasteR2Prefix = document.getElementById('btnPasteR2Prefix');
-    this.btnTriggerPublicSubmit = document.getElementById('btnTriggerPublicSubmit');
-    this.btnTriggerPublicSubmitLabel = document.getElementById('btnTriggerPublicSubmitLabel');
+    this.publicCloudStatusPanel = document.getElementById('publicCloudStatusPanel');
+    this.r2UploadStatusText = document.getElementById('r2UploadStatusText');
+    this.r2UploadProgressBar = document.getElementById('r2UploadProgressBar');
+    this.r2UploadProgressFill = document.getElementById('r2UploadProgressFill');
     this.formPublicPendingBadge = document.getElementById('formPublicPendingBadge');
 
     // Submission Confirmation Modal
@@ -687,6 +694,7 @@ class LyricsApp {
         this.publicSubmitCheckLabel.textContent = 'Submit for Public Catalog (Admin Review)';
       }
     }
+    this.updatePublicSubmitButtonState();
 
     this.renderHomePage();
     if (this.currentView === 'library') {
@@ -1301,6 +1309,12 @@ class LyricsApp {
       }
     };
 
+    this.player.onBufferUpdate = (bufferedPercent) => {
+      if (this.scrubberBuffered) {
+        this.scrubberBuffered.style.width = `${Math.min(100, Math.max(0, bufferedPercent))}%`;
+      }
+    };
+
     // Smart Queue: When a song ends, respect repeat mode & play next
     this.player.onEnded = async () => {
       if (this.playIcon) this.playIcon.style.display = 'block';
@@ -1340,23 +1354,76 @@ class LyricsApp {
       }
     };
 
+    const openVolumeTray = () => {
+      if (this._volumeTrayHideTimer) {
+        clearTimeout(this._volumeTrayHideTimer);
+        this._volumeTrayHideTimer = null;
+      }
+      if (this.volumeContainer) {
+        this.volumeContainer.classList.add('tray-active');
+      }
+    };
+
+    const scheduleCloseVolumeTray = (delayMs = 950) => {
+      if (this._volumeTrayHideTimer) {
+        clearTimeout(this._volumeTrayHideTimer);
+      }
+      if (this._isDraggingVolume) return;
+      this._volumeTrayHideTimer = setTimeout(() => {
+        if (!this._isDraggingVolume && this.volumeContainer) {
+          this.volumeContainer.classList.remove('tray-active');
+        }
+      }, delayMs);
+    };
+
+    if (this.volumeContainer) {
+      this.volumeContainer.addEventListener('mouseenter', openVolumeTray);
+      this.volumeContainer.addEventListener('focusin', openVolumeTray);
+      this.volumeContainer.addEventListener('mouseleave', () => scheduleCloseVolumeTray(950));
+    }
+    if (this.volumePopupTray) {
+      this.volumePopupTray.addEventListener('mouseenter', openVolumeTray);
+      this.volumePopupTray.addEventListener('mouseleave', () => scheduleCloseVolumeTray(950));
+    }
+
     if (this.volumeSlider) {
+      const startDrag = () => {
+        this._isDraggingVolume = true;
+        openVolumeTray();
+      };
+      this.volumeSlider.addEventListener('pointerdown', startDrag);
+      this.volumeSlider.addEventListener('mousedown', startDrag);
+      this.volumeSlider.addEventListener('touchstart', startDrag, { passive: true });
       this.volumeSlider.addEventListener('input', (e) => {
+        openVolumeTray();
         const val = parseFloat(e.target.value);
         this.player.setVolume(val);
         if (val > 0.02) lastVolume = val;
         updateVolumeUI(val);
+        if (window.innerWidth <= 768) {
+          scheduleCloseVolumeTray(2800);
+        }
       });
     }
+
+    const endVolumeDrag = () => {
+      if (!this._isDraggingVolume) return;
+      this._isDraggingVolume = false;
+      scheduleCloseVolumeTray(1200);
+    };
+    window.addEventListener('pointerup', endVolumeDrag);
+    window.addEventListener('mouseup', endVolumeDrag);
+    window.addEventListener('touchend', endVolumeDrag);
 
     if (this.btnMute) {
       this.btnMute.addEventListener('click', (e) => {
         e.stopPropagation();
-        // On touch screens or small devices, tap opens/toggles the slider tray
+        // On touch screens or small devices, tap opens/keeps open the slider tray before muting
         if (this.volumeContainer && window.innerWidth <= 768) {
           const wasOpen = this.volumeContainer.classList.contains('tray-active');
+          openVolumeTray();
+          scheduleCloseVolumeTray(3500);
           if (!wasOpen) {
-            this.volumeContainer.classList.add('tray-active');
             return;
           }
         }
@@ -1378,6 +1445,11 @@ class LyricsApp {
     document.addEventListener('click', (e) => {
       if (this.volumeContainer && this.volumeContainer.classList.contains('tray-active')) {
         if (!this.volumeContainer.contains(e.target)) {
+          if (this._volumeTrayHideTimer) {
+            clearTimeout(this._volumeTrayHideTimer);
+            this._volumeTrayHideTimer = null;
+          }
+          this._isDraggingVolume = false;
           this.volumeContainer.classList.remove('tray-active');
         }
       }
@@ -1923,36 +1995,13 @@ class LyricsApp {
 
     if (this.checkSubmitToPublic) {
       this.checkSubmitToPublic.addEventListener('change', () => {
-        if (this.publicAudioUrlField) {
-          this.publicAudioUrlField.style.display = this.checkSubmitToPublic.checked ? 'block' : 'none';
-        }
         this.updatePublicSubmitButtonState();
-      });
-    }
-
-    if (this.inputPublicAudioUrl) {
-      this.inputPublicAudioUrl.addEventListener('input', () => {
-        this.updatePublicSubmitButtonState();
-      });
-    }
-
-    if (this.btnPasteR2Prefix) {
-      this.btnPasteR2Prefix.addEventListener('click', () => {
-        if (this.inputPublicAudioUrl) {
-          const current = this.inputPublicAudioUrl.value.trim();
-          if (!current || !current.startsWith('http')) {
-            const fileName = (this.selectedAudioFile ? this.selectedAudioFile.name : (this.inputCustomTitle && this.inputCustomTitle.value.trim() ? `${this.inputCustomTitle.value.trim()}.mp3` : 'song.mp3')).replace(/\s+/g, '_');
-            this.inputPublicAudioUrl.value = `${R2_PUBLIC_BASE}/${fileName}`;
+        if (this.checkSubmitToPublic.checked && !this.uploadedR2AudioUrl && !this.isUploadingToR2) {
+          const audioSource = this.getEffectiveUploadAudioFile();
+          if (audioSource && this.currentUser) {
+            this.startBackgroundR2AudioUpload(audioSource);
           }
-          this.inputPublicAudioUrl.focus();
-          this.updatePublicSubmitButtonState();
         }
-      });
-    }
-
-    if (this.btnTriggerPublicSubmit) {
-      this.btnTriggerPublicSubmit.addEventListener('click', () => {
-        this.openSubmissionConfirmModal();
       });
     }
 
@@ -1964,7 +2013,7 @@ class LyricsApp {
 
     if (this.btnExecutePublicSubmit) {
       this.btnExecutePublicSubmit.addEventListener('click', async () => {
-        await this.handleExecutePublicSubmit();
+        if (this.submissionConfirmModal) this.submissionConfirmModal.classList.remove('active');
       });
     }
 
@@ -1979,6 +2028,8 @@ class LyricsApp {
       this.coverFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
+          this.selectedCoverFile = file;
+          this.uploadedR2CoverUrl = null;
           const reader = new FileReader();
           reader.onload = (evt) => {
             this.selectedCoverDataUrl = evt.target.result;
@@ -1992,10 +2043,28 @@ class LyricsApp {
     if (this.btnRemoveCover) {
       this.btnRemoveCover.addEventListener('click', () => {
         this.selectedCoverDataUrl = '';
+        this.selectedCoverFile = null;
+        this.uploadedR2CoverUrl = null;
         if (this.coverPreviewImg) this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
         if (this.coverFileInput) this.coverFileInput.value = '';
       });
     }
+
+    const handlePickedAudioFile = (file) => {
+      if (!file) return;
+      this.selectedAudioFile = file;
+      this.uploadedR2AudioUrl = null;
+      this._r2UploadPromise = null;
+      if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
+      if (this.inputCustomTitle && !this.inputCustomTitle.value) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+        this.inputCustomTitle.value = nameWithoutExt;
+      }
+      this.updatePublicSubmitButtonState();
+      if (this.checkSubmitToPublic && this.checkSubmitToPublic.checked && this.currentUser) {
+        this.startBackgroundR2AudioUpload(file);
+      }
+    };
 
     // Audio Dropzone & File Pick
     if (this.audioDropzone && this.audioFileInput) {
@@ -2019,12 +2088,7 @@ class LyricsApp {
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
           const file = e.dataTransfer.files[0];
           if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|ogg|m4a|aac|flac)$/i)) {
-            this.selectedAudioFile = file;
-            if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
-            if (this.inputCustomTitle && !this.inputCustomTitle.value) {
-              const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-              this.inputCustomTitle.value = nameWithoutExt;
-            }
+            handlePickedAudioFile(file);
           }
         }
       });
@@ -2034,12 +2098,7 @@ class LyricsApp {
       this.audioFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-          if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = `Selected: ${file.name}`;
-          this.selectedAudioFile = file;
-          if (this.inputCustomTitle && !this.inputCustomTitle.value) {
-            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
-            this.inputCustomTitle.value = nameWithoutExt;
-          }
+          handlePickedAudioFile(file);
         }
       });
     }
@@ -2559,6 +2618,7 @@ class LyricsApp {
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = resolvedTrack.artist;
 
     // Load Audio in Engine
+    if (this.scrubberBuffered) this.scrubberBuffered.style.width = '0%';
     this.player.loadTrack(resolvedTrack);
     this.player.updateMediaSession(resolvedTrack, {
       onPlay: () => { if (!this.isGuestLocked('playback')) this.player.play(); },
@@ -2810,16 +2870,127 @@ class LyricsApp {
       this.scrubberFill.style.width = `${percent}%`;
     } else {
       this.scrubberFill.style.width = '0%';
+      if (this.scrubberBuffered) this.scrubberBuffered.style.width = '0%';
     }
   }
 
   // --------------------------------------------------------------------------
   // Catalog & Submissions Management
   // --------------------------------------------------------------------------
+  _normalizeComparableUrl(url) {
+    if (!url) return '';
+    try {
+      return decodeURIComponent(String(url)).trim();
+    } catch (e) {
+      return String(url).trim();
+    }
+  }
+
+  _migrateTrackIdReferences(oldId, newId) {
+    if (!oldId || !newId || oldId === newId) return false;
+    let changed = false;
+
+    // Favorites
+    const favs = Storage.getFavorites();
+    if (favs.includes(oldId)) {
+      const nextFavs = Array.from(new Set(favs.map(id => (id === oldId ? newId : id))));
+      Storage.setFavorites(nextFavs);
+      this.favorites = nextFavs;
+      changed = true;
+    }
+
+    // Recently Played
+    const recent = Storage.getRecentlyPlayed();
+    if (recent.includes(oldId)) {
+      const nextRecent = Array.from(new Set(recent.map(id => (id === oldId ? newId : id))));
+      Storage.setRecentlyPlayed(nextRecent);
+      this.recentlyPlayed = nextRecent;
+      changed = true;
+    }
+
+    // Playlists
+    const playlists = Storage.getPlaylists();
+    let playlistChanged = false;
+    for (const pl of playlists) {
+      if (Array.isArray(pl.trackIds) && pl.trackIds.includes(oldId)) {
+        pl.trackIds = Array.from(new Set(pl.trackIds.map(id => (id === oldId ? newId : id))));
+        playlistChanged = true;
+      }
+    }
+    if (playlistChanged) {
+      Storage.setPlaylists(playlists);
+      this.playlists = playlists;
+      changed = true;
+    }
+
+    // Last played & Active Queue
+    if (Storage.getLastTrackId() === oldId) {
+      Storage.setLastTrackId(newId);
+    }
+    if (Array.isArray(this.queue)) {
+      this.queue = this.queue.map(q => (q && q.id === oldId ? { ...q, id: newId } : q));
+    }
+
+    return changed;
+  }
+
+  async reconcileLocalWithPublicCatalog() {
+    if (!Array.isArray(this.publicTracks) || this.publicTracks.length === 0) return;
+    if (!Array.isArray(this.tracks) || this.tracks.length === 0) {
+      this.tracks = await Storage.getAllTracks();
+    }
+
+    let removedAny = false;
+    let refsChanged = false;
+
+    for (const localTrack of [...this.tracks]) {
+      if (!localTrack || !localTrack.id) continue;
+      // Offline cache copies reuse the same pub_* ID; keep those intact
+      if (this.publicTracks.some(p => p.id === localTrack.id)) continue;
+
+      const localUrlNorm = this._normalizeComparableUrl(localTrack.publicAudioUrl);
+      const localTitleNorm = (localTrack.title || '').trim().toLowerCase();
+      const localArtistNorm = (localTrack.artist || '').trim().toLowerCase();
+
+      const matchingPub = this.publicTracks.find((pub) => {
+        if (!pub || !pub.id || pub.id === localTrack.id) return false;
+        if (pub.localSourceTrackId && pub.localSourceTrackId === localTrack.id) return true;
+        if (localUrlNorm && pub.audioUrl && this._normalizeComparableUrl(pub.audioUrl) === localUrlNorm) return true;
+        if (localTrack.submissionStatus === 'pending' || localTrack.submissionStatus === 'published') {
+          const pubTitleNorm = (pub.title || '').trim().toLowerCase();
+          const pubArtistNorm = (pub.artist || '').trim().toLowerCase();
+          if (localTitleNorm && localArtistNorm && pubTitleNorm === localTitleNorm && pubArtistNorm === localArtistNorm) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (matchingPub) {
+        if (this._migrateTrackIdReferences(localTrack.id, matchingPub.id)) {
+          refsChanged = true;
+        }
+        if (this.currentTrack && this.currentTrack.id === localTrack.id) {
+          this.currentTrack = { ...matchingPub };
+        }
+        await Storage.deleteTrack(localTrack.id);
+        removedAny = true;
+      }
+    }
+
+    if (removedAny) {
+      this.tracks = await Storage.getAllTracks();
+    }
+    if (refsChanged && this.currentUser) {
+      this.pushCloudSyncDebounced();
+    }
+  }
+
   async loadPublicCatalog() {
     try {
       const tracks = await FirebaseService.getPublicTracks();
       this.publicTracks = tracks;
+      await this.reconcileLocalWithPublicCatalog();
     } catch (e) {
       console.warn('Could not fetch public catalog from Firestore (offline):', e);
       this.publicTracks = [];
@@ -3098,16 +3269,94 @@ class LyricsApp {
     if (this.btnShowUploadForm) this.btnShowUploadForm.style.display = 'inline-flex';
   }
 
+  getEffectiveUploadAudioFile() {
+    if (this.selectedAudioFile) return this.selectedAudioFile;
+    if (this.editingTrackId) {
+      const existing = this.tracks.find(t => t.id === this.editingTrackId);
+      if (existing && existing.audioBlob) return existing.audioBlob;
+    }
+    return null;
+  }
+
+  setR2UploadStatus(message, { percent = null, state = 'idle' } = {}) {
+    if (this.r2UploadStatusText) {
+      this.r2UploadStatusText.textContent = message;
+      this.r2UploadStatusText.classList.remove('is-uploading', 'is-ready', 'is-error');
+      if (state === 'uploading') this.r2UploadStatusText.classList.add('is-uploading');
+      else if (state === 'ready') this.r2UploadStatusText.classList.add('is-ready');
+      else if (state === 'error') this.r2UploadStatusText.classList.add('is-error');
+    }
+    if (this.r2UploadProgressBar && this.r2UploadProgressFill) {
+      if (typeof percent === 'number') {
+        this.r2UploadProgressBar.style.display = 'block';
+        this.r2UploadProgressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+      } else {
+        this.r2UploadProgressBar.style.display = 'none';
+        this.r2UploadProgressFill.style.width = '0%';
+      }
+    }
+  }
+
+  async startBackgroundR2AudioUpload(fileOrBlob = null) {
+    const file = fileOrBlob || this.getEffectiveUploadAudioFile();
+    if (!file) return null;
+    if (this.uploadedR2AudioUrl && !fileOrBlob) return this.uploadedR2AudioUrl;
+    if (this.isUploadingToR2 && this._r2UploadPromise) return this._r2UploadPromise;
+
+    if (!this.currentUser) {
+      this.setR2UploadStatus('Please sign in with Google in Settings to upload to Cloudflare R2.', { state: 'error' });
+      this.updatePublicSubmitButtonState();
+      return null;
+    }
+
+    const fallbackTitle = (this.inputCustomTitle && this.inputCustomTitle.value.trim()) || 'song';
+    const fileName = (file && file.name) ? file.name : `${fallbackTitle}.mp3`;
+
+    this.isUploadingToR2 = true;
+    this.setR2UploadStatus(`Uploading audio to Cloudflare R2 (0%)...`, { percent: 0, state: 'uploading' });
+    this.updatePublicSubmitButtonState();
+
+    this._r2UploadPromise = (async () => {
+      try {
+        const publicUrl = await FirebaseService.uploadMediaToR2(file, {
+          kind: 'audio',
+          fileName,
+          onProgress: (pct) => {
+            this.setR2UploadStatus(`Uploading audio to Cloudflare R2 (${pct}%)...`, { percent: pct, state: 'uploading' });
+          }
+        });
+        this.uploadedR2AudioUrl = publicUrl;
+        this.setR2UploadStatus('Audio uploaded to Cloudflare R2 & ready.', { percent: 100, state: 'ready' });
+        return publicUrl;
+      } catch (err) {
+        console.error('R2 auto-upload failed:', err);
+        this.uploadedR2AudioUrl = null;
+        this.setR2UploadStatus(`Upload failed: ${err.message || 'Check connection & sign in.'}`, { state: 'error' });
+        return null;
+      } finally {
+        this.isUploadingToR2 = false;
+        this._r2UploadPromise = null;
+        this.updatePublicSubmitButtonState();
+      }
+    })();
+
+    return this._r2UploadPromise;
+  }
+
   showTrackForm(trackToEdit = null) {
     this.clearFormErrors();
     if (this.trackListView) this.trackListView.style.display = 'none';
     if (this.trackFormView) this.trackFormView.style.display = 'flex';
     if (this.btnShowUploadForm) this.btnShowUploadForm.style.display = 'none';
 
+    this.selectedCoverFile = null;
+    this.uploadedR2CoverUrl = null;
+    this.isUploadingToR2 = false;
+    this._r2UploadPromise = null;
+
     if (trackToEdit) {
       this.editingTrackId = trackToEdit.id;
       if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Edit Song Metadata & Artwork';
-      if (this.btnApplyCustomTrack) this.btnApplyCustomTrack.textContent = 'Save Changes';
       if (this.audioRequiredBadge) {
         this.audioRequiredBadge.textContent = '(Optional - keep existing audio)';
         this.audioRequiredBadge.className = 'optional-badge';
@@ -3120,27 +3369,27 @@ class LyricsApp {
       this.inputCustomLrc.value = trackToEdit.lrc || '';
 
       this.selectedAudioFile = null;
+      this.uploadedR2AudioUrl = trackToEdit.publicAudioUrl || trackToEdit.audioUrl || null;
       if (this.audioFileInput) this.audioFileInput.value = '';
       if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = 'Existing Audio Attached (Click to replace file)';
 
       this.selectedCoverDataUrl = trackToEdit.cover || null;
+      if (this.coverPreviewImg) this.coverPreviewImg.src = trackToEdit.cover || 'assets/weleta_cover.jpg';
       if (this.checkSubmitToPublic) {
         this.checkSubmitToPublic.checked = !!(trackToEdit.publicAudioUrl || trackToEdit.submissionStatus === 'pending');
       }
-      if (this.publicAudioUrlField) {
-        this.publicAudioUrlField.style.display = (trackToEdit.publicAudioUrl || trackToEdit.submissionStatus === 'pending') ? 'block' : 'none';
-      }
-      if (this.inputPublicAudioUrl) {
-        this.inputPublicAudioUrl.value = trackToEdit.publicAudioUrl || '';
-      }
       if (this.formPublicPendingBadge) {
         this.formPublicPendingBadge.style.display = trackToEdit.submissionStatus === 'pending' ? 'inline-flex' : 'none';
+      }
+      if (this.uploadedR2AudioUrl) {
+        this.setR2UploadStatus('Audio already uploaded to Cloudflare R2 & ready.', { percent: 100, state: 'ready' });
+      } else {
+        this.setR2UploadStatus('Audio will upload to Cloudflare R2 automatically before publishing.');
       }
       this.updatePublicSubmitButtonState();
     } else {
       this.editingTrackId = null;
       if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Upload New Song';
-      if (this.btnApplyCustomTrack) this.btnApplyCustomTrack.textContent = 'Save & Play Song';
       if (this.audioRequiredBadge) {
         this.audioRequiredBadge.textContent = '* Required';
         this.audioRequiredBadge.className = 'required-badge';
@@ -3153,6 +3402,7 @@ class LyricsApp {
       this.inputCustomLrc.value = '';
 
       this.selectedAudioFile = null;
+      this.uploadedR2AudioUrl = null;
       if (this.audioFileInput) this.audioFileInput.value = '';
       if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = 'Click or Drag & Drop Audio File (MP3, WAV, AAC, M4A)';
 
@@ -3160,182 +3410,63 @@ class LyricsApp {
       if (this.coverPreviewImg) this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
       if (this.coverFileInput) this.coverFileInput.value = '';
       if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
-      if (this.publicAudioUrlField) this.publicAudioUrlField.style.display = 'none';
-      if (this.inputPublicAudioUrl) this.inputPublicAudioUrl.value = '';
       if (this.formPublicPendingBadge) this.formPublicPendingBadge.style.display = 'none';
+      this.setR2UploadStatus('Audio will upload automatically to Cloudflare R2.');
       this.updatePublicSubmitButtonState();
     }
   }
 
   updatePublicSubmitButtonState() {
-    if (!this.btnTriggerPublicSubmit) return;
-    const url = this.inputPublicAudioUrl ? this.inputPublicAudioUrl.value.trim() : '';
-    const hasValidUrl = url.length > 5 && (url.startsWith('http://') || url.startsWith('https://') || url.includes('.r2.dev'));
-    if (hasValidUrl) {
-      this.btnTriggerPublicSubmit.disabled = false;
-      this.btnTriggerPublicSubmit.style.opacity = '1';
-      this.btnTriggerPublicSubmit.style.cursor = 'pointer';
-    } else {
-      this.btnTriggerPublicSubmit.disabled = true;
-      this.btnTriggerPublicSubmit.style.opacity = '0.5';
-      this.btnTriggerPublicSubmit.style.cursor = 'not-allowed';
+    const isPublicChecked = !!(this.checkSubmitToPublic && this.checkSubmitToPublic.checked);
+    if (this.publicCloudStatusPanel) {
+      this.publicCloudStatusPanel.style.display = isPublicChecked ? 'block' : 'none';
     }
-  }
+    if (!this.btnApplyCustomTrack) return;
 
-  openSubmissionConfirmModal() {
-    this.clearFormErrors();
-    const artist = this.inputCustomArtist.value.trim();
-    const title = this.inputCustomTitle.value.trim();
-    const audioUrl = this.inputPublicAudioUrl ? this.inputPublicAudioUrl.value.trim() : '';
-
-    if (!artist || !title) {
-      this.showFormError('Artist Name and Song Title are required before submitting to the catalog.');
-      if (!artist) this.inputCustomArtist.focus();
-      else if (!title) this.inputCustomTitle.focus();
+    if (!isPublicChecked) {
+      this.btnApplyCustomTrack.disabled = false;
+      this.btnApplyCustomTrack.style.opacity = '1';
+      this.btnApplyCustomTrack.style.cursor = 'pointer';
+      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Save Changes' : 'Save & Play Song';
       return;
     }
 
-    if (!audioUrl) {
-      this.showFormError('Public Audio URL (Cloudflare R2 link) is required for the Global Catalog.');
-      if (this.inputPublicAudioUrl) this.inputPublicAudioUrl.focus();
+    if (this.isUploadingToR2) {
+      this.btnApplyCustomTrack.disabled = true;
+      this.btnApplyCustomTrack.style.opacity = '0.55';
+      this.btnApplyCustomTrack.style.cursor = 'not-allowed';
+      this.btnApplyCustomTrack.textContent = 'Uploading Audio...';
       return;
     }
 
-    // Populate Confirmation Modal Details
-    if (this.confirmSubArtwork) {
-      this.confirmSubArtwork.src = this.selectedCoverDataUrl || 
-        (this.editingTrackId ? (this.tracks.find(t => t.id === this.editingTrackId)?.cover) : null) || 
-        'assets/weleta_cover.jpg';
-    }
-    if (this.confirmSubTitle) this.confirmSubTitle.textContent = title;
-    if (this.confirmSubArtist) this.confirmSubArtist.textContent = artist;
-    if (this.confirmSubMeta) {
-      const album = this.inputCustomAlbum.value.trim() || 'Single';
-      const year = this.inputCustomYear.value.trim() || new Date().getFullYear().toString();
-      this.confirmSubMeta.textContent = `${album} (${year})`;
-    }
-    if (this.confirmSubAudioUrl) {
-      this.confirmSubAudioUrl.textContent = audioUrl;
-    }
-    if (this.confirmSubErrorMsg) {
-      this.confirmSubErrorMsg.style.display = 'none';
-      this.confirmSubErrorMsg.textContent = '';
+    if (this.isAdmin) {
+      const audioAvailable = !!(this.uploadedR2AudioUrl || this.getEffectiveUploadAudioFile());
+      this.btnApplyCustomTrack.disabled = !audioAvailable;
+      this.btnApplyCustomTrack.style.opacity = audioAvailable ? '1' : '0.55';
+      this.btnApplyCustomTrack.style.cursor = audioAvailable ? 'pointer' : 'not-allowed';
+      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Update & Publish Song' : 'Publish Song';
+      if (!audioAvailable) {
+        this.setR2UploadStatus('Select an audio file to upload and publish to the Global Catalog.');
+      } else if (!this.uploadedR2AudioUrl) {
+        this.setR2UploadStatus('Ready: Audio will upload to Cloudflare R2 automatically on Publish.');
+      }
+      return;
     }
 
-    if (this.submissionConfirmModal) {
-      this.submissionConfirmModal.classList.add('active');
-    }
-  }
+    // Standard user: audio MUST finish uploading to R2 before Submit for Review is enabled
+    const hasUploadedAudio = !!this.uploadedR2AudioUrl;
+    this.btnApplyCustomTrack.disabled = !hasUploadedAudio;
+    this.btnApplyCustomTrack.style.opacity = hasUploadedAudio ? '1' : '0.55';
+    this.btnApplyCustomTrack.style.cursor = hasUploadedAudio ? 'pointer' : 'not-allowed';
+    this.btnApplyCustomTrack.textContent = 'Submit for Review';
 
-  async handleExecutePublicSubmit() {
-    const artist = this.inputCustomArtist.value.trim();
-    const title = this.inputCustomTitle.value.trim();
-    const album = this.inputCustomAlbum.value.trim() || 'Single';
-    const year = this.inputCustomYear.value.trim() || new Date().getFullYear().toString();
-    const lrc = this.inputCustomLrc.value.trim() || '';
-    const audioUrl = this.inputPublicAudioUrl ? this.inputPublicAudioUrl.value.trim() : '';
-
-    const submitBtn = this.btnExecutePublicSubmit;
-    const labelSpan = this.btnExecutePublicSubmitLabel;
-    if (labelSpan) labelSpan.textContent = 'Submitting...';
-    if (submitBtn) submitBtn.disabled = true;
-
-    try {
-      let trackObj = null;
-
-      // 1. If currently editing existing track, update it
-      if (this.editingTrackId) {
-        trackObj = this.tracks.find(t => t.id === this.editingTrackId);
-        if (trackObj) {
-          trackObj.title = title;
-          trackObj.titleEn = title;
-          trackObj.artist = artist;
-          trackObj.artistEn = artist;
-          trackObj.album = album;
-          trackObj.year = year;
-          trackObj.lrc = lrc;
-          trackObj.publicAudioUrl = audioUrl;
-          trackObj.submissionStatus = 'pending';
-          if (this.selectedCoverDataUrl) {
-            trackObj.cover = this.selectedCoverDataUrl;
-            trackObj.discCenter = this.selectedCoverDataUrl;
-          }
-          await Storage.saveTrack(trackObj);
-        }
-      } else {
-        // 2. New track: save locally
-        const coverArt = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-        trackObj = {
-          id: `track_${Date.now()}`,
-          title,
-          titleEn: title,
-          artist,
-          artistEn: artist,
-          album,
-          year,
-          cover: coverArt,
-          discCenter: coverArt,
-          duration: 180,
-          lrc,
-          audioBlob: this.selectedAudioFile || null,
-          publicAudioUrl: audioUrl,
-          submissionStatus: 'pending'
-        };
-        await Storage.saveTrack(trackObj);
-        this.editingTrackId = trackObj.id;
+    if (!hasUploadedAudio) {
+      const hasFile = !!this.getEffectiveUploadAudioFile();
+      if (!hasFile) {
+        this.setR2UploadStatus('Select an audio file first so it can upload to Cloudflare R2.');
+      } else if (!this.currentUser) {
+        this.setR2UploadStatus('Sign in with Google in Settings to upload audio before submitting.', { state: 'error' });
       }
-
-      this.tracks = await Storage.getAllTracks();
-
-      // 3. Send to Firebase (Direct Publish if Admin, else Submit for Review)
-      if (this.isAdmin) {
-        await FirebaseService.publishTrack({
-          ...trackObj,
-          audioUrl: audioUrl
-        });
-        if (trackObj) {
-          trackObj.submissionStatus = 'published';
-          await Storage.saveTrack(trackObj);
-        }
-        await this.loadPublicCatalog();
-        alert(`Published "${title}" directly to the Global Public Catalog!`);
-      } else {
-        const coverArt = (trackObj && trackObj.cover) || this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-        await FirebaseService.submitForReview({
-          title,
-          artist,
-          album,
-          year,
-          cover: coverArt,
-          lrc,
-          audioUrl,
-          audioFileName: this.selectedAudioFile ? this.selectedAudioFile.name : `${title}.mp3`
-        });
-        alert(`"${title}" submitted for Public Catalog review! The admin will review it shortly.`);
-      }
-
-      // 4. Update UI state: Show pending badge in form
-      if (this.formPublicPendingBadge) {
-        this.formPublicPendingBadge.style.display = 'inline-flex';
-      }
-      if (this.submissionConfirmModal) {
-        this.submissionConfirmModal.classList.remove('active');
-      }
-
-      this.renderHomePage();
-      this.populateTracksModal();
-
-    } catch (err) {
-      console.error('Submission error:', err);
-      if (this.confirmSubErrorMsg) {
-        this.confirmSubErrorMsg.textContent = 'Submission failed: ' + (err.message || 'Network error');
-        this.confirmSubErrorMsg.style.display = 'block';
-      } else {
-        alert('Submission failed: ' + (err.message || 'Please check your connection'));
-      }
-    } finally {
-      if (labelSpan) labelSpan.textContent = 'Confirm & Submit';
-      if (submitBtn) submitBtn.disabled = false;
     }
   }
 
@@ -3355,6 +3486,29 @@ class LyricsApp {
     if (this.inputCustomTitle) this.inputCustomTitle.style.borderColor = '';
   }
 
+  async _resolvePublicCoverUrl(fallbackCover = 'assets/weleta_cover.jpg') {
+    if (this.uploadedR2CoverUrl) return this.uploadedR2CoverUrl;
+    if (this.selectedCoverFile && this.currentUser) {
+      try {
+        this.setR2UploadStatus('Uploading cover artwork to Cloudflare R2...', { state: 'uploading' });
+        const url = await FirebaseService.uploadMediaToR2(this.selectedCoverFile, {
+          kind: 'cover',
+          fileName: this.selectedCoverFile.name || 'cover.jpg'
+        });
+        this.uploadedR2CoverUrl = url;
+        return url;
+      } catch (err) {
+        console.warn('Cover R2 upload failed, falling back to default cover:', err);
+      }
+    }
+    const candidate = this.selectedCoverDataUrl || fallbackCover || 'assets/weleta_cover.jpg';
+    // Avoid storing multi-hundred-KB base64 images in Firestore documents
+    if (typeof candidate === 'string' && candidate.startsWith('data:') && candidate.length > 60000) {
+      return 'assets/weleta_cover.jpg';
+    }
+    return candidate;
+  }
+
   async applyCustomTrack() {
     this.clearFormErrors();
 
@@ -3364,7 +3518,6 @@ class LyricsApp {
     const year = this.inputCustomYear.value.trim() || new Date().getFullYear().toString();
     const lrc = this.inputCustomLrc.value.trim() || '';
     const submitToPublic = this.checkSubmitToPublic ? this.checkSubmitToPublic.checked : false;
-    const publicAudioUrl = this.inputPublicAudioUrl ? this.inputPublicAudioUrl.value.trim() : '';
 
     let hasError = false;
     if (!artist) {
@@ -3383,6 +3536,165 @@ class LyricsApp {
       return;
     }
 
+    const existingTrack = this.editingTrackId
+      ? this.tracks.find(t => t.id === this.editingTrackId)
+      : null;
+
+    if (!this.editingTrackId && !this.selectedAudioFile) {
+      this.showFormError('Please select or drop an audio file for your track.');
+      return;
+    }
+
+    // Handle Direct Publish (Admin) or Submit for Review (User)
+    if (submitToPublic) {
+      if (!this.currentUser) {
+        this.showFormError('Please sign in with Google in Settings first.');
+        return;
+      }
+
+      const audioSource = this.getEffectiveUploadAudioFile();
+      if (!this.uploadedR2AudioUrl) {
+        if (!audioSource) {
+          this.showFormError('Please select an audio file to upload.');
+          return;
+        }
+        const uploadedUrl = await this.startBackgroundR2AudioUpload(audioSource);
+        if (!uploadedUrl) {
+          this.showFormError('Audio upload to Cloudflare R2 failed. Please try again.');
+          return;
+        }
+      }
+
+      if (this.btnApplyCustomTrack) {
+        this.btnApplyCustomTrack.disabled = true;
+        this.btnApplyCustomTrack.textContent = this.isAdmin ? 'Publishing...' : 'Submitting...';
+      }
+
+      try {
+        const publicCoverUrl = await this._resolvePublicCoverUrl(existingTrack ? existingTrack.cover : 'assets/weleta_cover.jpg');
+        const publicAudioUrl = this.uploadedR2AudioUrl;
+
+        if (this.isAdmin) {
+          const published = await FirebaseService.publishTrack({
+            title,
+            artist,
+            album,
+            year,
+            cover: publicCoverUrl,
+            lrc,
+            audioUrl: publicAudioUrl,
+            duration: (existingTrack && existingTrack.duration) || 180,
+            localSourceTrackId: existingTrack ? existingTrack.id : null
+          });
+
+          // Remove any local draft copy so the song only appears once in the Global Catalog
+          if (existingTrack) {
+            this._migrateTrackIdReferences(existingTrack.id, published.id);
+            await Storage.deleteTrack(existingTrack.id);
+            this.tracks = await Storage.getAllTracks();
+          }
+
+          await this.loadPublicCatalog();
+          const globalTrack = this.publicTracks.find(t => t.id === published.id) || published;
+
+          this.inputCustomArtist.value = '';
+          this.inputCustomTitle.value = '';
+          this.inputCustomAlbum.value = '';
+          this.inputCustomYear.value = '';
+          this.inputCustomLrc.value = '';
+          this.selectedAudioFile = null;
+          this.selectedCoverDataUrl = null;
+          this.selectedCoverFile = null;
+          this.uploadedR2AudioUrl = null;
+          this.uploadedR2CoverUrl = null;
+          if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+
+          await this.loadTrack(globalTrack, true);
+          this.showTrackList();
+          this.switchTab('lyrics');
+          this.renderHomePage();
+          this.populateTracksModal();
+          this.showToast(`Published "${title}" to the Global Catalog!`, 3500);
+          return;
+        }
+
+        // Standard User Submission (audio is already uploaded to R2)
+        let localTrackId = existingTrack ? existingTrack.id : `track_${Date.now()}`;
+        const localTrackObj = existingTrack ? {
+          ...existingTrack,
+          title,
+          titleEn: title,
+          artist,
+          artistEn: artist,
+          album,
+          year,
+          lrc,
+          cover: this.selectedCoverDataUrl || existingTrack.cover || 'assets/weleta_cover.jpg',
+          discCenter: this.selectedCoverDataUrl || existingTrack.discCenter || 'assets/weleta_cover.jpg',
+          audioBlob: this.selectedAudioFile || existingTrack.audioBlob || null,
+          publicAudioUrl,
+          submissionStatus: 'pending'
+        } : {
+          id: localTrackId,
+          title,
+          titleEn: title,
+          artist,
+          artistEn: artist,
+          album,
+          year,
+          cover: this.selectedCoverDataUrl || 'assets/weleta_cover.jpg',
+          discCenter: this.selectedCoverDataUrl || 'assets/weleta_cover.jpg',
+          duration: 180,
+          lrc,
+          audioBlob: this.selectedAudioFile,
+          publicAudioUrl,
+          submissionStatus: 'pending'
+        };
+
+        await Storage.saveTrack(localTrackObj);
+        this.tracks = await Storage.getAllTracks();
+
+        await FirebaseService.submitForReview({
+          title,
+          artist,
+          album,
+          year,
+          cover: publicCoverUrl,
+          lrc,
+          audioUrl: publicAudioUrl,
+          audioFileName: (this.selectedAudioFile && this.selectedAudioFile.name) || `${title}.mp3`,
+          localSourceTrackId: localTrackId
+        });
+
+        this.inputCustomArtist.value = '';
+        this.inputCustomTitle.value = '';
+        this.inputCustomAlbum.value = '';
+        this.inputCustomYear.value = '';
+        this.inputCustomLrc.value = '';
+        this.selectedAudioFile = null;
+        this.selectedCoverDataUrl = null;
+        this.selectedCoverFile = null;
+        this.uploadedR2AudioUrl = null;
+        this.uploadedR2CoverUrl = null;
+        if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+
+        await this.loadTrack(localTrackObj, true);
+        this.showTrackList();
+        this.switchTab('lyrics');
+        this.renderHomePage();
+        this.populateTracksModal();
+        this.showToast(`"${title}" submitted for review! When approved, the global version will replace your local draft.`, 4200);
+        return;
+      } catch (err) {
+        console.error('Public upload/publish error:', err);
+        this.showFormError(err.message || 'Could not publish/submit track. Please try again.');
+        return;
+      } finally {
+        this.updatePublicSubmitButtonState();
+      }
+    }
+
+    // Offline-only Save / Edit Mode
     let coverArt = this.selectedCoverDataUrl;
     if (!coverArt && !this.editingTrackId) {
       coverArt = 'assets/weleta_cover.jpg';
@@ -3392,75 +3704,34 @@ class LyricsApp {
       discArt = 'assets/weleta_cover.jpg';
     }
 
-    // Editing Existing Track Mode
-    if (this.editingTrackId) {
-      const existingTrack = this.tracks.find(t => t.id === this.editingTrackId);
-      if (existingTrack) {
-        existingTrack.title = title;
-        existingTrack.titleEn = title;
-        existingTrack.artist = artist;
-        existingTrack.artistEn = artist;
-        existingTrack.album = album;
-        existingTrack.year = year;
-        existingTrack.lrc = lrc;
+    if (existingTrack) {
+      existingTrack.title = title;
+      existingTrack.titleEn = title;
+      existingTrack.artist = artist;
+      existingTrack.artistEn = artist;
+      existingTrack.album = album;
+      existingTrack.year = year;
+      existingTrack.lrc = lrc;
 
-        if (this.selectedCoverDataUrl !== null) {
-          existingTrack.cover = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-          existingTrack.discCenter = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-        }
-
-        if (this.selectedAudioFile) {
-          existingTrack.audioBlob = this.selectedAudioFile;
-        }
-
-        if (submitToPublic && publicAudioUrl) {
-          existingTrack.publicAudioUrl = publicAudioUrl;
-          if (existingTrack.submissionStatus !== 'published') {
-            existingTrack.submissionStatus = 'pending';
-            try {
-              if (this.isAdmin) {
-                await FirebaseService.publishTrack({
-                  ...existingTrack,
-                  audioUrl: publicAudioUrl
-                });
-                existingTrack.submissionStatus = 'published';
-                await this.loadPublicCatalog();
-                alert(`Published "${title}" directly to the Global Public Catalog!`);
-              } else {
-                await FirebaseService.submitForReview({
-                  title,
-                  artist,
-                  album,
-                  year,
-                  cover: existingTrack.cover,
-                  lrc,
-                  audioUrl: publicAudioUrl,
-                  audioFileName: this.selectedAudioFile ? this.selectedAudioFile.name : `${title}.mp3`
-                });
-                alert(`"${title}" submitted for Public Catalog review! The admin will review it shortly.`);
-              }
-            } catch (err) {
-              console.warn('Submission error during save changes:', err);
-            }
-          }
-        }
-
-        await Storage.saveTrack(existingTrack);
-        this.tracks = await Storage.getAllTracks();
-
-        if (this.currentTrack && this.currentTrack.id === existingTrack.id) {
-          await this.loadTrack(existingTrack, this.player.isPlaying);
-        }
-
-        this.showTrackList();
-        this.renderHomePage();
-        return;
+      if (this.selectedCoverDataUrl !== null) {
+        existingTrack.cover = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
+        existingTrack.discCenter = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
       }
-    }
 
-    // New Track Creation Mode
-    if (!this.selectedAudioFile) {
-      this.showFormError('Please select or drop an audio file for your track.');
+      if (this.selectedAudioFile) {
+        existingTrack.audioBlob = this.selectedAudioFile;
+      }
+
+      await Storage.saveTrack(existingTrack);
+      this.tracks = await Storage.getAllTracks();
+
+      if (this.currentTrack && this.currentTrack.id === existingTrack.id) {
+        await this.loadTrack(existingTrack, this.player.isPlaying);
+      }
+
+      this.showTrackList();
+      this.renderHomePage();
+      this.populateTracksModal();
       return;
     }
 
@@ -3477,47 +3748,12 @@ class LyricsApp {
       duration: 180,
       lrc: lrc,
       audioBlob: this.selectedAudioFile,
-      publicAudioUrl: publicAudioUrl || '',
-      submissionStatus: submitToPublic ? 'pending' : null
+      publicAudioUrl: '',
+      submissionStatus: null
     };
 
     await Storage.saveTrack(newTrack);
     this.tracks = await Storage.getAllTracks();
-
-    // Community Submission or Direct Admin Publishing
-    if (submitToPublic && publicAudioUrl) {
-      if (this.isAdmin) {
-        try {
-          await FirebaseService.publishTrack({
-            ...newTrack,
-            audioUrl: publicAudioUrl
-          });
-          newTrack.submissionStatus = 'published';
-          await Storage.saveTrack(newTrack);
-          await this.loadPublicCatalog();
-          alert(`Published "${title}" directly to the Global Public Catalog!`);
-        } catch (pubErr) {
-          console.warn('Direct admin publish error:', pubErr);
-        }
-      } else {
-        try {
-          await FirebaseService.submitForReview({
-            title,
-            artist,
-            album,
-            year,
-            cover: coverArt,
-            lrc,
-            audioUrl: publicAudioUrl,
-            audioFileName: this.selectedAudioFile.name
-          });
-          alert(`"${title}" was saved locally and submitted for Public Catalog review! Once approved by the admin, it will be published for everyone.`);
-        } catch (subErr) {
-          console.warn('Submission queue error:', subErr);
-          alert('Saved locally! Note: Submission to public queue requires an active internet connection.');
-        }
-      }
-    }
 
     // Reset inputs
     this.inputCustomArtist.value = '';
@@ -3527,6 +3763,9 @@ class LyricsApp {
     this.inputCustomLrc.value = '';
     this.selectedAudioFile = null;
     this.selectedCoverDataUrl = null;
+    this.selectedCoverFile = null;
+    this.uploadedR2AudioUrl = null;
+    this.uploadedR2CoverUrl = null;
     if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
 
     // Load and play
@@ -3534,6 +3773,7 @@ class LyricsApp {
     this.showTrackList();
     this.switchTab('lyrics');
     this.renderHomePage();
+    this.populateTracksModal();
     this.showToast(`Saved "${newTrack.title}" to Offline Library 🎵`);
   }
 
@@ -3783,9 +4023,14 @@ class LyricsApp {
           try {
             await FirebaseService.approveSubmission(sub, customUrl || null);
             item.remove();
+            if (sub.localSourceTrackId) {
+              await Storage.deleteTrack(sub.localSourceTrackId);
+              this.tracks = await Storage.getAllTracks();
+            }
             await this.loadPublicCatalog();
             this.checkPendingSubmissionsCount();
             this.renderHomePage();
+            this.populateTracksModal();
             alert(isMetadataEdit 
               ? `Applied community edits and lyrics to "${sub.title}" successfully!` 
               : `Approved "${sub.title}" and published to Global Cloud Catalog!`);

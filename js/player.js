@@ -6,7 +6,7 @@ import { LyricsParser } from './lyrics-parser.js';
 export class AudioPlayer {
   constructor() {
     this.audioElement = new Audio();
-    this.audioElement.preload = 'auto';
+    this.audioElement.preload = 'metadata';
     this.audioElement.preservesPitch = true;
     this.audioElement.mozPreservesPitch = true;
     this.audioElement.webkitPreservesPitch = true;
@@ -17,12 +17,14 @@ export class AudioPlayer {
     this.volume = 0.8;
     this.playbackRate = 1.0;
     this.syncRateMultiplier = 1.0;
-    this.isSynthetic = true; // Use synth if no external audio file loaded
+    this.isSynthetic = false;
+    this.hasAudioSource = false;
     this.audioUrl = null;
 
     // Callbacks
     this.onTimeUpdate = null;
     this.onDurationChange = null;
+    this.onBufferUpdate = null;
     this.onStateChange = null;
     this.onEnded = null;
     this.onPlaying = null;
@@ -100,6 +102,20 @@ export class AudioPlayer {
 
     this.audioElement.addEventListener('loadedmetadata', handleDurationMeta);
     this.audioElement.addEventListener('durationchange', handleDurationMeta);
+    const emitBuffered = () => {
+      if (this.isSynthetic || !this.onBufferUpdate) return;
+      const dur = (this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0)
+        ? this.audioElement.duration
+        : this.duration;
+      if (!dur || dur <= 0 || !this.audioElement.buffered || this.audioElement.buffered.length === 0) {
+        this.onBufferUpdate(0);
+        return;
+      }
+      const end = this.audioElement.buffered.end(this.audioElement.buffered.length - 1);
+      this.onBufferUpdate(Math.min(100, Math.max(0, (end / dur) * 100)));
+    };
+    this.audioElement.addEventListener('progress', emitBuffered);
+    this.audioElement.addEventListener('canplay', emitBuffered);
     this.audioElement.addEventListener('error', () => {
       if (this.isSynthetic || !this.audioElement.getAttribute('src')) return;
       this.isPlaying = false;
@@ -151,9 +167,21 @@ export class AudioPlayer {
     }
   }
 
+  _normalizeStreamUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    try {
+      return encodeURI(decodeURI(trimmed));
+    } catch (e) {
+      return encodeURI(trimmed);
+    }
+  }
+
   loadTrack(track) {
     this.pause();
     this.currentTime = 0;
+    if (this.onBufferUpdate) this.onBufferUpdate(0);
 
     // Resolve real duration: from track.duration (if valid and not default 180), or LRC timestamp estimate, or 0
     let initialDuration = 0;
@@ -170,17 +198,29 @@ export class AudioPlayer {
       this.loadAudioFile(track.audioBlob);
     } else if (track._audioFile) {
       this.loadAudioFile(track._audioFile);
-    } else if (track.audioUrl) {
+    } else if (track.audioUrl && track.audioUrl.trim()) {
       this._revokeBlobUrl();
       this.isSynthetic = false;
-      this.audioUrl = track.audioUrl;
-      this.audioElement.src = track.audioUrl;
+      this.hasAudioSource = true;
+      const streamUrl = this._normalizeStreamUrl(track.audioUrl);
+      this.audioUrl = streamUrl;
+      // Progressive HTTP Range streaming: fetch only metadata until playback starts
+      this.audioElement.preload = 'metadata';
+      this.audioElement.src = streamUrl;
       this.audioElement.load();
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.getEffectivePlaybackRate();
-    } else {
+    } else if (track.isDemoSynth === true) {
       this._revokeBlobUrl();
       this.isSynthetic = true;
+      this.hasAudioSource = true;
+      this.audioElement.removeAttribute('src');
+      this.audioElement.load();
+      this.audioUrl = null;
+    } else {
+      this._revokeBlobUrl();
+      this.isSynthetic = false;
+      this.hasAudioSource = false;
       this.audioElement.removeAttribute('src');
       this.audioElement.load();
       this.audioUrl = null;
@@ -197,11 +237,14 @@ export class AudioPlayer {
     this.audioUrl = url;
     this._isBlobUrl = true;
     this.isSynthetic = false;
+    this.hasAudioSource = true;
+    this.audioElement.preload = 'auto';
     this.audioElement.src = url;
     this.audioElement.load();
     this.audioElement.volume = this.volume;
     this.audioElement.playbackRate = this.getEffectivePlaybackRate();
     this.seek(0);
+    if (this.onBufferUpdate) this.onBufferUpdate(100);
   }
 
   play() {
@@ -235,6 +278,14 @@ export class AudioPlayer {
       if (this.onStateChange) this.onStateChange('playing');
       return Promise.resolve(true);
     } else {
+      if (!this.hasAudioSource || !this.audioUrl) {
+        if (this.onError) {
+          this.onError('No audio stream is available for this track yet.');
+        }
+        return Promise.resolve(false);
+      }
+      // Switch to progressive buffering as soon as playback is requested
+      this.audioElement.preload = 'auto';
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.getEffectivePlaybackRate();
       return this.audioElement.play().then(() => {
@@ -244,6 +295,9 @@ export class AudioPlayer {
         return true;
       }).catch(e => {
         console.warn('Audio play prevented:', e);
+        if (e && e.name !== 'NotAllowedError' && this.onError) {
+          this.onError('Could not start audio stream. Check connection and try again.');
+        }
         return false;
       });
     }

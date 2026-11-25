@@ -768,6 +768,19 @@ html, body {
   height: 7px;
 }
 
+.scrubber-buffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  pointer-events: none;
+  width: 0%;
+  transition: width 0.25s ease;
+  will-change: width;
+}
+
 .scrubber-fill {
   position: absolute;
   top: 0;
@@ -779,6 +792,7 @@ html, body {
   width: 0%;
   transition: width 0.1s linear;
   will-change: width;
+  z-index: 2;
 }
 
 .scrubber-thumb {
@@ -825,12 +839,12 @@ html, body {
 
 .volume-popup-tray {
   position: absolute;
-  bottom: calc(100% + 12px);
+  bottom: calc(100% + 10px);
   right: 0;
-  background: rgba(18, 12, 16, 0.95);
+  background: rgba(18, 12, 16, 0.96);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
-  padding: 0.5rem 0.8rem;
+  padding: 0.55rem 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -841,12 +855,21 @@ html, body {
   opacity: 0;
   visibility: hidden;
   transform: translateY(6px) scale(0.94);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s;
   pointer-events: none;
   white-space: nowrap;
 }
 
-.volume-container:hover .volume-popup-tray,
+/* Invisible hover bridge covering the gap between volume icon and popup tray */
+.volume-popup-tray::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 100%;
+  height: 18px;
+}
+
 .volume-container.tray-active .volume-popup-tray {
   opacity: 1;
   visibility: visible;
@@ -2743,6 +2766,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex-wrap: wrap;
   margin-top: 0.25rem;
 }
 
@@ -3663,6 +3687,11 @@ html, body {
   .card-artist {
     font-size: 0.75rem;
   }
+  .card-actions-row {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.15rem;
+  }
 }
 
 /* ==========================================================================
@@ -3754,6 +3783,13 @@ html, body {
   margin: 0 auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Prevent flex children inside scrollable tab views from shrinking vertically */
+#tabViewHome > *,
+#tabViewLibrary > *,
+#tabViewSettings > * {
+  flex-shrink: 0;
 }
 
 #tabViewHome::-webkit-scrollbar {
@@ -4078,8 +4114,10 @@ html, body {
   }
 
   .hero-artwork-box {
-    width: 78px;
-    height: 78px;
+    width: 84px !important;
+    height: 84px !important;
+    min-width: 84px !important;
+    max-width: 84px !important;
     border-radius: 12px;
     flex-shrink: 0;
   }
@@ -6380,6 +6418,33 @@ body.is-party-guest .guest-locked-control:hover::after {
   .edit-review-grid-2col {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Automatic R2 Upload Status Box */
+.r2-upload-status-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(229, 185, 90, 0.28);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.r2-upload-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.r2-upload-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f4a261, #e5b95a, #10b981);
+  transition: width 0.2s ease;
 }
 
 

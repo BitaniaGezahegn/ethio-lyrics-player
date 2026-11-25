@@ -765,44 +765,26 @@
                 <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Catalog (Admin
                   Review)</span>
               </label>
-              <p
+              <p id="publicSubmitCheckDesc"
                 style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
-                Share your track with the global community. Once approved by the admin, it will be published to the
-                catalog for all visitors.
+                Audio is automatically uploaded to Cloudflare R2 so everyone can stream it. Once approved, the global
+                version replaces your local draft so there are no duplicates.
               </p>
-              <div id="publicAudioUrlField" style="display:none; margin-top:0.75rem; padding-left:1.6rem;">
-                <label style="font-size:0.78rem; color:var(--color-gold); font-weight:600;">
-                  Public Audio URL (Cloudflare R2 or direct link): <span class="required-badge">* Required for
-                    Catalog</span>
-                </label>
-                <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
-                  <input type="url" id="inputPublicAudioUrl" class="form-input"
-                    placeholder="https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev/song.mp3"
-                    style="font-size:0.82rem; flex:1;">
-                  <button type="button" id="btnPasteR2Prefix" class="btn-pill"
-                    style="font-size:0.72rem; padding:0.4rem 0.65rem; white-space:nowrap;"
-                    title="Insert default R2 bucket prefix">
-                    + R2 Domain
-                  </button>
-                </div>
 
-                <!-- Dedicated Submit Action & Pending Status -->
-                <div
-                  style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; margin-top:0.85rem;">
-                  <button type="button" id="btnTriggerPublicSubmit" class="btn-primary" disabled
-                    style="opacity:0.5; cursor:not-allowed; font-size:0.82rem; padding:0.5rem 1.15rem; display:inline-flex; align-items:center; gap:0.45rem;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="m22 2-7 20-4-9-9-4Z" />
-                      <path d="M22 2 11 13" />
-                    </svg>
-                    <span id="btnTriggerPublicSubmitLabel">Submit for Review</span>
-                  </button>
+              <!-- Automatic Cloudflare R2 Upload Status (Shown when public checkbox is checked) -->
+              <div id="publicCloudStatusPanel" class="r2-upload-status-box" style="display:none; margin-top:0.7rem; margin-left:1.6rem;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+                  <span id="r2UploadStatusText" style="font-size:0.78rem; font-weight:600; color:#fce7b2;">
+                    Select an audio file to upload to Cloudflare R2 automatically.
+                  </span>
                   <div id="formPublicPendingBadge"
-                    style="display:none; align-items:center; gap:0.45rem; font-size:0.78rem; color:#fce7b2; background:rgba(229,185,90,0.15); border:1px solid rgba(229,185,90,0.4); padding:0.3rem 0.75rem; border-radius:9999px;">
+                    style="display:none; align-items:center; gap:0.45rem; font-size:0.74rem; color:#fce7b2; background:rgba(229,185,90,0.15); border:1px solid rgba(229,185,90,0.4); padding:0.22rem 0.65rem; border-radius:9999px;">
                     <span class="spotlight-dot" style="background:#f4a261;"></span>
                     <span style="font-weight:600;">Pending Admin Review</span>
                   </div>
+                </div>
+                <div id="r2UploadProgressBar" class="r2-upload-progress-track" style="display:none;">
+                  <div id="r2UploadProgressFill" class="r2-upload-progress-fill" style="width:0%;"></div>
                 </div>
               </div>
             </div>
@@ -1096,7 +1078,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.3</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.5.4</span>
                 </div>
               </div>
 
@@ -1104,7 +1086,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v28 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v29 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1316,6 +1298,7 @@
           <div class="timeline-container">
             <span id="currentTimeLabel" class="time-label">0:00</span>
             <div id="scrubberTrack" class="scrubber-track">
+              <div id="scrubberBuffered" class="scrubber-buffered"></div>
               <div id="scrubberFill" class="scrubber-fill">
                 <div class="scrubber-thumb"></div>
               </div>

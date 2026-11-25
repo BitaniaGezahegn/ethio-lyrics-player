@@ -8,6 +8,7 @@ import { escapeHtml, sanitizeUrl } from '../js/utils/sanitize.js';
 import { LyricsParser } from '../js/lyrics-parser.js';
 import { computeTarget, DriftController, GuestSyncEngine, HostBroadcaster } from '../js/party-sync.js';
 import { RecommendationEngine } from '../js/recommendation-engine.js';
+import { onRequestPost as uploadPostHandler } from '../functions/api/upload.js';
 
 const ROOT = process.cwd();
 
@@ -40,6 +41,8 @@ async function run() {
   const css = fs.readFileSync(path.join(ROOT, 'css/style.css'), 'utf8');
   assert.ok(css.includes('.app-global-toast'), 'Missing .app-global-toast CSS rule');
   assert.ok(css.includes('.empty-library-state'), 'Missing .empty-library-state CSS rule');
+  assert.ok(css.includes('.scrubber-buffered'), 'Missing .scrubber-buffered CSS rule');
+  assert.ok(css.includes('.volume-container.tray-active'), 'Missing .volume-container.tray-active CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
   assert.ok(!fs.existsSync(path.join(ROOT, 'js/data/sample-songs.js')), 'Unused sample-songs.js should be removed');
   console.log('   OK');
@@ -182,6 +185,85 @@ async function run() {
   } finally {
     srv.kill();
   }
+
+  console.log('8. Testing AudioPlayer progressive streaming & no-synth fallback...');
+  const listenersMap = {};
+  const fakeAudioEl = {
+    preload: '',
+    crossOrigin: '',
+    src: '',
+    volume: 1,
+    playbackRate: 1,
+    duration: 180,
+    currentTime: 0,
+    buffered: { length: 1, start: () => 0, end: () => 45 },
+    paused: true,
+    error: null,
+    addEventListener: (evt, fn) => { listenersMap[evt] = fn; },
+    removeAttribute: (attr) => { if (attr === 'src') fakeAudioEl.src = ''; },
+    pause: () => { fakeAudioEl.paused = true; },
+    play: async () => { fakeAudioEl.paused = false; },
+    load: () => {}
+  };
+  const origAudio = globalThis.Audio;
+  const origRaf = globalThis.requestAnimationFrame;
+  const origCaf = globalThis.cancelAnimationFrame;
+  const origCreateObjectURL = globalThis.URL.createObjectURL;
+  const origRevokeObjectURL = globalThis.URL.revokeObjectURL;
+  globalThis.Audio = function () { return fakeAudioEl; };
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+  globalThis.URL.createObjectURL = () => 'blob:mock';
+  globalThis.URL.revokeObjectURL = () => {};
+  try {
+    const { AudioPlayer } = await import('../js/player.js');
+    const testPlayer = new AudioPlayer();
+    let lastPlayerError = null;
+    let lastBufferPct = 0;
+    testPlayer.onError = (msg) => { lastPlayerError = msg; };
+    testPlayer.onBufferUpdate = (pct) => { lastBufferPct = pct; };
+
+    // Real track missing audio must NOT enable synthetic fallback
+    testPlayer.loadTrack({ id: 'pub_missing', title: 'No Audio Track' });
+    assert.equal(testPlayer.isSynthetic, false);
+    assert.equal(testPlayer.hasAudioSource, false);
+    const playedMissing = await testPlayer.play();
+    assert.equal(playedMissing, false);
+    assert.ok(lastPlayerError && lastPlayerError.includes('No audio stream'), 'Should report missing audio stream');
+
+    // Streaming track uses metadata preload initially, switches to auto on play, and encodes non-ASCII URLs
+    testPlayer.loadTrack({ id: 'pub_stream', title: 'Stream', audioUrl: 'https://pub-test.r2.dev/በስምህ ታምኛለው.mp3' });
+    assert.equal(testPlayer.hasAudioSource, true);
+    assert.equal(fakeAudioEl.preload, 'metadata');
+    assert.ok(!fakeAudioEl.src.includes(' '), 'Stream URL spaces must be percent-encoded');
+    listenersMap.progress();
+    assert.equal(lastBufferPct, 25);
+    const playedStream = await testPlayer.play();
+    assert.equal(playedStream, true);
+    assert.equal(fakeAudioEl.preload, 'auto');
+    testPlayer.pause();
+  } finally {
+    globalThis.Audio = origAudio;
+    globalThis.requestAnimationFrame = origRaf;
+    globalThis.cancelAnimationFrame = origCaf;
+    globalThis.URL.createObjectURL = origCreateObjectURL;
+    globalThis.URL.revokeObjectURL = origRevokeObjectURL;
+  }
+  console.log('   OK');
+
+  console.log('9. Testing functions/api/upload.js Cloudflare R2 guardrails...');
+  const noBucketRes = await uploadPostHandler({
+    request: new Request('https://example.com/api/upload', { method: 'POST' }),
+    env: {}
+  });
+  assert.equal(noBucketRes.status, 503);
+
+  const noAuthRes = await uploadPostHandler({
+    request: new Request('https://example.com/api/upload', { method: 'POST' }),
+    env: { MEDIA_BUCKET: { put: async () => {} } }
+  });
+  assert.equal(noAuthRes.status, 401);
+  console.log('   OK');
 
   console.log('\nALL TESTS PASSED!');
 }
