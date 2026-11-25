@@ -200,7 +200,11 @@ async function run() {
     paused: true,
     error: null,
     addEventListener: (evt, fn) => { listenersMap[evt] = fn; },
-    removeAttribute: (attr) => { if (attr === 'src') fakeAudioEl.src = ''; },
+    getAttribute: (attr) => (attr === 'src' ? (fakeAudioEl.src || null) : null),
+    removeAttribute: (attr) => {
+      if (attr === 'src') fakeAudioEl.src = '';
+      if (attr === 'crossOrigin') fakeAudioEl.crossOrigin = '';
+    },
     pause: () => { fakeAudioEl.paused = true; },
     play: async () => { fakeAudioEl.paused = false; },
     load: () => {}
@@ -241,7 +245,18 @@ async function run() {
     const playedStream = await testPlayer.play();
     assert.equal(playedStream, true);
     assert.equal(fakeAudioEl.preload, 'auto');
+
+    // Simulate CORS retry + MediaError.code without accessing MediaError.message
+    fakeAudioEl.crossOrigin = 'anonymous';
+    fakeAudioEl.error = { code: 2 };
+    listenersMap.error();
+    assert.equal(fakeAudioEl.crossOrigin, '');
+    listenersMap.error();
+    assert.ok(lastPlayerError && lastPlayerError.includes('Network error'), 'Should emit code-mapped audio error');
     testPlayer.pause();
+
+    const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+    assert.ok(swSrc.includes('url.origin !== self.location.origin'), 'Service worker must skip all cross-origin requests');
   } finally {
     globalThis.Audio = origAudio;
     globalThis.requestAnimationFrame = origRaf;

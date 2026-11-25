@@ -32,6 +32,8 @@ export class AudioPlayer {
     this.onWaiting = null;
     this.onError = null;
     this._isBlobUrl = false;
+    this._corsFallbackTried = false;
+    this._wantedPlayOnLoad = false;
 
     // Web Audio Synthesizer state
     this.audioCtx = null;
@@ -118,13 +120,30 @@ export class AudioPlayer {
     this.audioElement.addEventListener('canplay', emitBuffered);
     this.audioElement.addEventListener('error', () => {
       if (this.isSynthetic || !this.audioElement.getAttribute('src')) return;
+      if (this.audioElement.crossOrigin && !this._corsFallbackTried && this.audioUrl && !this._isBlobUrl) {
+        this._corsFallbackTried = true;
+        const shouldPlay = this._wantedPlayOnLoad;
+        this.audioElement.removeAttribute('crossOrigin');
+        this.audioElement.src = this.audioUrl;
+        this.audioElement.load();
+        if (shouldPlay) {
+          this.audioElement.play().catch(() => {});
+        }
+        return;
+      }
       this.isPlaying = false;
+      this._wantedPlayOnLoad = false;
       this._stopRafTicker();
       if (this.onStateChange) this.onStateChange('paused');
       if (this.onError) {
-        const mediaErr = this.audioElement.error;
-        const msg = mediaErr && mediaErr.message ? mediaErr.message : 'Unable to stream or decode this audio track.';
-        this.onError(msg);
+        const code = this.audioElement.error ? this.audioElement.error.code : 0;
+        const codeMessages = {
+          1: 'Audio loading was aborted.',
+          2: 'Network error or blocked connection while streaming audio.',
+          3: 'Audio decoding failed or stream was interrupted.',
+          4: 'Audio stream unavailable or blocked by browser privacy rules.'
+        };
+        this.onError(codeMessages[code] || 'Unable to stream or decode this audio track.');
       }
     });
   }
@@ -202,8 +221,16 @@ export class AudioPlayer {
       this._revokeBlobUrl();
       this.isSynthetic = false;
       this.hasAudioSource = true;
+      this._corsFallbackTried = false;
+      this._wantedPlayOnLoad = false;
       const streamUrl = this._normalizeStreamUrl(track.audioUrl);
       this.audioUrl = streamUrl;
+      const isProdPagesOrigin = typeof window !== 'undefined' && window.location && window.location.origin === 'https://ethio-lyrics-player.pages.dev';
+      if (isProdPagesOrigin && streamUrl.includes('.r2.dev/')) {
+        this.audioElement.crossOrigin = 'anonymous';
+      } else {
+        this.audioElement.removeAttribute('crossOrigin');
+      }
       // Progressive HTTP Range streaming: fetch only metadata until playback starts
       this.audioElement.preload = 'metadata';
       this.audioElement.src = streamUrl;
@@ -238,6 +265,9 @@ export class AudioPlayer {
     this._isBlobUrl = true;
     this.isSynthetic = false;
     this.hasAudioSource = true;
+    this._corsFallbackTried = false;
+    this._wantedPlayOnLoad = false;
+    this.audioElement.removeAttribute('crossOrigin');
     this.audioElement.preload = 'auto';
     this.audioElement.src = url;
     this.audioElement.load();
@@ -285,6 +315,7 @@ export class AudioPlayer {
         return Promise.resolve(false);
       }
       // Switch to progressive buffering as soon as playback is requested
+      this._wantedPlayOnLoad = true;
       this.audioElement.preload = 'auto';
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.getEffectivePlaybackRate();

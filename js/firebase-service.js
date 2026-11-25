@@ -2,7 +2,7 @@
  * Firebase Auth & Cloud Firestore Integration Service
  * Configured for Ethio Lyrics Player with Cloudflare R2 integration
  */
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { 
   getAuth, 
   signInWithPopup, 
@@ -11,8 +11,9 @@ import {
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged 
-} from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
 import { 
+  initializeFirestore,
   getFirestore, 
   collection, 
   getDocs, 
@@ -31,7 +32,7 @@ import {
   arrayUnion,
   arrayRemove,
   runTransaction
-} from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDf0VvlUp1edtOjSJXZfyOeN75eYXrROsk",
@@ -54,7 +55,11 @@ let googleProvider = null;
 try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  db = getFirestore(app);
+  try {
+    db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+  } catch (fsErr) {
+    db = getFirestore(app);
+  }
   googleProvider = new GoogleAuthProvider();
   googleProvider.setCustomParameters({ prompt: 'select_account' });
 } catch (err) {
@@ -107,9 +112,24 @@ export const FirebaseService = {
       const result = await signInWithPopup(auth, googleProvider);
       return result.user;
     } catch (popupErr) {
-      console.warn('Popup login failed, attempting redirect login...', popupErr);
-      if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
-        return await signInWithRedirect(auth, googleProvider);
+      console.warn('Popup login failed:', popupErr?.code || popupErr?.message);
+      const redirectFallbackCodes = [
+        'auth/popup-blocked',
+        'auth/cancelled-popup-request',
+        'auth/internal-error',
+        'auth/operation-not-supported-in-this-environment'
+      ];
+      if (redirectFallbackCodes.includes(popupErr?.code)) {
+        try {
+          console.info('Attempting redirect Google Sign-In fallback...');
+          await signInWithRedirect(auth, googleProvider);
+          return null;
+        } catch (redirectErr) {
+          if (redirectErr?.code === 'auth/internal-error' || redirectErr?.code === 'auth/network-request-failed') {
+            throw new Error('Google Sign-In scripts (apis.google.com) are blocked by Firefox Tracking Protection, resistFingerprinting, an ad-blocker, or network firewall. Turn off tracking protection for this site (shield icon in address bar) and retry.');
+          }
+          throw redirectErr;
+        }
       }
       throw popupErr;
     }

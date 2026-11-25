@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v29';
+const CACHE_NAME = 'ethio-lyrics-cache-v30';
 
 const STATIC_ASSETS = [
   './',
@@ -56,13 +56,10 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Only handle HTTP(S) GET requests; skip Firebase, Google APIs, Cloudflare R2, and local hub /api/ and /ws
+  // Only handle same-origin HTTP(S) GET requests (never intercept Google/Firebase, apis.google.com, R2, /api/, or /ws)
   if (
     !url.protocol.startsWith('http') ||
-    url.origin.includes('firebase') ||
-    url.origin.includes('googleapis') ||
-    url.origin.includes('gstatic') ||
-    url.origin.includes('r2.dev') ||
+    url.origin !== self.location.origin ||
     url.pathname.startsWith('/api/') ||
     url.pathname.startsWith('/ws') ||
     event.request.method !== 'GET'
