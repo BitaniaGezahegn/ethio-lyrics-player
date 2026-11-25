@@ -418,7 +418,12 @@ export class WebRtcHostHub {
       const end = Math.min(start + chunkSize, totalBytes);
       const chunkData = buffer.slice(start, end);
 
-      const base64Chunk = btoa(String.fromCharCode(...new Uint8Array(chunkData)));
+      const bytes = new Uint8Array(chunkData);
+      let binary = '';
+      for (let b = 0; b < bytes.length; b++) {
+        binary += String.fromCharCode(bytes[b]);
+      }
+      const base64Chunk = btoa(binary);
       this.broadcast({
         type: 'audio_chunk',
         trackId,
@@ -461,6 +466,7 @@ export class WebRtcGuestClient {
     this.dc = null;
     this.clockOffsetMs = 0;
     this.audioBufferChunks = new Map(); // trackId -> array of chunks
+    this.audioHeaderMeta = new Map(); // trackId -> { mime, totalBytes, totalChunks }
     this.audioBlobs = new Map(); // trackId -> Blob
     this.callbacks = {
       onConnected: null,
@@ -578,6 +584,11 @@ export class WebRtcGuestClient {
 
       case 'audio_header':
         this.audioBufferChunks.set(msg.trackId, new Array(msg.totalChunks));
+        this.audioHeaderMeta.set(msg.trackId, {
+          mime: msg.mime || 'audio/mpeg',
+          totalBytes: msg.totalBytes || 0,
+          totalChunks: msg.totalChunks || 0,
+        });
         break;
 
       case 'audio_chunk': {
@@ -596,8 +607,11 @@ export class WebRtcGuestClient {
           }
 
           if (receivedCount === chunks.length) {
-            const blob = new Blob(chunks, { type: 'audio/mpeg' });
+            const meta = this.audioHeaderMeta.get(msg.trackId);
+            const blob = new Blob(chunks, { type: (meta && meta.mime) || 'audio/mpeg' });
             this.audioBlobs.set(msg.trackId, blob);
+            this.audioBufferChunks.delete(msg.trackId);
+            this.audioHeaderMeta.delete(msg.trackId);
             console.log(`[WebRTC-P2P] Complete audio blob reassembled for "${msg.trackId}"!`);
             if (this.callbacks.onTrackReceived) {
               this.callbacks.onTrackReceived(msg.trackId, blob);

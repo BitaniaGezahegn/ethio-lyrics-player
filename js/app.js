@@ -11,6 +11,7 @@ import { QRCodeGenerator } from './qr-code.js';
 import { CameraScanner } from './camera-scanner.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
+import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
 
 class LyricsApp {
   constructor() {
@@ -61,7 +62,10 @@ class LyricsApp {
     this.localLanUrl = null;
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('mode') === 'local' || window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.') || window.location.hostname.startsWith('10.') || window.location.hostname.startsWith('172.')) {
+      const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      const host = window.location.hostname || '';
+      const isLanHost = host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.') || (host === 'localhost' && window.location.port === '3000');
+      if (urlParams.get('mode') === 'local' || (!isNativeWebView && isLanHost)) {
         this.syncMode = 'local';
       }
     } catch (e) {}
@@ -90,9 +94,18 @@ class LyricsApp {
 
     // LRC Editor - instantiated early so it is immediately accessible to settings & buttons
     this.lrcEditor = new LrcEditor(this.player, async (lrcString) => {
+      if (this._lrcEditorReviewTarget) {
+        this._lrcEditorReviewTarget = false;
+        if (this.inputEditReviewLrc) this.inputEditReviewLrc.value = lrcString;
+        if (this.editSongReviewModal) this.editSongReviewModal.classList.add('active');
+        this.showToast('Synced lyrics applied to review draft ✨');
+        return;
+      }
       if (!this.currentTrack) return;
       this.currentTrack.lrc = lrcString;
-      await Storage.saveTrack(this.currentTrack);
+      if (this.currentTrack.audioBlob || await Storage.hasTrack(this.currentTrack.id)) {
+        await Storage.saveTrack(this.currentTrack);
+      }
       this.parsedLyrics = LyricsParser.parse(lrcString);
       this.renderLyrics();
       this.player.seek(0);
@@ -110,9 +123,10 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.5.2';
-    this.cacheVersion = 'v27';
-    if ('serviceWorker' in navigator) {
+    this.appVersion = 'v2.5.3';
+    this.cacheVersion = 'v28';
+    const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if ('serviceWorker' in navigator && !isNativeWebView) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
           this.swRegistration = reg;
@@ -213,7 +227,6 @@ class LyricsApp {
 
     this.desktopPendingDot = document.getElementById('desktopPendingDot');
     this.mobilePendingDot = document.getElementById('mobilePendingDot');
-    this.btnStageBackToHome = document.getElementById('btnStageBackToHome');
     this.dockTrackInfo = document.getElementById('dockTrackInfo');
 
     // Settings View Elements
@@ -248,10 +261,8 @@ class LyricsApp {
     this.btnEditParticipantName = document.getElementById('btnEditParticipantName');
     this.activeRoomCodeTitle = document.getElementById('activeRoomCodeTitle');
     this.activeRoomRoleText = document.getElementById('activeRoomRoleText');
-    this.btnShareInviteLinkModal = document.getElementById('btnShareInviteLinkModal') || document.getElementById('btnCopyInviteLinkModal');
-    this.shareInviteLinkModalLabel = document.getElementById('shareInviteLinkModalLabel') || document.getElementById('copyInviteLinkModalLabel');
-    this.btnCopyInviteLinkModal = this.btnShareInviteLinkModal;
-    this.copyInviteLinkModalLabel = this.shareInviteLinkModalLabel;
+    this.btnShareInviteLinkModal = document.getElementById('btnShareInviteLinkModal');
+    this.shareInviteLinkModalLabel = document.getElementById('shareInviteLinkModalLabel');
     this.activeRoomTrackArt = document.getElementById('activeRoomTrackArt');
     this.activeRoomTrackTitle = document.getElementById('activeRoomTrackTitle');
     this.activeRoomTrackArtist = document.getElementById('activeRoomTrackArtist');
@@ -263,10 +274,8 @@ class LyricsApp {
     this.roomBarCodeLabel = document.getElementById('roomBarCodeLabel');
     this.roomBarRolePill = document.getElementById('roomBarRolePill');
     this.roomBarListenersLabel = document.getElementById('roomBarListenersLabel');
-    this.btnShareRoomLink = document.getElementById('btnShareRoomLink') || document.getElementById('btnCopyRoomLink');
-    this.shareLinkBtnText = document.getElementById('shareLinkBtnText') || document.getElementById('copyLinkBtnText');
-    this.btnCopyRoomLink = this.btnShareRoomLink;
-    this.copyLinkBtnText = this.shareLinkBtnText;
+    this.btnShareRoomLink = document.getElementById('btnShareRoomLink');
+    this.shareLinkBtnText = document.getElementById('shareLinkBtnText');
     this.btnManageActiveRoom = document.getElementById('btnManageActiveRoom');
     this.btnLeaveRoom = document.getElementById('btnLeaveRoom');
     this.btnToggleReactions = document.getElementById('btnToggleReactions');
@@ -375,7 +384,6 @@ class LyricsApp {
     this.rowIconicArtists = document.getElementById('rowIconicArtists');
     this.sectionGlobalCatalog = document.getElementById('sectionGlobalCatalog');
     this.gridGlobalCatalog = document.getElementById('gridGlobalCatalog');
-    this.gridPersonalCatalog = document.getElementById('gridPersonalCatalog');
     this.selectCatalogSort = document.getElementById('selectCatalogSort');
     this.catalogCounterSubtitle = document.getElementById('catalogCounterSubtitle');
     this.catalogSortOption = 'newest';
@@ -384,8 +392,6 @@ class LyricsApp {
     this.artistAmharic = document.getElementById('artistAmharic');
     this.artistEnglish = document.getElementById('artistEnglish');
     this.songTitleAmharic = document.getElementById('songTitleAmharic');
-    this.btnLyricsFavorite = document.getElementById('btnLyricsFavorite');
-    this.lyricsFavText = document.getElementById('lyricsFavText');
     this.albumTitle = document.getElementById('albumTitle');
     this.albumYear = document.getElementById('albumYear');
     this.discArtwork = document.getElementById('discArtwork');
@@ -491,18 +497,9 @@ class LyricsApp {
     this.userProfilePill = document.getElementById('userProfilePill');
     this.userAvatarImg = document.getElementById('userAvatarImg');
     this.userNameLabel = document.getElementById('userNameLabel');
-    this.btnSignOut = document.getElementById('btnSignOut');
-    this.btnOpenAdminModal = document.getElementById('btnOpenAdminModal');
-    this.adminPendingBadge = document.getElementById('adminPendingBadge');
 
-    // Modals
-    this.themeModal = document.getElementById('themeModal');
-    this.btnOpenThemeModal = document.getElementById('btnOpenThemeModal');
+    // Theme & Track Form Refs
     this.themeOptionsList = document.getElementById('themeOptionsList');
-
-    this.trackModal = document.getElementById('trackModal');
-    this.btnOpenTrackModal = document.getElementById('btnOpenTrackModal');
-    this.btnOpenLrcEditor = document.getElementById('btnOpenLrcEditor');
 
     // Track Modal Tabs & Lists
     this.trackListView = document.getElementById('trackListView');
@@ -681,13 +678,11 @@ class LyricsApp {
 
     // Show Admin Badge if Admin
     if (isAdmin) {
-      if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'inline-flex';
       if (this.publicSubmitCheckLabel) {
         this.publicSubmitCheckLabel.textContent = 'Directly publish to Global Catalog (Admin)';
       }
       this.checkPendingSubmissionsCount();
     } else {
-      if (this.btnOpenAdminModal) this.btnOpenAdminModal.style.display = 'none';
       if (this.publicSubmitCheckLabel) {
         this.publicSubmitCheckLabel.textContent = 'Submit for Public Catalog (Admin Review)';
       }
@@ -723,10 +718,6 @@ class LyricsApp {
     try {
       const submissions = await FirebaseService.getSubmissions();
       const count = submissions.length;
-      if (this.adminPendingBadge) {
-        this.adminPendingBadge.textContent = count;
-        this.adminPendingBadge.style.display = count > 0 ? 'inline-flex' : 'none';
-      }
       if (this.adminSubmissionsBadge) {
         this.adminSubmissionsBadge.textContent = count;
         this.adminSubmissionsBadge.style.display = count > 0 ? 'inline-block' : 'none';
@@ -852,9 +843,6 @@ class LyricsApp {
       });
     });
 
-    if (this.btnStageBackToHome) {
-      this.btnStageBackToHome.addEventListener('click', () => this.switchTab('home'));
-    }
     // Clicking dock mini-player opens the Lyrics Stage
     if (this.dockTrackInfo) {
       this.dockTrackInfo.addEventListener('click', () => this.switchTab('lyrics'));
@@ -877,12 +865,6 @@ class LyricsApp {
     }
     if (this.btnDockFavorite) {
       this.btnDockFavorite.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (this.currentTrack) this.toggleTrackFavorite(this.currentTrack.id);
-      });
-    }
-    if (this.btnLyricsFavorite) {
-      this.btnLyricsFavorite.addEventListener('click', (e) => {
         e.stopPropagation();
         if (this.currentTrack) this.toggleTrackFavorite(this.currentTrack.id);
       });
@@ -990,28 +972,6 @@ class LyricsApp {
 
     if (this.btnHeroPlay) this.btnHeroPlay.addEventListener('click', handleHeroPlay);
     if (this.btnHeroPlayBadge) this.btnHeroPlayBadge.addEventListener('click', handleHeroPlay);
-
-    if (this.btnHeroOpenLyrics) {
-      this.btnHeroOpenLyrics.addEventListener('click', () => {
-        this.switchTab('lyrics');
-      });
-    }
-
-    const btnHeroDetails = document.getElementById('btnHeroDetails');
-    if (btnHeroDetails) {
-      btnHeroDetails.addEventListener('click', () => {
-        const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-        if (spotlightTrack) this.openSongDetails(spotlightTrack);
-      });
-    }
-
-    const btnHeroQueue = document.getElementById('btnHeroQueue');
-    if (btnHeroQueue) {
-      btnHeroQueue.addEventListener('click', () => {
-        const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-        if (spotlightTrack) this.addToQueue(spotlightTrack, false);
-      });
-    }
 
     // Filter Chips
     if (this.homeFilterRow) {
@@ -1295,6 +1255,13 @@ class LyricsApp {
       }
     };
 
+    this.player.onError = (errMsg) => {
+      if (this.guestSync) {
+        this.guestSync.notifyWaiting();
+      }
+      this.showToast(`Playback issue: ${errMsg}`, 3200);
+    };
+
     this.player.onStateChange = (state) => {
       if (state === 'playing') {
         if (this.playIcon) this.playIcon.style.display = 'none';
@@ -1507,37 +1474,8 @@ class LyricsApp {
             this.handleUserAuthenticated(user, FirebaseService.isAdmin(user));
           }
         } catch (err) {
-          alert('Sign In: ' + (err.message || 'Please check your internet connection'));
+          this.showToast('Sign In: ' + (err.message || 'Check internet connection'), 3200);
         }
-      });
-    }
-
-    if (this.btnSignOut) {
-      this.btnSignOut.addEventListener('click', async () => {
-        await FirebaseService.logout();
-        this.handleUserAuthenticated(null, false);
-      });
-    }
-
-    if (this.btnOpenAdminModal) {
-      this.btnOpenAdminModal.addEventListener('click', () => {
-        this.openAdminModal();
-      });
-    }
-
-    // Modal Triggers (Legacy / Safe guards)
-    if (this.btnOpenThemeModal && this.themeModal) {
-      this.btnOpenThemeModal.addEventListener('click', () => this.themeModal.classList.add('active'));
-    }
-    if (this.btnOpenTrackModal && this.trackModal) {
-      this.btnOpenTrackModal.addEventListener('click', () => {
-        this.trackModal.classList.add('active');
-        this.showTrackList();
-      });
-    }
-    if (this.btnOpenLrcEditor && this.lrcEditor) {
-      this.btnOpenLrcEditor.addEventListener('click', () => {
-        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
       });
     }
 
@@ -1551,10 +1489,29 @@ class LyricsApp {
     });
 
     // Modal Backdrop Close
-    [this.themeModal, this.trackModal, this.adminModal, this.submissionConfirmModal, this.listenTogetherModal, this.songDetailsModal, this.editSongReviewModal].forEach(modal => {
+    [
+      this.adminModal,
+      this.submissionConfirmModal,
+      this.listenTogetherModal,
+      this.songDetailsModal,
+      this.editSongReviewModal,
+      this.createPlaylistModal,
+      this.addToPlaylistModal,
+      this.queueDrawerModal,
+      this.sleepTimerModal,
+      this.addTracksToPlaylistPickerModal,
+      this.p2pCameraModal,
+      this.p2pPairingModal
+    ].forEach(modal => {
       if (modal) {
         modal.addEventListener('click', (e) => {
-          if (e.target === modal) modal.classList.remove('active');
+          if (e.target === modal) {
+            if (modal === this.p2pCameraModal) {
+              this.closeP2pCameraScanner();
+            } else {
+              modal.classList.remove('active');
+            }
+          }
         });
       }
     });
@@ -1675,7 +1632,9 @@ class LyricsApp {
             await this.loadTrack(this._editingReviewTrack, false);
           }
           if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
-          if (this.lrcEditor) this.lrcEditor.open();
+          this._lrcEditorReviewTarget = true;
+          const draftLrc = this.inputEditReviewLrc ? this.inputEditReviewLrc.value : (this._editingReviewTrack.lrc || '');
+          if (this.lrcEditor) this.lrcEditor.open(draftLrc);
         }
       });
     }
@@ -1731,19 +1690,15 @@ class LyricsApp {
         }
       });
     }
-    const shareModalBtn = this.btnShareInviteLinkModal || this.btnCopyInviteLinkModal;
-    const shareModalLabel = this.shareInviteLinkModalLabel || this.copyInviteLinkModalLabel;
-    if (shareModalBtn) {
-      shareModalBtn.addEventListener('click', () => {
-        this.shareRoomInvite(shareModalBtn, shareModalLabel);
+    if (this.btnShareInviteLinkModal) {
+      this.btnShareInviteLinkModal.addEventListener('click', () => {
+        this.shareRoomInvite(this.btnShareInviteLinkModal, this.shareInviteLinkModalLabel);
       });
     }
 
-    const shareRoomBtn = this.btnShareRoomLink || this.btnCopyRoomLink;
-    const shareRoomLabel = this.shareLinkBtnText || this.copyLinkBtnText;
-    if (shareRoomBtn) {
-      shareRoomBtn.addEventListener('click', () => {
-        this.shareRoomInvite(shareRoomBtn, shareRoomLabel);
+    if (this.btnShareRoomLink) {
+      this.btnShareRoomLink.addEventListener('click', () => {
+        this.shareRoomInvite(this.btnShareRoomLink, this.shareLinkBtnText);
       });
     }
     if (this.btnLeaveRoomModal) {
@@ -1929,7 +1884,7 @@ class LyricsApp {
 
     window.addEventListener('beforeunload', () => {
       if (this.activeRoom && this.myParticipant) {
-        FirebaseService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
+        this.getSyncService().leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
       }
     });
 
@@ -2202,7 +2157,7 @@ class LyricsApp {
       this.greetingMoodText.textContent = `${greetingData.moodTag} • ${greetingData.moodTagAm}`;
     }
     if (this.greetingHeadingText) {
-      this.greetingHeadingText.innerHTML = `${greetingData.greetingEn} <span class="greeting-amharic-sub" id="greetingHeadingAmharic">${greetingData.greetingAm}</span>`;
+      this.greetingHeadingText.innerHTML = `${escapeHtml(greetingData.greetingEn)} <span class="greeting-amharic-sub" id="greetingHeadingAmharic">${escapeHtml(greetingData.greetingAm)}</span>`;
     }
     if (this.greetingSubtext) {
       this.greetingSubtext.textContent = greetingData.moodSubtitle;
@@ -2241,22 +2196,23 @@ class LyricsApp {
     // 5. Smart Recommendations Shelf ("Made For You")
     const recs = RecommendationEngine.getPersonalizedRecommendations(uniquePool, {
       currentTrack: this.currentTrack,
-      recentIds: this.recentlyPlayed || [],
-      favoriteIds: this.favorites || [],
+      recentlyPlayed: this.recentlyPlayed || [],
+      favorites: this.favorites || [],
       limit: 8
     });
     this.renderMusicGrid(this.gridSuggestions, recs, 'No personalized recommendations available yet. Play a song or like your favorites to tune your recommendations!');
 
     // 6. Context-Aware "Because You Listened To" Shelf
     const becauseShelf = RecommendationEngine.getBecauseYouListenedShelf(uniquePool, {
-      recentIds: this.recentlyPlayed || [],
+      recentlyPlayed: this.recentlyPlayed || [],
+      favorites: this.favorites || [],
       currentTrack: this.currentTrack
     });
     if (this.sectionBecauseYouListened) {
-      if (becauseShelf.tracks && becauseShelf.tracks.length > 0 && becauseShelf.sourceArtist) {
+      if (becauseShelf && becauseShelf.tracks && becauseShelf.tracks.length > 0 && becauseShelf.seedArtist) {
         this.sectionBecauseYouListened.style.display = 'block';
-        if (this.becauseTitleText) this.becauseTitleText.textContent = `Because You Listened To ${becauseShelf.sourceArtist}`;
-        if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = `Handpicked gems inspired by ${becauseShelf.sourceArtist}`;
+        if (this.becauseTitleText) this.becauseTitleText.textContent = becauseShelf.title || `Because You Listened To ${becauseShelf.seedArtist}`;
+        if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = becauseShelf.subtitle || `Handpicked gems inspired by ${becauseShelf.seedArtist}`;
         this.renderMusicGrid(this.gridBecauseYouListened, becauseShelf.tracks, 'No similar tracks found.');
       } else {
         this.sectionBecauseYouListened.style.display = 'none';
@@ -2321,9 +2277,6 @@ class LyricsApp {
     }
 
     this.renderMusicGrid(this.gridGlobalCatalog, catalogTracks, 'No cloud tracks found matching your criteria. Use Admin Studio to publish tracks!');
-
-    // Personal Offline Catalog
-    this.renderMusicGrid(this.gridPersonalCatalog, this.tracks, 'No offline tracks saved yet. Download songs from the catalog or upload your own in the library!');
   }
 
   renderJumpBackInGrid(jumpTracks) {
@@ -2338,13 +2291,16 @@ class LyricsApp {
     jumpTracks.forEach(track => {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
+      const safeTitle = escapeHtml(track.title || 'Untitled');
+      const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
+      const safeCover = sanitizeUrl(track.cover);
       const card = document.createElement('div');
       card.className = `jump-card ${isCurrent ? 'playing' : ''}`;
       card.innerHTML = `
-        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="jump-card-art jump-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="jump-card-art jump-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         <div class="jump-card-info jump-card-meta">
-          <div class="jump-card-title" title="${track.title}">${track.title}</div>
-          <div class="jump-card-artist" title="${track.artist}">${track.artist}</div>
+          <div class="jump-card-title" title="${safeTitle}">${safeTitle}</div>
+          <div class="jump-card-artist" title="${safeArtist}">${safeArtist}</div>
         </div>
         <button class="jump-card-play-btn" title="${isPlaying ? 'Pause' : 'Play'}" type="button">
           ${isPlaying 
@@ -2381,13 +2337,15 @@ class LyricsApp {
     this.rowIconicArtists.innerHTML = '';
 
     artists.forEach(artist => {
+      const safeName = escapeHtml(artist.name || 'Ethiopian Artist');
+      const safeCover = sanitizeUrl(artist.cover);
       const card = document.createElement('div');
       card.className = 'artist-circle-card';
       card.innerHTML = `
         <div class="artist-circle-avatar">
-          <img src="${artist.cover || 'assets/weleta_cover.jpg'}" alt="${artist.name}" class="artist-circle-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         </div>
-        <div class="artist-circle-name" title="${artist.name}">${artist.name}</div>
+        <div class="artist-circle-name" title="${safeName}">${safeName}</div>
         <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
       `;
 
@@ -2411,8 +2369,8 @@ class LyricsApp {
   getSmartSuggestions(tracksList) {
     return RecommendationEngine.getPersonalizedRecommendations(tracksList, {
       currentTrack: this.currentTrack,
-      recentIds: this.recentlyPlayed || [],
-      favoriteIds: this.favorites || [],
+      recentlyPlayed: this.recentlyPlayed || [],
+      favorites: this.favorites || [],
       limit: 8
     });
   }
@@ -2424,7 +2382,7 @@ class LyricsApp {
     if (!tracks || tracks.length === 0) {
       container.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 2.5rem 1.5rem; text-align: center; color: var(--color-text-dim); font-size: 0.88rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.08);">
-          ${emptyMessage}
+          ${escapeHtml(emptyMessage)}
         </div>
       `;
       return;
@@ -2436,23 +2394,27 @@ class LyricsApp {
       const isFav = this.favorites && this.favorites.includes(track.id);
       const dur = this.getTrackDuration(track);
       const durFormatted = dur > 0 ? LyricsParser.formatTime(dur) : '';
+      const safeTitle = escapeHtml(track.title || 'Untitled');
+      const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
+      const safeCover = sanitizeUrl(track.cover);
+      const safeYear = escapeHtml(track.year || '');
 
       const card = document.createElement('div');
       card.className = `music-card ${isCurrent ? 'playing' : ''}`;
       card.innerHTML = `
         <div class="card-art-wrap">
-          <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="card-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div class="card-play-overlay">
             <div class="card-play-icon">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
         </div>
         <div class="card-meta">
-          <div class="card-title" title="${track.title}">${track.title}</div>
-          <div class="card-artist" title="${track.artist}">${track.artist}</div>
+          <div class="card-title" title="${safeTitle}">${safeTitle}</div>
+          <div class="card-artist" title="${safeArtist}">${safeArtist}</div>
           <div class="card-badges-row">
             <span class="card-badge ${track.lrc ? 'card-badge-lrc' : ''}">${track.lrc ? 'Synced LRC' : 'Audio'}</span>
             ${durFormatted ? `<span class="card-badge">${durFormatted}</span>` : ''}
-            ${track.year ? `<span class="card-badge">${track.year}</span>` : ''}
+            ${safeYear ? `<span class="card-badge">${safeYear}</span>` : ''}
           </div>
           <div class="card-tag-row">
             <div class="card-actions-row">
@@ -2560,36 +2522,50 @@ class LyricsApp {
   // --------------------------------------------------------------------------
   async loadTrack(track, autoPlay = true) {
     if (!this._isApplyingRemoteSync && this.isGuestLocked('track selection')) return;
-    this.currentTrack = track;
-    Storage.setLastTrackId(track.id);
+    // Prefer locally cached offline audioBlob if user has already downloaded this track
+    let resolvedTrack = track;
+    if (track && !track.audioBlob && !track._audioFile && this.tracks && this.tracks.length > 0) {
+      const offlineCopy = this.tracks.find(t => t.id === track.id && t.audioBlob);
+      if (offlineCopy) {
+        resolvedTrack = { ...track, audioBlob: offlineCopy.audioBlob };
+      }
+    }
+    this.currentTrack = resolvedTrack;
+    Storage.setLastTrackId(resolvedTrack.id);
 
     // Update Header Display on Lyrics Stage (Fix duplicate artist names)
-    if (this.artistAmharic) this.artistAmharic.textContent = track.artist || 'Unknown Artist';
+    if (this.artistAmharic) this.artistAmharic.textContent = resolvedTrack.artist || 'Unknown Artist';
     if (this.artistEnglish) {
       // Only display transliteration if distinct from primary artist name
-      const hasDistinctEn = track.artistEn && track.artistEn.trim().toLowerCase() !== (track.artist || '').trim().toLowerCase();
+      const hasDistinctEn = resolvedTrack.artistEn && resolvedTrack.artistEn.trim().toLowerCase() !== (resolvedTrack.artist || '').trim().toLowerCase();
       if (hasDistinctEn) {
-        this.artistEnglish.textContent = track.artistEn;
+        this.artistEnglish.textContent = resolvedTrack.artistEn;
         this.artistEnglish.style.display = 'block';
       } else {
         this.artistEnglish.textContent = '';
         this.artistEnglish.style.display = 'none';
       }
     }
-    if (this.songTitleAmharic) this.songTitleAmharic.textContent = track.title || 'Untitled Track';
-    if (this.albumTitle) this.albumTitle.textContent = track.album || 'My Album';
-    if (this.albumYear) this.albumYear.textContent = track.year || '2024';
+    if (this.songTitleAmharic) this.songTitleAmharic.textContent = resolvedTrack.title || 'Untitled Track';
+    if (this.albumTitle) this.albumTitle.textContent = resolvedTrack.album || 'My Album';
+    if (this.albumYear) this.albumYear.textContent = resolvedTrack.year || '2024';
 
     // Update Images & Mini Player Dock
-    const coverUrl = track.cover || 'assets/weleta_cover.jpg';
-    const discUrl = track.discCenter || coverUrl;
+    const coverUrl = sanitizeUrl(resolvedTrack.cover);
+    const discUrl = sanitizeUrl(resolvedTrack.discCenter || coverUrl);
     if (this.discArtwork) this.discArtwork.src = discUrl;
     if (this.playerMiniArt) this.playerMiniArt.src = coverUrl;
-    if (this.playerMiniTitle) this.playerMiniTitle.textContent = track.title;
-    if (this.playerMiniArtist) this.playerMiniArtist.textContent = track.artist;
+    if (this.playerMiniTitle) this.playerMiniTitle.textContent = resolvedTrack.title;
+    if (this.playerMiniArtist) this.playerMiniArtist.textContent = resolvedTrack.artist;
 
     // Load Audio in Engine
-    this.player.loadTrack(track);
+    this.player.loadTrack(resolvedTrack);
+    this.player.updateMediaSession(resolvedTrack, {
+      onPlay: () => { if (!this.isGuestLocked('playback')) this.player.play(); },
+      onPause: () => { if (!this.isGuestLocked('playback')) this.player.pause(); },
+      onPrevioustrack: () => { if (!this.isGuestLocked('tracks')) this.playPrevTrack(); },
+      onNexttrack: () => { if (!this.isGuestLocked('tracks')) this.playNextTrack(); }
+    });
 
     // Dynamic color extraction with mobile blob safety
     PaletteExtractor.extractFromImage(coverUrl).then(palette => {
@@ -2597,7 +2573,7 @@ class LyricsApp {
     });
 
     // Parse Lyrics
-    this.parsedLyrics = LyricsParser.parse(track.lrc || '');
+    this.parsedLyrics = LyricsParser.parse(resolvedTrack.lrc || '');
     this.renderLyrics();
     this.syncLyrics(0);
     const initialDur = this.getTrackDuration(track);
@@ -2691,7 +2667,7 @@ class LyricsApp {
             <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
           <div class="no-lyrics-title">Lyrics Unavailable</div>
-          <div class="no-lyrics-subtitle">No synchronized lyrics attached to "${this.currentTrack ? this.currentTrack.title : 'this song'}". You can upload an .LRC file or use the editor to create synchronized lyrics!</div>
+          <div class="no-lyrics-subtitle">No synchronized lyrics attached to "${escapeHtml(this.currentTrack ? this.currentTrack.title : 'this song')}". You can upload an .LRC file or use the editor to create synchronized lyrics!</div>
           <div class="no-lyrics-actions">
             <button id="btnNoLyricsUploadLrc" class="btn-pill btn-primary-action">
               <span>Upload .LRC File</span>
@@ -2892,7 +2868,7 @@ class LyricsApp {
     if (!tracksToDisplay || tracksToDisplay.length === 0) {
       this.globalCatalogList.innerHTML = `
         <div style="text-align:center; padding:2rem; color:var(--color-text-dim); font-size:0.88rem;">
-          ${this.publicTracks.length === 0 ? 'No songs currently in the Global Catalog.' : `No songs match "${filterText}"`}
+          ${this.publicTracks.length === 0 ? 'No songs currently in the Global Catalog.' : `No songs match "${escapeHtml(filterText)}"`}
         </div>
       `;
       return;
@@ -2904,18 +2880,25 @@ class LyricsApp {
       const isOfflineReady = await Storage.hasTrack(song.id);
       if (this._catalogRenderToken !== currentToken) return;
 
+      const safeTitle = escapeHtml(song.title || 'Untitled');
+      const safeArtist = escapeHtml(song.artist || 'Unknown Artist');
+      const safeAlbum = escapeHtml(song.album || 'Single');
+      const safeYear = escapeHtml(song.year || '2024');
+      const safeCover = sanitizeUrl(song.cover);
+      const safeId = escapeHtml(song.id);
+
       const card = document.createElement('div');
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${song.cover || 'assets/weleta_cover.jpg'}" class="track-thumb-img" alt="${song.title}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${song.title} - ${song.artist}
+              ${safeTitle} - ${safeArtist}
             </div>
             <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${song.album || 'Single'} (${song.year || '2024'}) • ${song.lrc ? 'Synced Lyrics' : 'No Lyrics'}
+              ${safeAlbum} (${safeYear}) • ${song.lrc ? 'Synced Lyrics' : 'No Lyrics'}
             </div>
           </div>
         </div>
@@ -2926,7 +2909,7 @@ class LyricsApp {
           <button class="btn-track-info btn-pill" style="font-size:0.75rem; padding:0.35rem 0.55rem;" title="Song Details">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
-          <button class="btn-pill btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${song.id}">
+          <button class="btn-pill btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${safeId}">
             ${isOfflineReady ? 'Saved' : 'Download'}
           </button>
           ${this.isAdmin ? `<button class="btn-pill btn-delete-public" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete from Global Catalog">&times;</button>` : ''}
@@ -2949,7 +2932,6 @@ class LyricsApp {
       card.querySelector('.btn-play-public').addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.loadTrack(song, true);
-        if (this.trackModal) this.trackModal.classList.remove('active');
         this.renderHomePage();
       });
 
@@ -3029,18 +3011,23 @@ class LyricsApp {
 
     tracksToDisplay.forEach(song => {
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
+      const safeTitle = escapeHtml(song.title || 'Untitled');
+      const safeArtist = escapeHtml(song.artist || 'Unknown Artist');
+      const safeAlbum = escapeHtml(song.album || 'Single');
+      const safeYear = escapeHtml(song.year || '2024');
+      const safeCover = sanitizeUrl(song.cover);
       const card = document.createElement('div');
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${song.cover || 'assets/weleta_cover.jpg'}" class="track-thumb-img" alt="${song.title}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${song.title} - ${song.artist}
+              ${safeTitle} - ${safeArtist}
             </div>
             <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${song.album || 'Single'} (${song.year || '2024'}) • ${song.isDownloaded ? 'Downloaded' : 'Custom Upload'}
+              ${safeAlbum} (${safeYear}) • ${song.isDownloaded ? 'Downloaded' : 'Custom Upload'}
               ${song.submissionStatus === 'pending' ? ' • <span style="color:#f4a261; font-weight:600;">Pending Review</span>' : ''}
               ${song.submissionStatus === 'published' ? ' • <span style="color:#10b981; font-weight:600;">Published</span>' : ''}
             </div>
@@ -3074,7 +3061,6 @@ class LyricsApp {
       card.querySelector('.btn-play-custom').addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.loadTrack(song, true);
-        if (this.trackModal) this.trackModal.classList.remove('active');
         this.renderHomePage();
       });
 
@@ -3403,7 +3389,7 @@ class LyricsApp {
     }
     let discArt = this.selectedCoverDataUrl;
     if (!discArt && !this.editingTrackId) {
-      discArt = 'assets/abinet_portrait.jpg';
+      discArt = 'assets/weleta_cover.jpg';
     }
 
     // Editing Existing Track Mode
@@ -3420,7 +3406,7 @@ class LyricsApp {
 
         if (this.selectedCoverDataUrl !== null) {
           existingTrack.cover = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-          existingTrack.discCenter = this.selectedCoverDataUrl || 'assets/abinet_portrait.jpg';
+          existingTrack.discCenter = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
         }
 
         if (this.selectedAudioFile) {
@@ -3487,7 +3473,7 @@ class LyricsApp {
       album: album,
       year: year,
       cover: coverArt || 'assets/weleta_cover.jpg',
-      discCenter: discArt || 'assets/abinet_portrait.jpg',
+      discCenter: discArt || 'assets/weleta_cover.jpg',
       duration: 180,
       lrc: lrc,
       audioBlob: this.selectedAudioFile,
@@ -3545,8 +3531,10 @@ class LyricsApp {
 
     // Load and play
     await this.loadTrack(newTrack, true);
-    this.trackModal.classList.remove('active');
+    this.showTrackList();
+    this.switchTab('lyrics');
     this.renderHomePage();
+    this.showToast(`Saved "${newTrack.title}" to Offline Library 🎵`);
   }
 
   initPullToRefresh() {
@@ -3721,30 +3709,43 @@ class LyricsApp {
 
       list.forEach(sub => {
         const isMetadataEdit = sub.type === 'metadata_edit';
+        const safeSubTitle = escapeHtml(sub.title || 'Untitled');
+        const safeSubArtist = escapeHtml(sub.artist || 'Unknown Artist');
+        const safeOrigTitle = escapeHtml(sub.originalTitle || '');
+        const safeOrigArtist = escapeHtml(sub.originalArtist || '');
+        const safeSubAlbum = escapeHtml(sub.album || 'Single');
+        const safeSubYear = escapeHtml(sub.year || '2024');
+        const safeSubEmail = escapeHtml(sub.submittedByEmail || 'Visitor');
+        const safeSubNote = escapeHtml(sub.contributorNote || '');
+        const safeSubCover = sanitizeUrl(sub.cover);
+        const safeAudioFileName = escapeHtml(sub.audioFileName || 'Local File');
+        const safeAudioInputVal = escapeHtml(sub.audioUrl && !isMetadataEdit ? sub.audioUrl : (isMetadataEdit ? '' : `${R2_PUBLIC_BASE}/`));
+        const safeSubId = escapeHtml(sub.id);
+
         const item = document.createElement('div');
         item.className = 'admin-submission-item';
         item.innerHTML = `
           <div class="submission-meta-row">
-            <img src="${sub.cover || 'assets/weleta_cover.jpg'}" class="submission-thumb" alt="${sub.title}" crossorigin="anonymous">
+            <img src="${safeSubCover}" class="submission-thumb" alt="${safeSubTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
             <div style="flex:1; min-width:0;">
               <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:2px;">
                 ${isMetadataEdit ? '<span style="background:rgba(229,185,90,0.2); color:var(--color-gold); font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700; border:1px solid rgba(229,185,90,0.4);">COMMUNITY EDIT</span>' : '<span style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700;">NEW TRACK</span>'}
-                <span style="font-weight:700; font-size:0.95rem; color:#fff;">${sub.title} - ${sub.artist}</span>
+                <span style="font-weight:700; font-size:0.95rem; color:#fff;">${safeSubTitle} - ${safeSubArtist}</span>
               </div>
               <div style="font-size:0.75rem; color:var(--color-text-dim);">
-                ${isMetadataEdit && sub.originalTitle ? `Original: <span style="color:#d1d5db;">${sub.originalTitle} (${sub.originalArtist || ''})</span> • ` : ''}
-                Album: ${sub.album || 'Single'} (${sub.year || '2024'}) • By: <b style="color:#fce7b2;">${sub.submittedByEmail || 'Visitor'}</b>
+                ${isMetadataEdit && safeOrigTitle ? `Original: <span style="color:#d1d5db;">${safeOrigTitle} (${safeOrigArtist})</span> • ` : ''}
+                Album: ${safeSubAlbum} (${safeSubYear}) • By: <b style="color:#fce7b2;">${safeSubEmail}</b>
               </div>
-              ${sub.contributorNote ? `<div style="font-size:0.73rem; color:#fce7b2; background:rgba(255,255,255,0.04); padding:0.3rem 0.55rem; border-radius:6px; margin-top:4px; border-left:2px solid var(--color-gold);"><b>Contributor Note:</b> ${sub.contributorNote}</div>` : ''}
+              ${safeSubNote ? `<div style="font-size:0.73rem; color:#fce7b2; background:rgba(255,255,255,0.04); padding:0.3rem 0.55rem; border-radius:6px; margin-top:4px; border-left:2px solid var(--color-gold);"><b>Contributor Note:</b> ${safeSubNote}</div>` : ''}
               <div style="font-size:0.72rem; color:var(--color-accent); margin-top:3px;">
-                ${sub.lrc ? '✓ Timed LRC Lyrics Included' : 'No Lyrics'} • Audio: ${isMetadataEdit ? 'Retains Original Audio Stream' : (sub.audioUrl ? 'Direct Link' : (sub.audioFileName || 'Local File'))}
+                ${sub.lrc ? '✓ Timed LRC Lyrics Included' : 'No Lyrics'} • Audio: ${isMetadataEdit ? 'Retains Original Audio Stream' : (sub.audioUrl ? 'Direct Link' : safeAudioFileName)}
               </div>
             </div>
           </div>
 
           <div style="display:flex; flex-direction:column; gap:0.4rem;">
             <label style="font-size:0.75rem; color:var(--color-gold);">${isMetadataEdit ? 'Audio URL (Optional Override - Leave empty to keep catalog audio):' : 'Cloudflare R2 Audio URL:'}</label>
-            <input type="text" class="form-input r2-url-input" value="${sub.audioUrl && !isMetadataEdit ? sub.audioUrl : (isMetadataEdit ? '' : `${R2_PUBLIC_BASE}/`)}" placeholder="${isMetadataEdit ? 'Leave blank to preserve existing audio file' : `${R2_PUBLIC_BASE}/song.mp3`}" style="font-size:0.8rem; padding:0.4rem 0.6rem;">
+            <input type="text" class="form-input r2-url-input" value="${safeAudioInputVal}" placeholder="${isMetadataEdit ? 'Leave blank to preserve existing audio file' : `${R2_PUBLIC_BASE}/song.mp3`}" style="font-size:0.8rem; padding:0.4rem 0.6rem;">
           </div>
 
           <div class="submission-actions-row">
@@ -3757,10 +3758,10 @@ class LyricsApp {
               </button>
             </div>
             <div style="display:flex; gap:0.4rem;">
-              <button class="btn-pill btn-approve-submission" data-id="${sub.id}" style="${isMetadataEdit ? 'background:rgba(229,185,90,0.18); border-color:var(--color-gold); color:var(--color-gold); font-weight:700;' : ''}">
+              <button class="btn-pill btn-approve-submission" data-id="${safeSubId}" style="${isMetadataEdit ? 'background:rgba(229,185,90,0.18); border-color:var(--color-gold); color:var(--color-gold); font-weight:700;' : ''}">
                 ${isMetadataEdit ? 'Approve &amp; Apply Edits' : 'Approve &amp; Publish'}
               </button>
-              <button class="btn-pill btn-reject-submission" data-id="${sub.id}">
+              <button class="btn-pill btn-reject-submission" data-id="${safeSubId}">
                 Reject
               </button>
             </div>
@@ -3805,7 +3806,7 @@ class LyricsApp {
       });
     } catch (e) {
       console.warn('Submissions load error:', e);
-      this.adminSubmissionsList.innerHTML = `<div style="color:#fca5a5; padding:1rem; text-align:center;">Failed to load submissions: ${e.message}</div>`;
+      this.adminSubmissionsList.innerHTML = `<div style="color:#fca5a5; padding:1rem; text-align:center;">Failed to load submissions: ${escapeHtml(e.message)}</div>`;
     }
   }
 
@@ -3895,7 +3896,6 @@ class LyricsApp {
         card.classList.add('active');
         if (badgeLabel) badgeLabel.textContent = t.name;
         if (descText) descText.textContent = t.description;
-        if (this.themeModal) this.themeModal.classList.remove('active');
         if (this.currentUser) {
           this.pushCloudSyncDebounced();
         }
@@ -3948,6 +3948,25 @@ class LyricsApp {
         this.recentlyPlayed = mergedRecent;
         Storage.setRecentlyPlayed(mergedRecent);
 
+        // Merge custom playlists by id (preferring newer updatedAt)
+        if (Array.isArray(remoteData.playlists)) {
+          const localPlaylists = Storage.getPlaylists() || [];
+          const mergedMap = new Map();
+          for (const pl of localPlaylists) {
+            if (pl && pl.id) mergedMap.set(pl.id, pl);
+          }
+          for (const pl of remoteData.playlists) {
+            if (!pl || !pl.id) continue;
+            const existing = mergedMap.get(pl.id);
+            if (!existing || (pl.updatedAt || 0) > (existing.updatedAt || 0)) {
+              mergedMap.set(pl.id, pl);
+            }
+          }
+          const mergedPlaylists = Array.from(mergedMap.values());
+          this.playlists = mergedPlaylists;
+          Storage.setPlaylists(mergedPlaylists);
+        }
+
         // Sync preferred theme if stored
         if (remoteData.preferredTheme && remoteData.preferredTheme !== this.themeManager.currentTheme) {
           this.themeManager.applyTheme(remoteData.preferredTheme);
@@ -3999,6 +4018,19 @@ class LyricsApp {
             this.recentlyPlayed = remote.recentlyPlayed;
             Storage.setRecentlyPlayed(remote.recentlyPlayed);
             changed = true;
+          }
+        }
+
+        if (Array.isArray(remote.playlists)) {
+          const currentPlStr = JSON.stringify(this.playlists);
+          const remotePlStr = JSON.stringify(remote.playlists);
+          if (currentPlStr !== remotePlStr) {
+            this.playlists = remote.playlists;
+            Storage.setPlaylists(remote.playlists);
+            changed = true;
+            if (this.currentView === 'library' && this.currentLibraryTab === 'playlists') {
+              this.renderPlaylists();
+            }
           }
         }
 
@@ -4103,7 +4135,7 @@ class LyricsApp {
     const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
     const isFav = track ? Storage.isFavorite(track.id) : false;
 
-    [this.btnDockFavorite, this.btnHeroFavorite, this.btnLyricsFavorite].forEach(btn => {
+    [this.btnDockFavorite, this.btnHeroFavorite].forEach(btn => {
       if (!btn) return;
       if (isFav) {
         btn.classList.add('is-favorite');
@@ -4113,10 +4145,6 @@ class LyricsApp {
         btn.title = 'Add to Favorites';
       }
     });
-
-    if (this.lyricsFavText) {
-      this.lyricsFavText.textContent = isFav ? 'Favorited' : 'Favorite';
-    }
 
     if (this._detailTrack && this.btnDetailToggleFavorite) {
       const isDetailFav = Storage.isFavorite(this._detailTrack.id);
@@ -4322,7 +4350,7 @@ class LyricsApp {
     document.body.classList.toggle('is-fullscreen', active);
 
     if (this.tiktokWatermark) {
-      this.tiktokWatermark.style.display = (active && (!this.activeTab || this.activeTab === 'lyrics')) ? 'block' : 'none';
+      this.tiktokWatermark.style.display = (active && (!this.currentView || this.currentView === 'lyrics')) ? 'block' : 'none';
     }
 
     if (this.btnToggleFullscreen) {
@@ -4333,7 +4361,7 @@ class LyricsApp {
     }
 
     if (active) {
-      if (this.currentTrack && this.activeTab !== 'lyrics') {
+      if (this.currentTrack && this.currentView !== 'lyrics') {
         this.switchTab('lyrics');
       }
       requestAnimationFrame(() => {
@@ -4650,12 +4678,13 @@ class LyricsApp {
 
     this.p2pPeersList.innerHTML = '';
     list.forEach(p => {
+      const safeName = escapeHtml(p.name || 'Friend');
       const card = document.createElement('div');
       card.className = 'p2p-phone-card';
       card.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.5rem;">
           <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
-          <span style="font-weight:600; font-size:0.82rem; color:#fff;">📱 ${p.name || 'Friend'}</span>
+          <span style="font-weight:600; font-size:0.82rem; color:#fff;">📱 ${safeName}</span>
         </div>
         <span class="badge-status-sync" style="font-size:0.68rem; color:#6ee7b7; border-color:rgba(16,185,129,0.3);">In Sync</span>
       `;
@@ -4987,7 +5016,7 @@ class LyricsApp {
     // 1. Room document listener (state & anchor)
     this.roomUnsubscribe = syncService.subscribeListenRoom(roomCode, async (room) => {
       if (!room || room.isActive === false) {
-        alert('The host has ended this Listen Together session.');
+        this.showToast('The host has ended this Listen Together session.', 3500);
         this.handleLeaveRoom(false);
         return;
       }
@@ -5078,8 +5107,10 @@ class LyricsApp {
     this.roomReactionsUnsubscribe = syncService.subscribeReactions(roomCode, Date.now() - 1000, (rx) => {
       if (!this._seenReactionIds.has(rx.id)) {
         this._seenReactionIds.add(rx.id);
+        const myId = this.myParticipant ? this.myParticipant.id : '';
         const myName = this.myParticipant ? this.myParticipant.name : '';
-        if (rx.from && rx.from !== myName) {
+        const isOwn = rx.fromId ? (rx.fromId === myId) : (rx.from === myName);
+        if (rx.from && !isOwn) {
           this.renderFloatingReaction(rx.type, rx.from);
         }
       }
@@ -5102,13 +5133,16 @@ class LyricsApp {
       this.activeRoomParticipantsList.innerHTML = '';
       list.forEach(p => {
         const isCurrent = p.id === (this.myParticipant ? this.myParticipant.id : '');
+        const safeName = escapeHtml(p.name || 'Listener');
+        const safeAvatar = p.avatar ? sanitizeUrl(p.avatar, '') : '';
+        const initial = escapeHtml((p.name || 'M').trim().charAt(0).toUpperCase() || 'M');
         const pEl = document.createElement('div');
         pEl.className = 'participant-item';
         pEl.innerHTML = `
           <div class="participant-user-info">
-            ${p.avatar ? `<img src="${p.avatar}" alt="${p.name || 'Participant'}" class="participant-avatar-img" crossorigin="anonymous">` : `<div class="participant-avatar-badge">${(p.name || 'M')[0].toUpperCase()}</div>`}
+            ${safeAvatar ? `<img src="${safeAvatar}" alt="${safeName}" class="participant-avatar-img" crossorigin="anonymous">` : `<div class="participant-avatar-badge">${initial}</div>`}
             <div>
-              <div style="font-weight:600; font-size:0.88rem; color:#fff;">${p.name || 'Listener'} ${isCurrent ? '<span style="color:var(--color-gold); font-size:0.75rem;">(You)</span>' : ''}</div>
+              <div style="font-weight:600; font-size:0.88rem; color:#fff;">${safeName} ${isCurrent ? '<span style="color:var(--color-gold); font-size:0.75rem;">(You)</span>' : ''}</div>
               <div style="font-size:0.7rem; color:var(--color-text-dim);">${p.isHost ? 'Session Host' : 'Listener'}</div>
             </div>
           </div>
@@ -5202,8 +5236,9 @@ class LyricsApp {
 
   updateDebugOverlay(info) {
     if (!this.partySyncDebugOverlay || this.partySyncDebugOverlay.style.display === 'none') return;
-    const offset = FirebaseService.getClockOffset();
-    const bestRtt = FirebaseService.getBestRtt();
+    const syncService = this.getSyncService();
+    const offset = syncService.getClockOffset ? syncService.getClockOffset() : 0;
+    const bestRtt = syncService.getBestRtt ? syncService.getBestRtt() : 0;
     if (this.dbgClockOffset) this.dbgClockOffset.textContent = `${Math.round(offset)}ms`;
     if (this.dbgBestRtt) this.dbgBestRtt.textContent = `${Math.round(bestRtt)}ms`;
     if (this.dbgStatus) this.dbgStatus.textContent = info.state || '--';
@@ -5410,7 +5445,7 @@ class LyricsApp {
 
     reactionEl.innerHTML = `
       ${iconSvg}
-      <span class="reaction-from-name">${fromName}</span>
+      <span class="reaction-from-name">${escapeHtml(fromName || 'Friend')}</span>
     `;
 
     const isMobile = window.innerWidth <= 680;
@@ -5659,13 +5694,16 @@ class LyricsApp {
 
     upcoming.forEach((track, relIdx) => {
       const actualIdx = this.queueIndex + 1 + relIdx;
+      const safeTitle = escapeHtml(track.title || 'Untitled');
+      const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
+      const safeCover = sanitizeUrl(track.cover);
       const item = document.createElement('div');
       item.className = 'queue-track-item';
       item.innerHTML = `
-        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="queue-thumb-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="queue-thumb-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         <div style="flex:1; min-width:0;">
-          <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${track.title}</div>
-          <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${track.artist}</div>
+          <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeTitle}</div>
+          <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeArtist}</div>
         </div>
         <div style="display:flex; gap:0.4rem; align-items:center;">
           <button class="btn-pill btn-sm btn-queue-play" style="font-size:0.75rem; padding:0.3rem 0.65rem;" title="Play Now" type="button">Play</button>
@@ -5803,16 +5841,19 @@ class LyricsApp {
 
     this.playlists.forEach(pl => {
       const songCount = (pl.trackIds || []).length;
+      const safePlTitle = escapeHtml(pl.title || 'Playlist');
+      const safePlCover = pl.cover ? sanitizeUrl(pl.cover, '') : '';
+      const safePlGrad = escapeHtml(pl.gradient || 'linear-gradient(135deg, #e5b95a, #d97706)');
       const card = document.createElement('div');
       card.className = 'playlist-card';
       card.innerHTML = `
-        <div class="playlist-card-art" style="background: ${pl.gradient || 'linear-gradient(135deg, #e5b95a, #d97706)'};">
-          ${pl.cover ? `<img src="${pl.cover}" class="playlist-card-img" alt="${pl.title}" crossorigin="anonymous" onerror="this.style.display='none'">` : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.85;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
+        <div class="playlist-card-art" style="background: ${safePlGrad};">
+          ${safePlCover ? `<img src="${safePlCover}" class="playlist-card-img" alt="${safePlTitle}" crossorigin="anonymous" onerror="this.style.display='none'">` : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.85;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
           <button class="playlist-card-hover-play" title="Play Playlist" type="button">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
           </button>
         </div>
-        <div class="playlist-card-title" title="${pl.title}">${pl.title}</div>
+        <div class="playlist-card-title" title="${safePlTitle}">${safePlTitle}</div>
         <div class="playlist-card-sub">${songCount} ${songCount === 1 ? 'song' : 'songs'}</div>
       `;
 
@@ -5846,6 +5887,7 @@ class LyricsApp {
     const desc = this.inputPlaylistDesc ? this.inputPlaylistDesc.value.trim() : '';
     const newPl = Storage.createPlaylist(title, desc);
     this.playlists = Storage.getPlaylists();
+    if (this.currentUser) this.pushCloudSyncDebounced();
     if (this.createPlaylistModal) this.createPlaylistModal.classList.remove('active');
     this.showToast(`Playlist "${newPl.title}" created! 🎉`);
     this.renderPlaylists();
@@ -5907,8 +5949,9 @@ class LyricsApp {
     if (this.playlistBannerDesc) this.playlistBannerDesc.textContent = playlist.description || 'Custom playlist on ELM';
     if (this.playlistBannerArt) {
       this.playlistBannerArt.style.background = playlist.gradient || 'linear-gradient(135deg, #e5b95a, #d97706)';
-      if (playlist.cover) {
-        this.playlistBannerArt.innerHTML = `<img src="${playlist.cover}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;" alt="${playlist.title}">`;
+      const safeBannerCover = playlist.cover ? sanitizeUrl(playlist.cover, '') : '';
+      if (safeBannerCover) {
+        this.playlistBannerArt.innerHTML = `<img src="${safeBannerCover}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;" alt="${escapeHtml(playlist.title)}">`;
       } else {
         this.playlistBannerArt.innerHTML = `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
       }
@@ -5947,12 +5990,15 @@ class LyricsApp {
       const row = document.createElement('div');
       row.className = `playlist-track-row ${isCurrent ? 'playing' : ''}`;
       const trackDur = this.getTrackDuration(track);
+      const safeTitle = escapeHtml(track.title || 'Untitled');
+      const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
+      const safeCover = sanitizeUrl(track.cover);
       row.innerHTML = `
         <span class="playlist-track-idx">${idx + 1}</span>
-        <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" class="playlist-track-thumb" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="playlist-track-thumb" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         <div style="flex:1; min-width:0;">
-          <div class="playlist-track-title">${track.title}</div>
-          <div class="playlist-track-artist">${track.artist}</div>
+          <div class="playlist-track-title">${safeTitle}</div>
+          <div class="playlist-track-artist">${safeArtist}</div>
         </div>
         <span class="playlist-track-duration">${LyricsParser.formatTime(trackDur, '--:--')}</span>
         <button class="btn-pill btn-sm btn-play-row" style="padding:0.3rem 0.65rem; font-size:0.75rem;" type="button">Play</button>
@@ -6010,6 +6056,7 @@ class LyricsApp {
     if (confirm(`Are you sure you want to delete "${this.activePlaylist.title}"?`)) {
       Storage.deletePlaylist(this.activePlaylist.id);
       this.playlists = Storage.getPlaylists();
+      if (this.currentUser) this.pushCloudSyncDebounced();
       this.activePlaylist = null;
       this.showToast('Playlist deleted');
       if (this.singlePlaylistView) this.singlePlaylistView.style.display = 'none';
@@ -6021,6 +6068,7 @@ class LyricsApp {
   removeTrackFromPlaylist(playlistId, trackId) {
     Storage.removeTrackFromPlaylist(playlistId, trackId);
     this.playlists = Storage.getPlaylists();
+    if (this.currentUser) this.pushCloudSyncDebounced();
     this.showToast('Song removed from playlist');
     this.openPlaylistDetail(playlistId);
   }
@@ -6065,13 +6113,15 @@ class LyricsApp {
 
     this.playlists.forEach(pl => {
       const isAlreadyIn = trackId && Storage.isTrackInPlaylist(pl.id, trackId);
+      const safePlTitle = escapeHtml(pl.title || 'Playlist');
+      const safePlGrad = escapeHtml(pl.gradient || '#e5b95a');
       const row = document.createElement('div');
       row.className = `playlist-choice-row ${isAlreadyIn ? 'in-playlist' : ''}`;
       row.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.65rem;">
-          <div style="width:12px; height:12px; border-radius:50%; background:${pl.gradient || '#e5b95a'}; flex-shrink:0;"></div>
+          <div style="width:12px; height:12px; border-radius:50%; background:${safePlGrad}; flex-shrink:0;"></div>
           <div>
-            <div style="font-weight:600; font-size:0.88rem; color:#fff;">${pl.title}</div>
+            <div style="font-weight:600; font-size:0.88rem; color:#fff;">${safePlTitle}</div>
             <div style="font-size:0.72rem; color:var(--color-text-dim);">${(pl.trackIds || []).length} songs</div>
           </div>
         </div>
@@ -6088,6 +6138,7 @@ class LyricsApp {
           Storage.addTrackToPlaylist(pl.id, trackId);
           this.showToast(`Added to "${pl.title}" ✨`);
         }
+        if (this.currentUser) this.pushCloudSyncDebounced();
         this.renderAddToPlaylistChoices();
         if (this.activePlaylist && this.activePlaylist.id === pl.id) {
           this.openPlaylistDetail(pl.id);
@@ -6130,14 +6181,17 @@ class LyricsApp {
 
     filtered.forEach(track => {
       const isAlreadyIn = Storage.isTrackInPlaylist(this.activePlaylist.id, track.id);
+      const safeTitle = escapeHtml(track.title || 'Untitled');
+      const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
+      const safeCover = sanitizeUrl(track.cover);
       const row = document.createElement('div');
       row.className = 'playlist-choice-row';
       row.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0;">
-          <img src="${track.cover || 'assets/weleta_cover.jpg'}" alt="${track.title}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;">
+          <img src="${safeCover}" alt="${safeTitle}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
-            <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${track.title}</div>
-            <div style="font-size:0.72rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${track.artist}</div>
+            <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeTitle}</div>
+            <div style="font-size:0.72rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeArtist}</div>
           </div>
         </div>
         <button class="btn-pill btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem; ${isAlreadyIn ? 'color:var(--color-gold); border-color:var(--color-gold);' : ''}" type="button">
@@ -6154,6 +6208,7 @@ class LyricsApp {
           Storage.addTrackToPlaylist(this.activePlaylist.id, track.id);
           this.showToast(`Added "${track.title}" to playlist!`);
         }
+        if (this.currentUser) this.pushCloudSyncDebounced();
         this.renderAddTracksPickerList(this.inputPlaylistSongSearch ? this.inputPlaylistSongSearch.value.trim().toLowerCase() : '');
         this.openPlaylistDetail(this.activePlaylist.id);
       });

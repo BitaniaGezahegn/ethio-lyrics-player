@@ -6296,6 +6296,93 @@ body.is-party-guest .guest-locked-control:hover::after {
   border-color: rgba(229, 185, 90, 0.3);
 }
 
+/* ==========================================================================
+   Global Toast Notification & Empty Library State
+   ========================================================================== */
+.app-global-toast {
+  position: fixed;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(18px);
+  z-index: var(--z-toast, 1000);
+  background: rgba(22, 12, 18, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(229, 185, 90, 0.4);
+  color: #fce7b2;
+  padding: 0.6rem 1.2rem;
+  border-radius: 9999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  opacity: 0;
+  max-width: min(90vw, 440px);
+  text-align: center;
+  transition: opacity 0.22s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-global-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.empty-library-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+}
+
+@media (hover: none) {
+  .smart-card-play-btn,
+  .playlist-card-hover-play {
+    opacity: 0.92;
+    transform: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .app-global-toast {
+    bottom: calc(195px + env(safe-area-inset-bottom, 0px));
+    font-size: 0.8rem;
+    padding: 0.55rem 1rem;
+  }
+
+  .playlist-banner-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.1rem;
+  }
+
+  .playlist-banner-art {
+    width: 96px;
+    height: 96px;
+  }
+
+  .playlist-banner-title {
+    font-size: 1.35rem;
+  }
+
+  .queue-drawer-sheet {
+    max-width: 100%;
+    border-left: none;
+    height: 85dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .edit-review-grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
 
 
 

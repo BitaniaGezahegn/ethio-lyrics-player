@@ -68,10 +68,15 @@ export const Storage = {
           album: track.album || 'My Album',
           year: track.year || new Date().getFullYear().toString(),
           cover: track.cover || 'assets/weleta_cover.jpg',
-          discCenter: track.discCenter || 'assets/abinet_portrait.jpg',
+          discCenter: track.discCenter || track.cover || 'assets/weleta_cover.jpg',
           duration: (track.duration && track.duration !== 180) ? track.duration : 0,
           lrc: track.lrc || '',
           audioBlob: track.audioBlob || null,
+          audioUrl: track.audioUrl || '',
+          isDownloaded: Boolean(track.isDownloaded),
+          downloadedAt: track.downloadedAt || null,
+          publicAudioUrl: track.publicAudioUrl || '',
+          submissionStatus: track.submissionStatus || null,
           updatedAt: Date.now()
         };
         const req = store.put(item);

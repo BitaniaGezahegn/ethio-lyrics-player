@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node local-sync-server.js",
     "local-sync": "node local-sync-server.js",
-    "test": "node local-sync-server.js --test"
+    "test": "node scripts/run-tests.mjs"
   },
   "keywords": [
     "music-player",

@@ -36,6 +36,14 @@ let lastCalibrationMeta = { offset: 0, rtt: 0, method: 'none', timestamp: 0 };
 let activeTransport = 'none';
 
 function getWsUrl() {
+  const customBase = (() => {
+    try { return localStorage.getItem('ethio_local_hub_url') || ''; } catch (e) { return ''; }
+  })();
+  if (customBase && /^https?:\/\//i.test(customBase)) {
+    const parsed = new URL(customBase);
+    const proto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${parsed.host}/ws`;
+  }
   const loc = window.location;
   // If served over HTTP/HTTPS, use host; if file:// or standalone, fallback to localhost:3000
   const host = loc.host && loc.protocol.startsWith('http') ? loc.host : 'localhost:3000';
@@ -44,6 +52,12 @@ function getWsUrl() {
 }
 
 function getHttpApiBase() {
+  const customBase = (() => {
+    try { return localStorage.getItem('ethio_local_hub_url') || ''; } catch (e) { return ''; }
+  })();
+  if (customBase && /^https?:\/\//i.test(customBase)) {
+    return customBase.replace(/\/+$/, '');
+  }
   const loc = window.location;
   if (loc.host && loc.protocol.startsWith('http')) {
     return `${loc.protocol}//${loc.host}`;
@@ -760,7 +774,12 @@ export const LocalSyncService = {
       } else if (data.type === 'reaction') {
         reactionListeners.forEach(cb => cb(data.reaction));
       } else if (data.type === 'room_ended') {
-        alert('The host has ended this local session.');
+        if (activeRoomData) {
+          activeRoomData.isActive = false;
+          roomListeners.forEach(cb => cb({ ...activeRoomData, isActive: false }));
+        } else {
+          roomListeners.forEach(cb => cb(null));
+        }
         this._cleanup();
       }
     };
@@ -778,11 +797,11 @@ export const LocalSyncService = {
     activeTransport = 'none';
 
     if (webrtcHost) {
-      try { webrtcHost.close(); } catch (e) {}
+      try { webrtcHost.destroy(); } catch (e) {}
       webrtcHost = null;
     }
     if (webrtcGuest) {
-      try { webrtcGuest.close(); } catch (e) {}
+      try { webrtcGuest.destroy(); } catch (e) {}
       webrtcGuest = null;
     }
     if (socket) {

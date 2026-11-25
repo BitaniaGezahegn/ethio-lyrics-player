@@ -857,7 +857,7 @@
             <div class="disc-wrapper">
               <div class="disc-outer-grooves"></div>
               <div class="vinyl-disc" id="vinylDisc">
-                <img id="discArtwork" class="disc-artwork-img" src="assets/abinet_portrait.jpg" alt="Album Cover Disc"
+                <img id="discArtwork" class="disc-artwork-img" src="assets/weleta_cover.jpg" alt="Album Cover Disc"
                   crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
                 <div class="disc-center-hole"></div>
               </div>
@@ -1096,7 +1096,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.2</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.5.3</span>
                 </div>
               </div>
 
@@ -1104,7 +1104,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v27 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v28 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1125,7 +1125,7 @@
     </main>
 
     <!-- Reaction Floating Particles Stage -->
-    <div id="reactionFloatingStage" class="reaction-floating-stage" pointer-events="none"></div>
+    <div id="reactionFloatingStage" class="reaction-floating-stage" style="pointer-events: none;"></div>
 
     <!-- Docked Controls Wrapper (Contains Relative Party Bar & Player Bar Dock) -->
     <div id="dockedControlsWrapper" class="docked-controls-wrapper">
@@ -1344,7 +1344,7 @@
               <line x1="3" y1="12" x2="3.01" y2="12"></line>
               <line x1="3" y1="18" x2="3.01" y2="18"></line>
             </svg>
-            <span id="queueCountBadge" class="queue-count-badge">0</span>
+            <span id="queueCountBadge" class="queue-count-badge" style="display:none;">0</span>
           </button>
 
           <!-- Playback Speed -->
@@ -2120,7 +2120,7 @@
 
           <form id="formEditSongReview" style="display:flex; flex-direction:column; gap:0.95rem;">
             <!-- Titles Row -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+            <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
                 <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Song Title (ርዕስ) *</label>
                 <input type="text" id="inputEditReviewTitle" class="form-input" required placeholder="e.g. ወለታ (Weleta)">
@@ -2132,7 +2132,7 @@
             </div>
 
             <!-- Artists Row -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+            <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
                 <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Artist Name (አርቲስት) *</label>
                 <input type="text" id="inputEditReviewArtist" class="form-input" required placeholder="e.g. ግርማ ተፈራ">
@@ -2144,7 +2144,7 @@
             </div>
 
             <!-- Album & Year Row -->
-            <div style="display:grid; grid-template-columns:1.5fr 1fr; gap:0.85rem;">
+            <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1.5fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
                 <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Album Name</label>
                 <input type="text" id="inputEditReviewAlbum" class="form-input" placeholder="e.g. Single / Album Title">

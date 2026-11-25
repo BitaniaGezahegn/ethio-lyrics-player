@@ -28,6 +28,8 @@ export class AudioPlayer {
     this.onPlaying = null;
     this.onSeeked = null;
     this.onWaiting = null;
+    this.onError = null;
+    this._isBlobUrl = false;
 
     // Web Audio Synthesizer state
     this.audioCtx = null;
@@ -98,6 +100,17 @@ export class AudioPlayer {
 
     this.audioElement.addEventListener('loadedmetadata', handleDurationMeta);
     this.audioElement.addEventListener('durationchange', handleDurationMeta);
+    this.audioElement.addEventListener('error', () => {
+      if (this.isSynthetic || !this.audioElement.getAttribute('src')) return;
+      this.isPlaying = false;
+      this._stopRafTicker();
+      if (this.onStateChange) this.onStateChange('paused');
+      if (this.onError) {
+        const mediaErr = this.audioElement.error;
+        const msg = mediaErr && mediaErr.message ? mediaErr.message : 'Unable to stream or decode this audio track.';
+        this.onError(msg);
+      }
+    });
   }
 
   initWebAudio() {
@@ -107,6 +120,34 @@ export class AudioPlayer {
     }
     if (this.audioCtx.state === 'suspended') {
       this.audioCtx.resume();
+    }
+  }
+
+  _revokeBlobUrl() {
+    if (this._isBlobUrl && this.audioUrl) {
+      try { URL.revokeObjectURL(this.audioUrl); } catch (e) {}
+    }
+    this._isBlobUrl = false;
+  }
+
+  updateMediaSession(track, handlers = {}) {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !track) return;
+    try {
+      const artworkUrl = track.cover && !track.cover.startsWith('blob:') ? track.cover : 'assets/weleta_cover.jpg';
+      if (typeof MediaMetadata !== 'undefined') {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title || 'Untitled Track',
+          artist: track.artist || 'Unknown Artist',
+          album: track.album || 'ELM - Ethio Lyrics Media',
+          artwork: [{ src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }]
+        });
+      }
+      if (handlers.onPlay) navigator.mediaSession.setActionHandler('play', handlers.onPlay);
+      if (handlers.onPause) navigator.mediaSession.setActionHandler('pause', handlers.onPause);
+      if (handlers.onPrevioustrack) navigator.mediaSession.setActionHandler('previoustrack', handlers.onPrevioustrack);
+      if (handlers.onNexttrack) navigator.mediaSession.setActionHandler('nexttrack', handlers.onNexttrack);
+    } catch (e) {
+      // MediaSession not supported in all contexts
     }
   }
 
@@ -130,12 +171,18 @@ export class AudioPlayer {
     } else if (track._audioFile) {
       this.loadAudioFile(track._audioFile);
     } else if (track.audioUrl) {
+      this._revokeBlobUrl();
       this.isSynthetic = false;
-      this.audioElement.src = track.audioUrl;
       this.audioUrl = track.audioUrl;
+      this.audioElement.src = track.audioUrl;
+      this.audioElement.load();
+      this.audioElement.volume = this.volume;
+      this.audioElement.playbackRate = this.getEffectivePlaybackRate();
     } else {
+      this._revokeBlobUrl();
       this.isSynthetic = true;
       this.audioElement.removeAttribute('src');
+      this.audioElement.load();
       this.audioUrl = null;
     }
 
@@ -145,11 +192,10 @@ export class AudioPlayer {
   }
 
   loadAudioFile(file) {
-    if (this.audioUrl) {
-      try { URL.revokeObjectURL(this.audioUrl); } catch (e) {}
-    }
+    this._revokeBlobUrl();
     const url = URL.createObjectURL(file);
     this.audioUrl = url;
+    this._isBlobUrl = true;
     this.isSynthetic = false;
     this.audioElement.src = url;
     this.audioElement.load();

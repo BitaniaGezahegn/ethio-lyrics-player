@@ -20,7 +20,18 @@ const path = require('path');
 const url = require('url');
 
 const DEFAULT_PORT = parseInt(process.env.PORT || '3000', 10);
-const ROOT_DIR = __dirname;
+const ROOT_DIR = path.resolve(__dirname);
+const MAX_WS_PAYLOAD_BYTES = 1024 * 1024; // 1MB WebSocket frame guard
+const BLOCKED_PATH_PREFIXES = ['/docs/', '/node_modules/', '/scripts/', '/.'];
+const BLOCKED_EXACT_PATHS = new Set(['/local-sync-server.js', '/start-local-sync.bat', '/package.json', '/package-lock.json']);
+
+function safeDecodeUriComponent(val) {
+  try {
+    return decodeURIComponent(val);
+  } catch (e) {
+    return null;
+  }
+}
 
 // In-memory audio track store: { [trackId]: { buffer: Buffer, mime: string, metadata: object, uploadedAt: number } }
 const audioTrackStore = new Map();
@@ -130,7 +141,12 @@ function handleHttpRequest(req, res) {
 
   // 3. Audio Relay Upload (Host uploads track audio blob for offline guest streaming)
   if (pathname.startsWith('/api/stream/upload/') && req.method === 'POST') {
-    const trackId = decodeURIComponent(pathname.replace('/api/stream/upload/', ''));
+    const trackId = safeDecodeUriComponent(pathname.replace('/api/stream/upload/', ''));
+    if (!trackId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid track ID encoding' }));
+      return;
+    }
     const chunks = [];
     let receivedBytes = 0;
     const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB limit per audio track
@@ -145,6 +161,7 @@ function handleHttpRequest(req, res) {
     });
 
     req.on('end', () => {
+      if (req.destroyed) return;
       const buffer = Buffer.concat(chunks);
       const mime = req.headers['content-type'] || 'audio/mpeg';
 
@@ -177,7 +194,12 @@ function handleHttpRequest(req, res) {
 
   // 4. Audio Relay Streaming (Guests stream audio with HTTP 206 Range support)
   if (pathname.startsWith('/api/stream/audio/')) {
-    const trackId = decodeURIComponent(pathname.replace('/api/stream/audio/', ''));
+    const trackId = safeDecodeUriComponent(pathname.replace('/api/stream/audio/', ''));
+    if (!trackId) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid track ID encoding' }));
+      return;
+    }
     const cached = audioTrackStore.get(trackId);
 
     if (!cached) {
@@ -193,6 +215,11 @@ function handleHttpRequest(req, res) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : total - 1;
+      if (isNaN(start) || isNaN(end) || start < 0 || start >= total || end >= total || end < start) {
+        res.writeHead(416, { 'Content-Range': `bytes */${total}` });
+        res.end();
+        return;
+      }
       const chunkSize = (end - start) + 1;
 
       res.writeHead(206, {
@@ -218,16 +245,36 @@ function handleHttpRequest(req, res) {
 }
 
 function serveStaticFile(pathname, req, res) {
-  let safePath = path.normalize(decodeURIComponent(pathname)).replace(/^(\.\.[\/\\])+/, '');
-  if (safePath === '/' || safePath === '\\') {
+  const decoded = safeDecodeUriComponent(pathname);
+  if (decoded === null) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('400 Bad Request');
+    return;
+  }
+
+  let safePath = path.posix.normalize(decoded.replace(/\\/g, '/'));
+  if (!safePath.startsWith('/')) safePath = '/' + safePath;
+  if (safePath === '/') {
     safePath = '/index.html';
   }
 
-  const filePath = path.join(ROOT_DIR, safePath);
+  const lowerPath = safePath.toLowerCase();
+  if (
+    safePath.includes('..') ||
+    BLOCKED_EXACT_PATHS.has(lowerPath) ||
+    BLOCKED_PATH_PREFIXES.some(prefix => lowerPath.startsWith(prefix)) ||
+    lowerPath.split('/').some(seg => seg.startsWith('.') && seg.length > 0)
+  ) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Access Denied');
+    return;
+  }
 
-  // Security check: ensure path stays inside ROOT_DIR
-  if (!filePath.startsWith(ROOT_DIR)) {
-    res.writeHead(403);
+  const filePath = path.resolve(ROOT_DIR, safePath.slice(1));
+
+  // Security check: ensure resolved path stays strictly inside ROOT_DIR
+  if (filePath !== ROOT_DIR && !filePath.startsWith(ROOT_DIR + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Access Denied');
     return;
   }
@@ -356,6 +403,13 @@ function setupWebSocketListeners(socket, client) {
         if (buffer.length < 10) return;
         payloadLength = Number(buffer.readBigUInt64BE(2));
         offset = 10;
+      }
+
+      if (payloadLength > MAX_WS_PAYLOAD_BYTES) {
+        console.warn(`[WS] Oversized frame (${payloadLength} bytes), closing connection.`);
+        handleWsDisconnect(client);
+        socket.destroy();
+        return;
       }
 
       let maskKey = null;

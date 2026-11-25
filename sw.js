@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v27';
+const CACHE_NAME = 'ethio-lyrics-cache-v28';
 
 const STATIC_ASSETS = [
   './',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   './css/style.css',
   './css/themes.css',
   './js/app.js',
+  './js/utils/sanitize.js',
   './js/recommendation-engine.js',
   './js/party-sync.js',
   './js/local-sync-service.js',
@@ -23,9 +24,7 @@ const STATIC_ASSETS = [
   './js/lrc-editor.js',
   './js/theme-manager.js',
   './js/firebase-service.js',
-  './js/data/sample-songs.js',
-  './assets/weleta_cover.jpg',
-  './assets/abinet_portrait.jpg'
+  './assets/weleta_cover.jpg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -57,8 +56,9 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip Firebase, Google APIs, Cloudflare R2, and local hub /api/ and /ws endpoints
+  // Only handle HTTP(S) GET requests; skip Firebase, Google APIs, Cloudflare R2, and local hub /api/ and /ws
   if (
+    !url.protocol.startsWith('http') ||
     url.origin.includes('firebase') ||
     url.origin.includes('googleapis') ||
     url.origin.includes('gstatic') ||
@@ -67,6 +67,22 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/ws') ||
     event.request.method !== 'GET'
   ) {
+    return;
+  }
+
+  // Network-first for HTML navigation so deployed updates take effect immediately
+  if (event.request.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
+    );
     return;
   }
 
@@ -84,7 +100,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).catch(() => {
-        // If offline and requesting document navigation, return index.html
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
