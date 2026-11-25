@@ -7,6 +7,7 @@
  */
 
 const FIREBASE_PROJECT_ID = 'ethio-lyrics-player';
+const ADMIN_EMAIL = 'bitaniagezahegn3@gmail.com';
 const R2_PUBLIC_BASE = 'https://pub-be2150892c704dc9b69b81b3d76f7984.r2.dev';
 const MAX_AUDIO_BYTES = 50 * 1024 * 1024; // 50 MB
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;  // 5 MB
@@ -118,6 +119,18 @@ export async function onRequestPost(context) {
   }
 
   const contentType = request.headers.get('Content-Type') || '';
+
+  // Optional POST delete action fallback
+  if (contentType.includes('application/json')) {
+    try {
+      const cloned = request.clone();
+      const body = await cloned.json();
+      if (body && body.action === 'delete') {
+        return onRequestDelete(context);
+      }
+    } catch (e) {}
+  }
+
   let fileBuffer = null;
   let fileMime = 'audio/mpeg';
   let originalName = 'track.mp3';
@@ -183,5 +196,95 @@ export async function onRequestPost(context) {
     url: publicUrl,
     size: fileBuffer.byteLength,
     contentType: fileMime
+  }, 200);
+}
+
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+
+  if (!env || !env.MEDIA_BUCKET) {
+    return jsonResponse({
+      error: 'R2 bucket binding "MEDIA_BUCKET" is not configured on Cloudflare Pages.'
+    }, 503);
+  }
+
+  // Verify Firebase Auth Bearer token
+  const authHeader = request.headers.get('Authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+  let decodedUser = null;
+  try {
+    decodedUser = await verifyFirebaseIdToken(token);
+  } catch (err) {
+    return jsonResponse({ error: 'Authentication verification failed: ' + err.message }, 401);
+  }
+  if (!decodedUser || !decodedUser.email) {
+    return jsonResponse({ error: 'Please sign in with Google before deleting media from R2.' }, 401);
+  }
+
+  const userEmail = String(decodedUser.email).trim().toLowerCase();
+  if (userEmail !== ADMIN_EMAIL.toLowerCase()) {
+    return jsonResponse({ error: 'Unauthorized: Only the admin can delete media from Cloudflare R2.' }, 403);
+  }
+
+  let items = [];
+  try {
+    const contentType = request.headers.get('Content-Type') || '';
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      if (Array.isArray(body.keys)) items.push(...body.keys);
+      if (Array.isArray(body.urls)) items.push(...body.urls);
+      if (body.key && typeof body.key === 'string') items.push(body.key);
+      if (body.url && typeof body.url === 'string') items.push(body.url);
+    }
+  } catch (e) {}
+
+  if (items.length === 0) {
+    try {
+      const urlObj = new URL(request.url);
+      const qKey = urlObj.searchParams.get('key');
+      const qUrl = urlObj.searchParams.get('url');
+      if (qKey) items.push(qKey);
+      if (qUrl) items.push(qUrl);
+    } catch (e) {}
+  }
+
+  if (items.length === 0) {
+    return jsonResponse({ error: 'No keys or URLs provided for deletion.' }, 400);
+  }
+
+  const keysToDelete = new Set();
+  for (const item of items) {
+    if (!item || typeof item !== 'string') continue;
+    let clean = item.trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      try {
+        const parsed = new URL(clean);
+        clean = parsed.pathname.replace(/^\/+/, '');
+      } catch (e) {
+        continue;
+      }
+    }
+    if (clean) {
+      keysToDelete.add(clean);
+      try {
+        const decoded = decodeURIComponent(clean);
+        if (decoded) keysToDelete.add(decoded);
+      } catch (e) {}
+    }
+  }
+
+  const deleted = [];
+  for (const k of keysToDelete) {
+    try {
+      await env.MEDIA_BUCKET.delete(k);
+      deleted.push(k);
+    } catch (delErr) {
+      console.warn('R2 delete error for key', k, delErr);
+    }
+  }
+
+  return jsonResponse({
+    ok: true,
+    deleted
   }, 200);
 }

@@ -185,6 +185,29 @@ export const FirebaseService = {
     });
   },
 
+  async deleteMediaFromR2(urlsOrKeys) {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('Must be signed in to delete media from R2.');
+    const idToken = await user.getIdToken();
+    const items = (Array.isArray(urlsOrKeys) ? urlsOrKeys : [urlsOrKeys]).filter(Boolean);
+    const r2Items = items.filter(u => typeof u === 'string' && (u.includes('r2.dev') || u.includes('.r2.') || u.startsWith('tracks/') || u.startsWith('covers/')));
+    if (r2Items.length === 0) return { ok: true, deleted: [] };
+
+    const res = await fetch('/api/upload', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ urls: r2Items })
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `R2 delete failed (${res.status})`);
+    }
+    return await res.json();
+  },
+
   // -------------------------------------------------------------
   // Public Tracks (Global Catalog)
   // -------------------------------------------------------------
@@ -247,10 +270,45 @@ export const FirebaseService = {
     return { id: trackId, ...payload };
   },
 
-  async deletePublicTrack(trackId) {
+  async deletePublicTrack(trackOrId) {
     if (!db) throw new Error('Firestore not initialized');
-    const docRef = doc(db, 'public_tracks', trackId);
-    await deleteDoc(docRef);
+    const trackId = typeof trackOrId === 'string' ? trackOrId : trackOrId?.id;
+    let trackObj = typeof trackOrId === 'object' && trackOrId !== null ? trackOrId : null;
+
+    if (!trackObj && trackId) {
+      try {
+        const snap = await getDoc(doc(db, 'public_tracks', trackId));
+        if (snap.exists()) {
+          trackObj = snap.data();
+        }
+      } catch (e) {
+        console.warn('Could not fetch public track before deletion:', e);
+      }
+    }
+
+    // Delete associated R2 audio and custom cover from Cloudflare R2
+    if (trackObj) {
+      const toDelete = [];
+      if (trackObj.audioUrl && (trackObj.audioUrl.includes('r2.dev') || trackObj.audioUrl.includes('.r2.'))) {
+        toDelete.push(trackObj.audioUrl);
+      }
+      if (trackObj.cover && trackObj.cover.includes('r2.dev') && !trackObj.cover.includes('weleta_cover')) {
+        toDelete.push(trackObj.cover);
+      }
+      if (toDelete.length > 0) {
+        try {
+          await this.deleteMediaFromR2(toDelete);
+          console.info('Deleted R2 assets for public track:', toDelete);
+        } catch (r2Err) {
+          console.warn('R2 media deletion warning (will continue Firestore deletion):', r2Err);
+        }
+      }
+    }
+
+    if (trackId) {
+      const docRef = doc(db, 'public_tracks', trackId);
+      await deleteDoc(docRef);
+    }
     return true;
   },
 
@@ -362,9 +420,38 @@ export const FirebaseService = {
     return published;
   },
 
-  async rejectSubmission(submissionId) {
+  async rejectSubmission(submissionOrId) {
     if (!db) throw new Error('Firestore not initialized');
-    await deleteDoc(doc(db, 'submissions', submissionId));
+    const submissionId = typeof submissionOrId === 'string' ? submissionOrId : submissionOrId?.id;
+    let subObj = typeof submissionOrId === 'object' && submissionOrId !== null ? submissionOrId : null;
+
+    if (!subObj && submissionId) {
+      try {
+        const snap = await getDoc(doc(db, 'submissions', submissionId));
+        if (snap.exists()) subObj = snap.data();
+      } catch (e) {}
+    }
+
+    if (subObj) {
+      const toDelete = [];
+      if (subObj.audioUrl && (subObj.audioUrl.includes('r2.dev') || subObj.audioUrl.includes('.r2.'))) {
+        toDelete.push(subObj.audioUrl);
+      }
+      if (subObj.cover && subObj.cover.includes('r2.dev') && !subObj.cover.includes('weleta_cover')) {
+        toDelete.push(subObj.cover);
+      }
+      if (toDelete.length > 0) {
+        try {
+          await this.deleteMediaFromR2(toDelete);
+        } catch (e) {
+          console.warn('R2 deletion warning during submission rejection:', e);
+        }
+      }
+    }
+
+    if (submissionId) {
+      await deleteDoc(doc(db, 'submissions', submissionId));
+    }
     return true;
   },
 

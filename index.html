@@ -1078,7 +1078,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.5</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.5.6</span>
                 </div>
               </div>
 
@@ -1086,7 +1086,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v30 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v31 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1200,7 +1200,7 @@
       </div>
 
       <!-- Persistent Docked Mini-Player Bar -->
-      <footer class="player-bar-dock">
+      <footer id="playerBarDock" class="player-bar-dock">
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
           <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art"
@@ -1355,6 +1355,24 @@
               <span id="volumePercentBadge" class="volume-percent-badge">80%</span>
             </div>
           </div>
+
+          <!-- Mobile Mini Play/Pause button (Visible when dock is collapsed) -->
+          <button id="btnDockMiniPlay" class="ctrl-btn btn-dock-mini-play" title="Play or Pause" type="button" style="display:none;" aria-label="Play or Pause">
+            <svg id="dockMiniPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6 3 20 12 6 21 6 3" />
+            </svg>
+            <svg id="dockMiniPauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+              <rect x="6" y="4" width="4" height="16" />
+              <rect x="14" y="4" width="4" height="16" />
+            </svg>
+          </button>
+
+          <!-- Mobile Dock Collapse/Expand Toggle Button -->
+          <button id="btnDockCollapse" class="ctrl-btn btn-dock-collapse" title="Collapse / Expand Player" type="button" aria-label="Toggle Player Size">
+            <svg class="dock-collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         </div>
       </footer>
     </div>

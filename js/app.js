@@ -404,11 +404,16 @@ class LyricsApp {
     this.discArtwork = document.getElementById('discArtwork');
     this.vinylDisc = document.getElementById('vinylDisc');
 
-    // Mini Player Info
+    // Mini Player Info & Dock
+    this.playerBarDock = document.getElementById('playerBarDock');
     this.playerMiniArt = document.getElementById('playerMiniArt');
     this.playerMiniTitle = document.getElementById('playerMiniTitle');
     this.playerMiniArtist = document.getElementById('playerMiniArtist');
     this.btnDockFavorite = document.getElementById('btnDockFavorite');
+    this.btnDockCollapse = document.getElementById('btnDockCollapse');
+    this.btnDockMiniPlay = document.getElementById('btnDockMiniPlay');
+    this.dockMiniPlayIcon = document.getElementById('dockMiniPlayIcon');
+    this.dockMiniPauseIcon = document.getElementById('dockMiniPauseIcon');
 
     // Lyrics Viewport
     this.lyricsViewport = document.getElementById('lyricsViewport');
@@ -782,6 +787,9 @@ class LyricsApp {
     } else if (tabId === 'library') {
       this.renderLibraryView();
     } else if (tabId === 'lyrics') {
+      if (this.playerBarDock) {
+        this.playerBarDock.classList.remove('is-collapsed');
+      }
       requestAnimationFrame(() => {
         this.syncLyrics(this.player.currentTime);
       });
@@ -851,9 +859,42 @@ class LyricsApp {
       });
     });
 
-    // Clicking dock mini-player opens the Lyrics Stage
+    // Restore saved dock collapsed state on mobile
+    try {
+      if (localStorage.getItem('ethio_player_dock_collapsed') === '1' && this.playerBarDock && window.innerWidth <= 820) {
+        this.playerBarDock.classList.add('is-collapsed');
+      }
+    } catch (e) {}
+
+    // Clicking dock mini-player opens Lyrics Stage (or expands if collapsed on mobile)
     if (this.dockTrackInfo) {
-      this.dockTrackInfo.addEventListener('click', () => this.switchTab('lyrics'));
+      this.dockTrackInfo.addEventListener('click', () => {
+        if (this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed')) {
+          this.playerBarDock.classList.remove('is-collapsed');
+          try { localStorage.setItem('ethio_player_dock_collapsed', '0'); } catch (err) {}
+          return;
+        }
+        this.switchTab('lyrics');
+      });
+    }
+
+    // Toggle player dock collapsed/expanded on mobile
+    if (this.btnDockCollapse) {
+      this.btnDockCollapse.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.playerBarDock) {
+          const isCollapsed = this.playerBarDock.classList.toggle('is-collapsed');
+          try { localStorage.setItem('ethio_player_dock_collapsed', isCollapsed ? '1' : '0'); } catch (err) {}
+        }
+      });
+    }
+
+    if (this.btnDockMiniPlay) {
+      this.btnDockMiniPlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.isGuestLocked('playback')) return;
+        this.player.togglePlay();
+      });
     }
     if (this.btnHeroOpenLyrics) {
       this.btnHeroOpenLyrics.addEventListener('click', () => this.switchTab('lyrics'));
@@ -1274,6 +1315,8 @@ class LyricsApp {
       if (state === 'playing') {
         if (this.playIcon) this.playIcon.style.display = 'none';
         if (this.pauseIcon) this.pauseIcon.style.display = 'block';
+        if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'none';
+        if (this.dockMiniPauseIcon) this.dockMiniPauseIcon.style.display = 'block';
         if (this.vinylDisc) {
           this.vinylDisc.classList.remove('paused');
           this.vinylDisc.classList.add('spinning');
@@ -1281,6 +1324,8 @@ class LyricsApp {
       } else {
         if (this.playIcon) this.playIcon.style.display = 'block';
         if (this.pauseIcon) this.pauseIcon.style.display = 'none';
+        if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'block';
+        if (this.dockMiniPauseIcon) this.dockMiniPauseIcon.style.display = 'none';
         if (this.vinylDisc) this.vinylDisc.classList.add('paused');
       }
       this.updateHeroState();
@@ -1319,6 +1364,8 @@ class LyricsApp {
     this.player.onEnded = async () => {
       if (this.playIcon) this.playIcon.style.display = 'block';
       if (this.pauseIcon) this.pauseIcon.style.display = 'none';
+      if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'block';
+      if (this.dockMiniPauseIcon) this.dockMiniPauseIcon.style.display = 'none';
       if (this.vinylDisc) this.vinylDisc.classList.remove('spinning');
       this.syncLyrics(0);
 
@@ -3128,11 +3175,30 @@ class LyricsApp {
         if (delBtn) {
           delBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (confirm(`Remove "${song.title}" from Global Cloud Catalog?`)) {
-              await FirebaseService.deletePublicTrack(song.id);
-              await this.loadPublicCatalog();
-              this.renderPublicCatalog();
-              this.renderHomePage();
+            if (confirm(`Remove "${song.title}" from Global Cloud Catalog?\n\nThis will permanently delete the song from Firestore and delete its audio file from Cloudflare R2.`)) {
+              delBtn.disabled = true;
+              delBtn.style.opacity = '0.5';
+              try {
+                await FirebaseService.deletePublicTrack(song);
+                await this.loadPublicCatalog();
+                this.renderPublicCatalog();
+                this.renderHomePage();
+                this.showToast(`Deleted "${song.title}" and its Cloudflare R2 audio.`, 3500);
+
+                if (this.currentTrack && this.currentTrack.id === song.id) {
+                  const remaining = [...this.publicTracks, ...this.tracks];
+                  if (remaining.length > 0) {
+                    await this.loadTrack(remaining[0], false);
+                  } else {
+                    this.renderEmptyLibraryState();
+                  }
+                }
+              } catch (delErr) {
+                console.error('Delete public track error:', delErr);
+                alert('Could not delete track: ' + (delErr.message || 'Please check your connection'));
+                delBtn.disabled = false;
+                delBtn.style.opacity = '1';
+              }
             }
           });
         }
@@ -4040,10 +4106,15 @@ class LyricsApp {
         });
 
         item.querySelector('.btn-reject-submission').addEventListener('click', async () => {
-          if (confirm(`Reject and delete submission for "${sub.title}"?`)) {
-            await FirebaseService.rejectSubmission(sub.id);
-            item.remove();
-            this.checkPendingSubmissionsCount();
+          if (confirm(`Reject and delete submission for "${sub.title}"?\n\nThis will remove the submission and delete its uploaded audio from Cloudflare R2.`)) {
+            try {
+              await FirebaseService.rejectSubmission(sub);
+              item.remove();
+              this.checkPendingSubmissionsCount();
+              this.showToast(`Rejected submission "${sub.title}" and cleaned up R2.`, 3000);
+            } catch (err) {
+              alert('Reject error: ' + (err.message || 'Check connection'));
+            }
           }
         });
 

@@ -619,6 +619,11 @@ html, body {
   pointer-events: auto;
 }
 
+.btn-dock-collapse,
+.btn-dock-mini-play {
+  display: none !important;
+}
+
 @supports (backdrop-filter: blur(8px)) {
   .player-bar-dock {
     background: rgba(18, 12, 16, 0.82);
@@ -1543,6 +1548,62 @@ html, body {
     border-radius: 18px;
     box-shadow: 0 10px 32px rgba(0, 0, 0, 0.75);
     pointer-events: auto;
+    transition: padding 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.22s ease;
+  }
+
+  /* Compact collapsed single-row dock state on mobile */
+  .player-bar-dock.is-collapsed {
+    padding: 0.35rem 0.75rem !important;
+    gap: 0 !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.82) !important;
+  }
+  .player-bar-dock.is-collapsed .buttons-row,
+  .player-bar-dock.is-collapsed .timeline-container {
+    display: none !important;
+  }
+  .player-bar-dock.is-collapsed .player-controls-right .btn-sleep-timer,
+  .player-bar-dock.is-collapsed .player-controls-right .btn-queue-toggle,
+  .player-bar-dock.is-collapsed .player-controls-right #btnSpeed,
+  .player-bar-dock.is-collapsed .player-controls-right .volume-container {
+    display: none !important;
+  }
+  .player-bar-dock.is-collapsed .btn-dock-mini-play {
+    display: inline-flex !important;
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background: var(--art-primary, var(--color-gold));
+    color: #0b0507;
+    border: none;
+    cursor: pointer;
+    margin-right: 0.2rem;
+  }
+  .player-bar-dock.is-collapsed .dock-collapse-icon {
+    transform: rotate(180deg);
+  }
+
+  .btn-dock-collapse {
+    display: inline-flex !important;
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.18s ease;
+  }
+  .btn-dock-collapse:active {
+    transform: scale(0.9);
+  }
+  .btn-dock-collapse .dock-collapse-icon {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Row 1 - Left: Track Thumbnail, Title, Artist & Quick Favorite */
@@ -3777,7 +3838,7 @@ html, body {
 
 /* Tab 1: Home View */
 #tabViewHome {
-  padding: 85px 2.5rem 130px 2.5rem;
+  padding: 85px 2.5rem 175px 2.5rem;
   gap: 2.2rem;
   max-width: 1400px;
   margin: 0 auto;
@@ -3802,7 +3863,7 @@ html, body {
 
 /* Tab 2: Library View */
 #tabViewLibrary {
-  padding: 85px 2rem 140px 2rem;
+  padding: 85px 2rem 175px 2rem;
   max-width: 1100px;
   margin: 0 auto;
   scrollbar-width: thin;
@@ -3814,6 +3875,7 @@ html, body {
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
+  padding-bottom: 24px;
 }
 
 .library-header-row {
@@ -3889,7 +3951,7 @@ html, body {
 
 /* Tab 4: Settings View */
 #tabViewSettings {
-  padding: 85px 1.5rem 140px 1.5rem;
+  padding: 85px 1.5rem 175px 1.5rem;
   max-width: 860px;
   margin: 0 auto;
   scrollbar-width: thin;
@@ -4090,18 +4152,21 @@ html, body {
     right: calc(50% - 14px);
   }
 
-  /* Padding Adjustments for Tab Views on Mobile */
+  /* Padding & Scroll Clearance Adjustments for Tab Views on Mobile (Ensures 3-row player dock never overlaps content) */
   #tabViewHome {
-    padding: 70px 1.25rem calc(56px + 92px + env(safe-area-inset-bottom, 0px) + 16px) 1.25rem !important;
+    padding: 70px 1.25rem calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px) 1.25rem !important;
+    scroll-padding-bottom: calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px);
     gap: 1.6rem;
   }
 
   #tabViewLibrary {
-    padding: 70px 1rem calc(56px + 92px + env(safe-area-inset-bottom, 0px) + 16px) 1rem !important;
+    padding: 70px 1rem calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px) 1rem !important;
+    scroll-padding-bottom: calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px);
   }
 
   #tabViewSettings {
-    padding: 70px 1rem calc(56px + 92px + env(safe-area-inset-bottom, 0px) + 16px) 1rem !important;
+    padding: 70px 1rem calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px) 1rem !important;
+    scroll-padding-bottom: calc(56px + 160px + env(safe-area-inset-bottom, 0px) + 36px);
   }
 
   /* Hero Content on Mobile (Compact horizontal row) */
@@ -4514,7 +4579,8 @@ html, body {
   body.in-active-room #tabViewHome,
   body.in-active-room #tabViewLibrary,
   body.in-active-room #tabViewSettings {
-    padding-bottom: calc(56px + 86px + 52px + env(safe-area-inset-bottom, 0px) + 20px) !important;
+    padding-bottom: calc(56px + 160px + 54px + env(safe-area-inset-bottom, 0px) + 36px) !important;
+    scroll-padding-bottom: calc(56px + 160px + 54px + env(safe-area-inset-bottom, 0px) + 36px);
   }
 
   .room-bar-left {

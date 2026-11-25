@@ -8,7 +8,7 @@ import { escapeHtml, sanitizeUrl } from '../js/utils/sanitize.js';
 import { LyricsParser } from '../js/lyrics-parser.js';
 import { computeTarget, DriftController, GuestSyncEngine, HostBroadcaster } from '../js/party-sync.js';
 import { RecommendationEngine } from '../js/recommendation-engine.js';
-import { onRequestPost as uploadPostHandler } from '../functions/api/upload.js';
+import { onRequestPost as uploadPostHandler, onRequestDelete as uploadDeleteHandler } from '../functions/api/upload.js';
 
 const ROOT = process.cwd();
 
@@ -43,6 +43,8 @@ async function run() {
   assert.ok(css.includes('.empty-library-state'), 'Missing .empty-library-state CSS rule');
   assert.ok(css.includes('.scrubber-buffered'), 'Missing .scrubber-buffered CSS rule');
   assert.ok(css.includes('.volume-container.tray-active'), 'Missing .volume-container.tray-active CSS rule');
+  assert.ok(css.includes('.player-bar-dock.is-collapsed'), 'Missing .player-bar-dock.is-collapsed CSS rule');
+  assert.ok(css.includes('.btn-dock-collapse'), 'Missing .btn-dock-collapse CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
   assert.ok(!fs.existsSync(path.join(ROOT, 'js/data/sample-songs.js')), 'Unused sample-songs.js should be removed');
   console.log('   OK');
@@ -278,6 +280,18 @@ async function run() {
     env: { MEDIA_BUCKET: { put: async () => {} } }
   });
   assert.equal(noAuthRes.status, 401);
+
+  const noBucketDel = await uploadDeleteHandler({
+    request: new Request('https://example.com/api/upload', { method: 'DELETE' }),
+    env: {}
+  });
+  assert.equal(noBucketDel.status, 503);
+
+  const noAuthDel = await uploadDeleteHandler({
+    request: new Request('https://example.com/api/upload', { method: 'DELETE' }),
+    env: { MEDIA_BUCKET: { delete: async () => {} } }
+  });
+  assert.equal(noAuthDel.status, 401);
   console.log('   OK');
 
   console.log('\nALL TESTS PASSED!');
