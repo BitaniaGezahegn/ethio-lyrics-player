@@ -45,6 +45,10 @@ async function run() {
   assert.ok(css.includes('.volume-container.tray-active'), 'Missing .volume-container.tray-active CSS rule');
   assert.ok(css.includes('.player-bar-dock.is-collapsed'), 'Missing .player-bar-dock.is-collapsed CSS rule');
   assert.ok(css.includes('.btn-dock-collapse'), 'Missing .btn-dock-collapse CSS rule');
+  assert.ok(css.includes('.btn-tray-mute'), 'Missing .btn-tray-mute CSS rule');
+  assert.ok(css.includes('.track-card-actions'), 'Missing .track-card-actions CSS rule');
+  assert.ok(css.includes('.btn-track-icon'), 'Missing .btn-track-icon CSS rule');
+  assert.ok(css.includes('.scrubber-track.is-scrubbing'), 'Missing .scrubber-track.is-scrubbing CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
   assert.ok(!fs.existsSync(path.join(ROOT, 'js/data/sample-songs.js')), 'Unused sample-songs.js should be removed');
   console.log('   OK');

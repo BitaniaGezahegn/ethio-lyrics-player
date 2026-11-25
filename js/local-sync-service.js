@@ -238,7 +238,7 @@ export const LocalSyncService = {
       schemaVersion: 2,
       roomCode,
       hostId: hostInfo.id,
-      hostName: hostInfo.name || 'Party Host',
+      hostName: hostInfo.name || 'Session Host',
       hostAvatar: hostInfo.avatar || '',
       isActive: true,
       currentTrack: trackData ? {
@@ -261,7 +261,7 @@ export const LocalSyncService = {
       },
       participants: [{
         id: hostInfo.id,
-        name: hostInfo.name || 'Party Host',
+        name: hostInfo.name || 'Session Host',
         avatar: hostInfo.avatar || '',
         isHost: true,
         joinedAt: Date.now(),
@@ -484,7 +484,7 @@ export const LocalSyncService = {
       schemaVersion: 2,
       roomCode,
       hostId: hostInfo.id,
-      hostName: hostInfo.name || 'Party Host',
+      hostName: hostInfo.name || 'Session Host',
       hostAvatar: hostInfo.avatar || '',
       isActive: true,
       currentTrack: trackData,
@@ -498,7 +498,7 @@ export const LocalSyncService = {
       },
       participants: [{
         id: hostInfo.id,
-        name: hostInfo.name || 'Party Host',
+        name: hostInfo.name || 'Session Host',
         avatar: hostInfo.avatar || '',
         isHost: true,
         joinedAt: Date.now(),
@@ -586,12 +586,12 @@ export const LocalSyncService = {
           schemaVersion: 2,
           roomCode: 'P2P-PARTY',
           hostId: 'dj_host',
-          hostName: 'DJ Host',
+          hostName: 'Session Host',
           isActive: true,
           currentTrack,
           playback,
           participants: [
-            { id: 'dj_host', name: 'DJ Host', isHost: true },
+            { id: 'dj_host', name: 'Session Host', isHost: true },
             { id: participantInfo.id, name: participantInfo.name, isHost: false },
           ],
         };

@@ -434,6 +434,9 @@ class LyricsApp {
     this.btnForward = document.getElementById('btnForward');
     this.btnSpeed = document.getElementById('btnSpeed');
     this.btnMute = document.getElementById('btnMute');
+    this.btnTrayMute = document.getElementById('btnTrayMute');
+    this.trayMuteIconHigh = document.getElementById('trayMuteIconHigh');
+    this.trayMuteIconMuted = document.getElementById('trayMuteIconMuted');
     this.volumeContainer = document.getElementById('volumeContainer');
     this.volumePopupTray = document.getElementById('volumePopupTray');
     this.volumeSlider = document.getElementById('volumeSlider');
@@ -602,7 +605,9 @@ class LyricsApp {
     this.detailModalLyricsSnippet = document.getElementById('detailModalLyricsSnippet');
     this.btnDetailModalPlay = document.getElementById('btnDetailModalPlay');
     this.btnDetailPlayNow = document.getElementById('btnDetailPlayNow');
+    this.detailPlayNowIcon = document.getElementById('detailPlayNowIcon');
     this.detailPlayNowLabel = document.getElementById('detailPlayNowLabel');
+    this.btnDetailAddToQueue = document.getElementById('btnDetailAddToQueue');
     this.btnDetailViewLyrics = document.getElementById('btnDetailViewLyrics');
     this.btnDetailToggleFavorite = document.getElementById('btnDetailToggleFavorite');
     this.detailFavLabel = document.getElementById('detailFavLabel');
@@ -1329,6 +1334,7 @@ class LyricsApp {
         if (this.vinylDisc) this.vinylDisc.classList.add('paused');
       }
       this.updateHeroState();
+      this.syncDynamicPlayButtons();
 
       if (state === 'paused' && this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
         this.hostBroadcaster?.notify('pause');
@@ -1384,20 +1390,39 @@ class LyricsApp {
       await this.playNextTrack();
     };
 
-    // Volume & Mute (Desktop and Mobile Touch Support)
+    // Volume & Mute (Desktop Hover/Mute + Mobile Touch Tray Toggle + Z-index Layering)
     let lastVolume = 0.8;
+    const isTouchVolumeUi = () => window.innerWidth <= 820 || (window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches);
+
     const updateVolumeUI = (val) => {
       const clamped = Math.max(0, Math.min(1, val));
-      if (this.volumeSlider) this.volumeSlider.value = clamped;
-      if (this.volumePercentBadge) this.volumePercentBadge.textContent = `${Math.round(clamped * 100)}%`;
+      const pct = Math.round(clamped * 100);
+      if (this.volumeSlider) {
+        this.volumeSlider.value = clamped;
+        this.volumeSlider.style.setProperty('--vol-fill', `${pct}%`);
+      }
+      if (this.volumePercentBadge) this.volumePercentBadge.textContent = `${pct}%`;
+      const isMuted = clamped <= 0.01;
       if (this.volumeIconHigh && this.volumeIconMuted) {
-        if (clamped <= 0.01) {
-          this.volumeIconHigh.style.display = 'none';
-          this.volumeIconMuted.style.display = 'block';
-        } else {
-          this.volumeIconHigh.style.display = 'block';
-          this.volumeIconMuted.style.display = 'none';
-        }
+        this.volumeIconHigh.style.display = isMuted ? 'none' : 'block';
+        this.volumeIconMuted.style.display = isMuted ? 'block' : 'none';
+      }
+      if (this.trayMuteIconHigh && this.trayMuteIconMuted) {
+        this.trayMuteIconHigh.style.display = isMuted ? 'none' : 'block';
+        this.trayMuteIconMuted.style.display = isMuted ? 'block' : 'none';
+      }
+    };
+    updateVolumeUI(this.player ? this.player.volume : 0.8);
+
+    const toggleMuteVolume = () => {
+      if (this.player.volume > 0.01) {
+        lastVolume = this.player.volume || 0.8;
+        this.player.setVolume(0);
+        updateVolumeUI(0);
+      } else {
+        const restored = lastVolume > 0.05 ? lastVolume : 0.8;
+        this.player.setVolume(restored);
+        updateVolumeUI(restored);
       }
     };
 
@@ -1406,35 +1431,52 @@ class LyricsApp {
         clearTimeout(this._volumeTrayHideTimer);
         this._volumeTrayHideTimer = null;
       }
-      if (this.volumeContainer) {
-        this.volumeContainer.classList.add('tray-active');
+      if (this.volumeContainer) this.volumeContainer.classList.add('tray-active');
+      if (this.playerBarDock) this.playerBarDock.classList.add('volume-open');
+    };
+
+    const closeVolumeTrayNow = () => {
+      if (this._volumeTrayHideTimer) {
+        clearTimeout(this._volumeTrayHideTimer);
+        this._volumeTrayHideTimer = null;
       }
+      this._isDraggingVolume = false;
+      if (this.volumeContainer) this.volumeContainer.classList.remove('tray-active');
+      if (this.playerBarDock) this.playerBarDock.classList.remove('volume-open');
     };
 
     const scheduleCloseVolumeTray = (delayMs = 950) => {
-      if (this._volumeTrayHideTimer) {
-        clearTimeout(this._volumeTrayHideTimer);
-      }
+      if (this._volumeTrayHideTimer) clearTimeout(this._volumeTrayHideTimer);
       if (this._isDraggingVolume) return;
       this._volumeTrayHideTimer = setTimeout(() => {
-        if (!this._isDraggingVolume && this.volumeContainer) {
-          this.volumeContainer.classList.remove('tray-active');
+        if (!this._isDraggingVolume) {
+          closeVolumeTrayNow();
         }
       }, delayMs);
     };
 
     if (this.volumeContainer) {
-      this.volumeContainer.addEventListener('mouseenter', openVolumeTray);
+      this.volumeContainer.addEventListener('mouseenter', () => {
+        if (!isTouchVolumeUi()) openVolumeTray();
+      });
       this.volumeContainer.addEventListener('focusin', openVolumeTray);
-      this.volumeContainer.addEventListener('mouseleave', () => scheduleCloseVolumeTray(950));
+      this.volumeContainer.addEventListener('mouseleave', () => {
+        if (!isTouchVolumeUi()) scheduleCloseVolumeTray(950);
+      });
     }
     if (this.volumePopupTray) {
-      this.volumePopupTray.addEventListener('mouseenter', openVolumeTray);
-      this.volumePopupTray.addEventListener('mouseleave', () => scheduleCloseVolumeTray(950));
+      this.volumePopupTray.addEventListener('mouseenter', () => {
+        if (!isTouchVolumeUi()) openVolumeTray();
+      });
+      this.volumePopupTray.addEventListener('mouseleave', () => {
+        if (!isTouchVolumeUi()) scheduleCloseVolumeTray(950);
+      });
+      this.volumePopupTray.addEventListener('click', (e) => e.stopPropagation());
     }
 
     if (this.volumeSlider) {
-      const startDrag = () => {
+      const startDrag = (e) => {
+        e.stopPropagation();
         this._isDraggingVolume = true;
         openVolumeTray();
       };
@@ -1447,89 +1489,111 @@ class LyricsApp {
         this.player.setVolume(val);
         if (val > 0.02) lastVolume = val;
         updateVolumeUI(val);
-        if (window.innerWidth <= 768) {
-          scheduleCloseVolumeTray(2800);
-        }
       });
     }
 
     const endVolumeDrag = () => {
       if (!this._isDraggingVolume) return;
       this._isDraggingVolume = false;
-      scheduleCloseVolumeTray(1200);
+      if (!isTouchVolumeUi()) {
+        scheduleCloseVolumeTray(1200);
+      }
     };
     window.addEventListener('pointerup', endVolumeDrag);
+    window.addEventListener('pointercancel', endVolumeDrag);
     window.addEventListener('mouseup', endVolumeDrag);
     window.addEventListener('touchend', endVolumeDrag);
+
+    if (this.btnTrayMute) {
+      this.btnTrayMute.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openVolumeTray();
+        toggleMuteVolume();
+      });
+    }
 
     if (this.btnMute) {
       this.btnMute.addEventListener('click', (e) => {
         e.stopPropagation();
-        // On touch screens or small devices, tap opens/keeps open the slider tray before muting
-        if (this.volumeContainer && window.innerWidth <= 768) {
-          const wasOpen = this.volumeContainer.classList.contains('tray-active');
-          openVolumeTray();
-          scheduleCloseVolumeTray(3500);
-          if (!wasOpen) {
-            return;
+        // On mobile/touch devices, tapping speaker toggles slider tray (never unexpectedly mutes!)
+        if (isTouchVolumeUi()) {
+          const isOpen = this.volumeContainer && this.volumeContainer.classList.contains('tray-active');
+          if (isOpen) {
+            closeVolumeTrayNow();
+          } else {
+            openVolumeTray();
           }
+          return;
         }
-
-        // Toggle mute or restore volume
-        if (this.player.volume > 0.01) {
-          lastVolume = this.player.volume || 0.8;
-          this.player.setVolume(0);
-          updateVolumeUI(0);
-        } else {
-          const restored = lastVolume > 0.05 ? lastVolume : 0.8;
-          this.player.setVolume(restored);
-          updateVolumeUI(restored);
-        }
+        // Desktop: toggle mute & show tray feedback briefly
+        openVolumeTray();
+        toggleMuteVolume();
+        scheduleCloseVolumeTray(1500);
       });
     }
 
-    // Dismiss floating volume tray when tapping anywhere outside
+    // Dismiss floating volume tray when tapping/clicking anywhere outside
     document.addEventListener('click', (e) => {
       if (this.volumeContainer && this.volumeContainer.classList.contains('tray-active')) {
         if (!this.volumeContainer.contains(e.target)) {
-          if (this._volumeTrayHideTimer) {
-            clearTimeout(this._volumeTrayHideTimer);
-            this._volumeTrayHideTimer = null;
-          }
-          this._isDraggingVolume = false;
-          this.volumeContainer.classList.remove('tray-active');
+          closeVolumeTrayNow();
         }
       }
     });
 
-    // Timeline Scrubber
+    // Timeline Scrubber (Smooth Click + Mouse/Touch Pointer Dragging)
     if (this.scrubberTrack) {
-      const seekAtClientX = (clientX) => {
-        if (this.isGuestLocked('seeking')) return;
-        if (!this.currentTrack || !this.player.duration) return;
+      let pendingSeekTime = null;
+      const getSeekTimeFromClientX = (clientX) => {
+        if (!this.currentTrack || !this.player.duration) return null;
         const rect = this.scrubberTrack.getBoundingClientRect();
+        if (!rect.width) return null;
         const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        const newTime = pos * this.player.duration;
-        this.player.seek(newTime);
+        return pos * this.player.duration;
       };
 
-      this.scrubberTrack.addEventListener('click', (e) => seekAtClientX(e.clientX));
-      this.scrubberTrack.addEventListener('touchstart', (e) => {
-        if (this.isGuestLocked('seeking')) return;
-        if (e.touches && e.touches[0]) {
-          this.isScrubbing = true;
-          seekAtClientX(e.touches[0].clientX);
+      const previewScrubAt = (clientX) => {
+        const t = getSeekTimeFromClientX(clientX);
+        if (t === null) return;
+        pendingSeekTime = t;
+        this.updateTimeline(t, this.player.duration);
+        if (this.currentView === 'stage' || this.currentView === 'lyrics') {
+          this.syncLyrics(t);
         }
-      }, { passive: true });
-      this.scrubberTrack.addEventListener('touchmove', (e) => {
-        if (this.isGuestLocked('seeking')) return;
-        if (this.isScrubbing && e.touches && e.touches[0]) {
-          seekAtClientX(e.touches[0].clientX);
-        }
-      }, { passive: true });
-      this.scrubberTrack.addEventListener('touchend', () => {
+      };
+
+      const commitScrub = () => {
+        if (!this.isScrubbing) return;
         this.isScrubbing = false;
+        this.scrubberTrack.classList.remove('is-scrubbing');
+        if (pendingSeekTime !== null && !this.isGuestLocked('seeking')) {
+          this.player.seek(pendingSeekTime);
+        }
+        pendingSeekTime = null;
+      };
+
+      this.scrubberTrack.addEventListener('pointerdown', (e) => {
+        if (e.button && e.button !== 0) return;
+        if (this.isGuestLocked('seeking')) return;
+        if (!this.currentTrack || !this.player.duration) return;
+        e.preventDefault();
+        this.isScrubbing = true;
+        this.scrubberTrack.classList.add('is-scrubbing');
+        try {
+          if (this.scrubberTrack.setPointerCapture) {
+            this.scrubberTrack.setPointerCapture(e.pointerId);
+          }
+        } catch (err) {}
+        previewScrubAt(e.clientX);
       });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!this.isScrubbing) return;
+        previewScrubAt(e.clientX);
+      });
+
+      window.addEventListener('pointerup', commitScrub);
+      window.addEventListener('pointercancel', commitScrub);
     }
 
     // Fullscreen / Clean Record Mode Toggle & Punchhole Protection
@@ -1654,11 +1718,19 @@ class LyricsApp {
         if (this._detailTrack) {
           if (this.currentTrack && this.currentTrack.id === this._detailTrack.id) {
             this.player.togglePlay();
+            this._setDetailPlayButtonState(this.player.isPlaying);
           } else {
             await this.loadTrack(this._detailTrack, true);
           }
           if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
           this.renderHomePage();
+        }
+      });
+    }
+    if (this.btnDetailAddToQueue) {
+      this.btnDetailAddToQueue.addEventListener('click', () => {
+        if (this._detailTrack) {
+          this.addToQueue(this._detailTrack, false);
         }
       });
     }
@@ -2329,8 +2401,11 @@ class LyricsApp {
     const showcaseTracks = RecommendationEngine.getLyricsStageShowcase(uniquePool, 8);
     this.renderMusicGrid(this.gridLyricsShowcase, showcaseTracks, 'No synced lyrics tracks available.');
 
-    // 8. Global Cloud Catalog Shelf (with search, category filter, and sorting)
-    let catalogTracks = [...this.publicTracks];
+    // Dynamic Filter Chips strictly matching existing catalog songs
+    this.renderHomeFilterChips(uniquePool);
+
+    // 8. Global Cloud Catalog Shelf (with search, dynamic category filter, and chronological sorting)
+    let catalogTracks = this.activeFilter === 'offline' ? [...this.tracks] : [...this.publicTracks];
 
     // Filter by Search Query
     if (this.searchQuery) {
@@ -2355,34 +2430,111 @@ class LyricsApp {
       });
       catalogTracks = ordered;
     } else if (this.activeFilter === 'suggested') {
-      catalogTracks = catalogTracks.filter(t => t.lrc && t.lrc.length > 20);
+      catalogTracks = RecommendationEngine.getPersonalizedRecommendations(catalogTracks, {
+        currentTrack: this.currentTrack,
+        recentlyPlayed: this.recentlyPlayed || [],
+        favorites: this.favorites || [],
+        limit: catalogTracks.length || 20
+      });
     } else if (this.activeFilter === 'classic') {
-      catalogTracks = catalogTracks.filter(t => (t.album && t.album.toLowerCase().includes('classic')) || (parseInt(t.year) < 2010));
+      catalogTracks = catalogTracks.filter(t => this._matchesClassicTrack(t));
     } else if (this.activeFilter === 'pop') {
-      catalogTracks = catalogTracks.filter(t => !t.year || parseInt(t.year) >= 2010);
+      catalogTracks = catalogTracks.filter(t => this._matchesPopTrack(t));
     } else if (this.activeFilter === 'lrc') {
-      catalogTracks = catalogTracks.filter(t => t.lrc && t.lrc.length > 10);
-    } else if (this.activeFilter === 'offline') {
-      catalogTracks = this.tracks;
+      catalogTracks = catalogTracks.filter(t => t.lrc && t.lrc.trim().length > 10);
     }
 
-    // Sorting
+    // Sorting (Chronological Newest First by default)
     const sortMode = this.catalogSortOption || 'newest';
-    if (sortMode === 'title') {
+    if (sortMode === 'oldest') {
+      catalogTracks.sort((a, b) => this._getTrackTimestamp(a) - this._getTrackTimestamp(b));
+    } else if (sortMode === 'title') {
       catalogTracks.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     } else if (sortMode === 'artist') {
       catalogTracks.sort((a, b) => (a.artist || '').localeCompare(b.artist || ''));
     } else if (sortMode === 'year') {
-      catalogTracks.sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0));
+      catalogTracks.sort((a, b) => (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0));
     } else if (sortMode === 'lrc') {
       catalogTracks.sort((a, b) => ((b.lrc ? b.lrc.length : 0) - (a.lrc ? a.lrc.length : 0)));
+    } else {
+      // 'newest' chronological order: latest uploaded/created first
+      catalogTracks.sort((a, b) => this._getTrackTimestamp(b) - this._getTrackTimestamp(a));
     }
 
     if (this.catalogCounterSubtitle) {
-      this.catalogCounterSubtitle.textContent = `${catalogTracks.length} Ethiopian tracks ready to stream & download`;
+      this.catalogCounterSubtitle.textContent = `${catalogTracks.length} track${catalogTracks.length === 1 ? '' : 's'} sorted ${sortMode === 'oldest' ? 'chronologically (oldest first)' : sortMode === 'newest' ? 'chronologically (newest first)' : `by ${sortMode}`}`;
     }
 
-    this.renderMusicGrid(this.gridGlobalCatalog, catalogTracks, 'No cloud tracks found matching your criteria. Use Admin Studio to publish tracks!');
+    this.renderMusicGrid(this.gridGlobalCatalog, catalogTracks, 'No tracks found matching your criteria.');
+  }
+
+  _getTrackTimestamp(track) {
+    if (!track) return 0;
+    if (track.createdAt) {
+      if (typeof track.createdAt.toMillis === 'function') return track.createdAt.toMillis();
+      if (typeof track.createdAt.seconds === 'number') return track.createdAt.seconds * 1000;
+      if (typeof track.createdAt === 'number') return track.createdAt;
+    }
+    if (track.updatedAt) {
+      if (typeof track.updatedAt.toMillis === 'function') return track.updatedAt.toMillis();
+      if (typeof track.updatedAt.seconds === 'number') return track.updatedAt.seconds * 1000;
+      if (typeof track.updatedAt === 'number') return track.updatedAt;
+    }
+    const idMatch = String(track.id || '').match(/(\d{10,})/);
+    if (idMatch) return parseInt(idMatch[1], 10);
+    const yr = parseInt(track.year, 10);
+    return isFinite(yr) && yr > 0 ? Date.UTC(yr, 0, 1) : 0;
+  }
+
+  _matchesClassicTrack(track) {
+    if (!track) return false;
+    const text = `${track.album || ''} ${track.genre || ''} ${track.title || ''}`.toLowerCase();
+    const yr = parseInt(track.year, 10);
+    return text.includes('classic') || text.includes('tizita') || (isFinite(yr) && yr > 0 && yr < 2010);
+  }
+
+  _matchesPopTrack(track) {
+    if (!track) return false;
+    const text = `${track.album || ''} ${track.genre || ''} ${track.title || ''}`.toLowerCase();
+    return /\bpop\b|afropop|ethiopop|modern pop/.test(text);
+  }
+
+  renderHomeFilterChips(uniquePool = []) {
+    if (!this.homeFilterRow) return;
+    const pool = Array.isArray(uniquePool) ? uniquePool : [];
+    const catalog = Array.isArray(this.publicTracks) ? this.publicTracks : [];
+    const favIds = this.favorites || [];
+    const recentIds = this.recentlyPlayed || [];
+
+    const hasLrc = catalog.some(t => t && t.lrc && t.lrc.trim().length > 10);
+    const hasClassic = catalog.some(t => this._matchesClassicTrack(t));
+    const hasPop = catalog.some(t => this._matchesPopTrack(t));
+    const hasFavs = catalog.some(t => favIds.includes(t.id));
+    const hasRecent = catalog.some(t => recentIds.includes(t.id));
+    const hasOffline = Array.isArray(this.tracks) && this.tracks.length > 0;
+    const hasSuggested = pool.length >= 2 && (hasFavs || hasRecent || hasLrc);
+
+    const chips = [
+      { id: 'all', label: 'All Music', icon: '' },
+      hasSuggested ? { id: 'suggested', label: 'Made For You', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>' } : null,
+      hasLrc ? { id: 'lrc', label: 'Synced Lyrics', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>' } : null,
+      hasClassic ? { id: 'classic', label: 'Classics', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' } : null,
+      hasPop ? { id: 'pop', label: 'Modern Pop', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>' } : null,
+      hasFavs ? { id: 'favorites', label: 'Favorites', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' } : null,
+      hasRecent ? { id: 'recent', label: 'Recently Played', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' } : null,
+      hasOffline ? { id: 'offline', label: 'Offline Ready', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' } : null
+    ].filter(Boolean);
+
+    if (!chips.some(c => c.id === this.activeFilter)) {
+      this.activeFilter = 'all';
+    }
+
+    this.homeFilterRow.innerHTML = chips.map(c => `
+      <button class="filter-chip ${this.activeFilter === c.id ? 'active' : ''}" data-filter="${escapeHtml(c.id)}" type="button">
+        ${c.icon}
+        <span>${escapeHtml(c.label)}</span>
+      </button>
+    `).join('');
   }
 
   renderJumpBackInGrid(jumpTracks) {
@@ -2716,6 +2868,7 @@ class LyricsApp {
     }
 
     this.updateHeroState();
+    this.syncDynamicPlayButtons();
   }
 
   renderEmptyLibraryState() {
@@ -3105,6 +3258,13 @@ class LyricsApp {
       const safeCover = sanitizeUrl(song.cover);
       const safeId = escapeHtml(song.id);
 
+      const isSongPlaying = isCurrent && this.player.isPlaying;
+      const playIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+      const pauseIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      const downloadIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      const savedIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>';
+      const spinnerIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
+
       const card = document.createElement('div');
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
@@ -3120,17 +3280,20 @@ class LyricsApp {
             </div>
           </div>
         </div>
-        <div style="display:flex; gap:0.4rem; flex-shrink:0; align-items:center;">
-          <button class="btn-pill btn-play-public" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
-            ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
+        <div class="track-card-actions">
+          <button class="btn-pill btn-track-icon btn-play-public ${isSongPlaying ? 'is-playing' : ''}" data-play-track-id="${safeId}" title="${isSongPlaying ? 'Pause' : 'Play'}" aria-label="${isSongPlaying ? 'Pause' : 'Play'}" type="button">
+            ${isSongPlaying ? pauseIconSvg : playIconSvg}
           </button>
-          <button class="btn-track-info btn-pill" style="font-size:0.75rem; padding:0.35rem 0.55rem;" title="Song Details">
+          <button class="btn-pill btn-track-icon btn-track-queue" title="Add to Queue" aria-label="Add to Queue" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="19" y1="15" x2="19" y2="21"/><line x1="16" y1="18" x2="22" y2="18"/></svg>
+          </button>
+          <button class="btn-pill btn-track-icon btn-track-info" title="Song Details" aria-label="Song Details" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
-          <button class="btn-pill btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${safeId}">
-            ${isOfflineReady ? 'Saved' : 'Download'}
+          <button class="btn-pill btn-track-icon btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${safeId}" title="${isOfflineReady ? 'Saved Offline' : 'Download for Offline'}" aria-label="${isOfflineReady ? 'Saved Offline' : 'Download for Offline'}" type="button">
+            ${isOfflineReady ? savedIconSvg : downloadIconSvg}
           </button>
-          ${this.isAdmin ? `<button class="btn-pill btn-delete-public" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete from Global Catalog">&times;</button>` : ''}
+          ${this.isAdmin ? `<button class="btn-pill btn-track-icon btn-delete-public" style="color:#ff6b6b;" title="Delete from Global Catalog" aria-label="Delete from Global Catalog" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
         </div>
       `;
 
@@ -3138,6 +3301,14 @@ class LyricsApp {
         e.stopPropagation();
         this.openSongDetails(song);
       });
+
+      const queueBtn = card.querySelector('.btn-track-queue');
+      if (queueBtn) {
+        queueBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.addToQueue(song, false);
+        });
+      }
 
       const infoBtn = card.querySelector('.btn-track-info');
       if (infoBtn) {
@@ -3149,7 +3320,12 @@ class LyricsApp {
 
       card.querySelector('.btn-play-public').addEventListener('click', async (e) => {
         e.stopPropagation();
-        await this.loadTrack(song, true);
+        if (this.currentTrack && this.currentTrack.id === song.id) {
+          this.player.togglePlay();
+        } else {
+          await this.loadTrack(song, true);
+        }
+        this.syncDynamicPlayButtons();
         this.renderHomePage();
       });
 
@@ -3157,16 +3333,23 @@ class LyricsApp {
       dlBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (dlBtn.classList.contains('downloaded')) return;
-        dlBtn.textContent = 'Saving...';
+        dlBtn.classList.add('is-loading');
+        dlBtn.innerHTML = spinnerIconSvg;
+        dlBtn.title = 'Saving Offline...';
         try {
           await Storage.downloadTrackForOffline(song);
-          dlBtn.textContent = 'Saved';
+          dlBtn.classList.remove('is-loading');
           dlBtn.classList.add('downloaded');
+          dlBtn.innerHTML = savedIconSvg;
+          dlBtn.title = 'Saved Offline';
+          dlBtn.setAttribute('aria-label', 'Saved Offline');
           this.tracks = await Storage.getAllTracks();
           this.renderHomePage();
+          this.showToast(`Saved "${song.title}" for offline playback.`);
         } catch (err) {
-          dlBtn.textContent = 'Failed';
-          setTimeout(() => { dlBtn.textContent = 'Download'; }, 2000);
+          dlBtn.classList.remove('is-loading');
+          dlBtn.innerHTML = downloadIconSvg;
+          dlBtn.title = 'Download Failed — Tap to retry';
         }
       });
 
@@ -3248,11 +3431,16 @@ class LyricsApp {
 
     tracksToDisplay.forEach(song => {
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
+      const isSongPlaying = isCurrent && this.player.isPlaying;
+      const safeId = escapeHtml(song.id);
       const safeTitle = escapeHtml(song.title || 'Untitled');
       const safeArtist = escapeHtml(song.artist || 'Unknown Artist');
       const safeAlbum = escapeHtml(song.album || 'Single');
       const safeYear = escapeHtml(song.year || '2024');
       const safeCover = sanitizeUrl(song.cover);
+      const playIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+      const pauseIconSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
       const card = document.createElement('div');
       card.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
       card.style.padding = '0.75rem 1rem';
@@ -3270,15 +3458,22 @@ class LyricsApp {
             </div>
           </div>
         </div>
-        <div style="display:flex; gap:0.4rem; flex-shrink:0; align-items:center;">
-          <button class="btn-pill btn-play-custom" style="font-size:0.75rem; padding:0.35rem 0.75rem;">
-            ${isCurrent && this.player.isPlaying ? 'Playing' : 'Play'}
+        <div class="track-card-actions">
+          <button class="btn-pill btn-track-icon btn-play-custom ${isSongPlaying ? 'is-playing' : ''}" data-play-track-id="${safeId}" title="${isSongPlaying ? 'Pause' : 'Play'}" aria-label="${isSongPlaying ? 'Pause' : 'Play'}" type="button">
+            ${isSongPlaying ? pauseIconSvg : playIconSvg}
           </button>
-          <button class="btn-track-info btn-pill" style="font-size:0.75rem; padding:0.35rem 0.55rem;" title="Song Details">
+          <button class="btn-pill btn-track-icon btn-track-queue" title="Add to Queue" aria-label="Add to Queue" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="19" y1="15" x2="19" y2="21"/><line x1="16" y1="18" x2="22" y2="18"/></svg>
+          </button>
+          <button class="btn-pill btn-track-icon btn-track-info" title="Song Details" aria-label="Song Details" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
-          <button class="btn-pill btn-edit-custom" style="font-size:0.75rem; padding:0.35rem 0.65rem;" title="Edit Metadata & Artwork">Edit</button>
-          <button class="btn-pill btn-delete-custom" style="font-size:0.75rem; padding:0.35rem 0.55rem; color:#ff6b6b;" title="Delete Song">&times;</button>
+          <button class="btn-pill btn-track-icon btn-edit-custom" title="Edit Metadata & Artwork" aria-label="Edit Song" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+          <button class="btn-pill btn-track-icon btn-delete-custom" style="color:#ff6b6b;" title="Delete Song" aria-label="Delete Song" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </div>
       `;
 
@@ -3286,6 +3481,14 @@ class LyricsApp {
         e.stopPropagation();
         this.openSongDetails(song);
       });
+
+      const queueBtn = card.querySelector('.btn-track-queue');
+      if (queueBtn) {
+        queueBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.addToQueue(song, false);
+        });
+      }
 
       const infoBtn = card.querySelector('.btn-track-info');
       if (infoBtn) {
@@ -3297,7 +3500,12 @@ class LyricsApp {
 
       card.querySelector('.btn-play-custom').addEventListener('click', async (e) => {
         e.stopPropagation();
-        await this.loadTrack(song, true);
+        if (this.currentTrack && this.currentTrack.id === song.id) {
+          this.player.togglePlay();
+        } else {
+          await this.loadTrack(song, true);
+        }
+        this.syncDynamicPlayButtons();
         this.renderHomePage();
       });
 
@@ -4543,12 +4751,48 @@ class LyricsApp {
     }
 
     // Playing state
-    const isPlayingThis = this.currentTrack && this.currentTrack.id === track.id && this.player.isPlaying;
-    if (this.detailPlayNowLabel) {
-      this.detailPlayNowLabel.textContent = isPlayingThis ? 'Pause' : 'Play Now';
-    }
+    const isPlayingThis = !!(this.currentTrack && this.currentTrack.id === track.id && this.player.isPlaying);
+    this._setDetailPlayButtonState(isPlayingThis);
 
     this.songDetailsModal.classList.add('active');
+  }
+
+  _setDetailPlayButtonState(isPlaying) {
+    if (this.detailPlayNowLabel) {
+      this.detailPlayNowLabel.textContent = isPlaying ? 'Pause' : 'Play Now';
+    }
+    if (this.detailPlayNowIcon) {
+      this.detailPlayNowIcon.innerHTML = isPlaying
+        ? '<rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" />'
+        : '<polygon points="6 3 20 12 6 21 6 3" />';
+    }
+  }
+
+  syncDynamicPlayButtons() {
+    const curId = this.currentTrack ? this.currentTrack.id : null;
+    const isPlaying = !!(this.player && this.player.isPlaying);
+
+    const playSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+    const pauseSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+
+    document.querySelectorAll('[data-play-track-id]').forEach((btn) => {
+      const id = btn.getAttribute('data-play-track-id');
+      const activePlaying = !!(curId && id === curId && isPlaying);
+      btn.innerHTML = activePlaying ? pauseSvg : playSvg;
+      btn.classList.toggle('is-playing', activePlaying);
+      btn.title = activePlaying ? 'Pause' : 'Play';
+      btn.setAttribute('aria-label', activePlaying ? 'Pause' : 'Play');
+
+      const card = btn.closest('.theme-card-option');
+      if (card) {
+        card.classList.toggle('active', !!(curId && id === curId));
+      }
+    });
+
+    if (this._detailTrack && this.songDetailsModal && this.songDetailsModal.classList.contains('active')) {
+      const detailPlaying = !!(curId && this._detailTrack.id === curId && isPlaying);
+      this._setDetailPlayButtonState(detailPlaying);
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -4691,7 +4935,7 @@ class LyricsApp {
   // --------------------------------------------------------------------------
   isGuestLocked(actionName = 'playback') {
     if (this.activeRoom && !this.isRoomHost) {
-      this.showToast(`Only the DJ controls ${actionName} 🎧`);
+      this.showToast(`Only the Session Host controls ${actionName} 🎧`);
       return true;
     }
     return false;
@@ -4838,10 +5082,10 @@ class LyricsApp {
         this.renderP2pPeersList([]);
       }
 
-      this.showToast('Mobile P2P Hub Active! Tap "+ Pair Phone" to add friends 📱');
+      this.showToast('Mobile P2P Hub Active! Tap "+ Pair Phone" to add listeners 📱');
       this.handleGenerateP2pInvite();
     } catch (err) {
-      alert('Failed to start P2P Party: ' + err.message);
+      alert('Failed to start P2P session: ' + err.message);
     }
   }
 
@@ -4856,7 +5100,7 @@ class LyricsApp {
           this.listenTogetherModal.classList.remove('active');
         }
         if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = `Pair Phone (${LocalSyncService.p2pConnectedCount + 1}/8)`;
-        if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Friend: tap <strong>"Join Friend's Party"</strong> and scan this QR code:`;
+        if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Listener: tap <strong>"Join Friend's Session"</strong> and scan this QR code:`;
         if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = invite.qrSvg;
         if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'block';
         if (this.btnToggleHostPasteBox) this.btnToggleHostPasteBox.style.display = 'block';
@@ -4898,11 +5142,11 @@ class LyricsApp {
         this.syncMode = 'local';
         this.localSubmode = 'p2p';
         this.myParticipant = Storage.getParticipant(this.currentUser);
-        this.showToast('Connecting to Host DJ...');
+        this.showToast('Connecting to Session Host...');
 
         LocalSyncService.onP2pGuestConnected = () => {
           if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
-          this.showToast('Connected to Host DJ! 🎧');
+          this.showToast('Connected to Session Host! 🎧');
           if (this.activeRoom) this.updateListenRoomUI(this.activeRoom);
         };
 
@@ -4922,8 +5166,8 @@ class LyricsApp {
 
         // Show Guest Answer QR to Host
         if (this.p2pPairingModal) {
-          if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = 'Show Answer to Host DJ';
-          if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Hold this QR code up so the <strong>Host DJ</strong> can scan it:`;
+          if (this.p2pPairingModalTitle) this.p2pPairingModalTitle.textContent = 'Show Answer to Session Host';
+          if (this.p2pPairingStepText) this.p2pPairingStepText.innerHTML = `Hold this QR code up so the <strong>Session Host</strong> can scan it:`;
           if (this.p2pPairingQrContainer) this.p2pPairingQrContainer.innerHTML = result.qrSvg;
           this.pendingP2pCode = result.answerCode;
           if (this.btnP2pScanFriendAnswer) this.btnP2pScanFriendAnswer.style.display = 'none';
@@ -4938,14 +5182,14 @@ class LyricsApp {
         this.initGuestSyncEngine();
         this.subscribeToRoom('P2P-PARTY');
       } catch (err) {
-        alert('Could not join P2P party: ' + err.message);
+        alert('Could not join P2P session: ' + err.message);
       }
     };
 
     if (rawOfferCode) {
       processOffer(rawOfferCode);
     } else {
-      this.openP2pCameraScanner('join_offer', 'Scan Host DJ\'s QR Code', (offerCode) => {
+      this.openP2pCameraScanner('join_offer', 'Scan Host QR Code', (offerCode) => {
         processOffer(offerCode);
       });
     }
@@ -5224,7 +5468,7 @@ class LyricsApp {
                 if (this.guestSync) { this.guestSync.stop(); this.guestSync = null; }
                 this.initHostBroadcaster();
                 this.updateSyncChipUI({ state: 'host' });
-                this.showToast('Session host disconnected. You are now the DJ 👑');
+                this.showToast('Session host disconnected. You are now the Session Host 👑');
               }
             } catch (err) {
               console.warn('[PartySync] Host takeover attempt failed:', err);
@@ -5347,7 +5591,7 @@ class LyricsApp {
           if (this.guestSync) { this.guestSync.stop(); this.guestSync = null; }
           this.initHostBroadcaster();
           this.updateSyncChipUI({ state: 'host' });
-          this.showToast('You are now the Session Host (DJ) 👑');
+          this.showToast('You are now the Session Host 👑');
         } else {
           document.body.classList.add('is-party-guest');
           if (this.hostBroadcaster) { this.hostBroadcaster.stop(); this.hostBroadcaster = null; }
@@ -5462,7 +5706,7 @@ class LyricsApp {
               <div style="font-size:0.7rem; color:var(--color-text-dim);">${p.isHost ? 'Session Host' : 'Listener'}</div>
             </div>
           </div>
-          ${p.isHost ? `<span class="room-role-pill" style="font-size:0.65rem;">DJ</span>` : ''}
+          ${p.isHost ? `<span class="room-role-pill" style="font-size:0.65rem;">Host</span>` : ''}
         `;
         this.activeRoomParticipantsList.appendChild(pEl);
       });
@@ -5475,12 +5719,12 @@ class LyricsApp {
   resyncGuestAudio() {
     if (!this.activeRoom) return;
     if (this.isRoomHost) {
-      this.showToast('You are the DJ 👑 (Broadcasting)');
+      this.showToast('You are the Session Host (Broadcasting)');
       return;
     }
     if (this.guestSync) {
       this.guestSync.unlockFromGesture();
-      this.showToast('Resyncing audio with DJ... 🎧');
+      this.showToast('Resyncing audio with Host... 🎧');
     }
   }
 
@@ -5494,8 +5738,8 @@ class LyricsApp {
 
     if (this.isRoomHost) {
       this.roomBarSyncChip.className = 'room-sync-chip status-host';
-      this.roomBarSyncChipText.textContent = 'DJ 👑';
-      this.roomBarSyncChip.title = 'You are the DJ (Live Host)';
+      this.roomBarSyncChipText.textContent = 'Host';
+      this.roomBarSyncChip.title = 'You are the Live Session Host';
       return;
     }
 
@@ -5528,7 +5772,7 @@ class LyricsApp {
       case 'paused':
         this.roomBarSyncChip.classList.add('status-insync');
         this.roomBarSyncChipText.textContent = 'Paused';
-        this.roomBarSyncChip.title = 'DJ paused playback';
+        this.roomBarSyncChip.title = 'Host paused playback';
         break;
       case 'loading':
         this.roomBarSyncChip.classList.add('status-buffering');
@@ -5537,7 +5781,7 @@ class LyricsApp {
         break;
       default:
         this.roomBarSyncChip.classList.add('status-insync');
-        this.roomBarSyncChipText.textContent = 'Party Mode';
+        this.roomBarSyncChipText.textContent = 'Live Sync';
         break;
     }
   }
@@ -5655,6 +5899,8 @@ class LyricsApp {
     document.body.classList.remove('is-party-guest');
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'none';
+    if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.remove('active');
+    if (this.listenTogetherBtnText) this.listenTogetherBtnText.textContent = 'Listen';
     if (this.roomBarSyncChip) this.roomBarSyncChip.style.display = 'none';
     if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'none';
     if (this.partySyncDebugOverlay) this.partySyncDebugOverlay.style.display = 'none';
@@ -5674,6 +5920,7 @@ class LyricsApp {
 
     if (this.activeListenRoomBar) this.activeListenRoomBar.style.display = 'flex';
     if (this.btnOpenListenTogether) this.btnOpenListenTogether.classList.add('active');
+    if (this.listenTogetherBtnText) this.listenTogetherBtnText.textContent = 'Live';
     if (this.liveRoomActiveIndicator) this.liveRoomActiveIndicator.style.display = 'inline-block';
 
     const isHost = room.hostId === (this.myParticipant ? this.myParticipant.id : '');
@@ -5688,7 +5935,7 @@ class LyricsApp {
 
     if (this.activeRoomCodeTitle) this.activeRoomCodeTitle.textContent = room.roomCode;
     if (this.activeRoomRoleText) {
-      this.activeRoomRoleText.textContent = isHost ? 'You are the Host (DJ)' : `Connected to DJ ${room.hostName || 'Host'}`;
+      this.activeRoomRoleText.textContent = isHost ? 'You are the Session Host' : `Connected to ${room.hostName || 'Host'}`;
     }
 
     if (room.currentTrack) {

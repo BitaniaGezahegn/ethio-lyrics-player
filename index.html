@@ -122,8 +122,8 @@
 
       <!-- Top Right Actions -->
       <div class="top-actions">
-        <!-- Listen Together (Party Room Button) -->
-        <button id="btnOpenListenTogether" class="btn-pill btn-broadcast-pill" title="Listen Together (Party Room)">
+        <!-- Listen Together (Live Session Button) -->
+        <button id="btnOpenListenTogether" class="btn-pill btn-broadcast-pill" title="Listen Together (Live Session)">
           <svg class="broadcast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
@@ -132,7 +132,7 @@
             <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
             <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
           </svg>
-          <span id="listenTogetherBtnText">Party</span>
+          <span id="listenTogetherBtnText">Listen</span>
           <span id="liveRoomActiveIndicator" class="badge-dot-live" style="display:none;"></span>
         </button>
 
@@ -181,35 +181,7 @@
            TAB 1: HOME (Redesigned Music Discovery & Recommendation Hub)
            ==================================================================== -->
       <section id="tabViewHome" class="tab-view active">
-        <!-- 1. Header with Time-of-Day Greeting & Listening DNA Stats -->
-        <div class="home-greeting-banner">
-          <div class="greeting-left">
-            <div class="greeting-period-badge" id="greetingMoodBadge">
-              <span class="live-dot-pulse"></span>
-              <span id="greetingMoodText">Nightfall Tizita 🌆</span>
-            </div>
-            <h1 class="greeting-heading" id="greetingHeadingText">Good evening <span class="greeting-amharic-sub" id="greetingHeadingAmharic">እንደምን አመሹ</span></h1>
-            <p class="greeting-subtext" id="greetingSubtext">Curated Ethiopian melodies, synchronized lyrics, and personalized discovery</p>
-          </div>
-          <div class="greeting-dna-stats" id="greetingDnaStats">
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatTotal">0</span>
-              <span class="dna-stat-lbl">Songs</span>
-            </div>
-            <div class="dna-stat-divider"></div>
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatLrc">0</span>
-              <span class="dna-stat-lbl">Synced LRC</span>
-            </div>
-            <div class="dna-stat-divider"></div>
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatFavs">0</span>
-              <span class="dna-stat-lbl">Favorites</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Search & Filter Bar -->
+        <!-- 1. Search & Dynamic Filter Bar -->
         <div class="home-search-filter-container">
           <div class="home-search-input-wrap">
             <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -221,43 +193,15 @@
               placeholder="Search by song, artist, album, or lyrics...">
             <button id="btnClearHomeSearch" class="btn-clear-search" style="display:none;" title="Clear search">&times;</button>
           </div>
-          <!-- Vibe & Filter Pills -->
+          <!-- Dynamic Filter Pills (populated strictly from tracks present in catalog) -->
           <div class="home-filter-scroll" id="homeFilterRow">
             <button class="filter-chip active" data-filter="all">
               <span>All Music</span>
             </button>
-            <button class="filter-chip" data-filter="suggested">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-              <span>Made For You</span>
-            </button>
-            <button class="filter-chip" data-filter="lrc">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              <span>Synced Lyrics</span>
-            </button>
-            <button class="filter-chip" data-filter="classic">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              <span>Tizita Classics</span>
-            </button>
-            <button class="filter-chip" data-filter="pop">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-              <span>Modern Pop</span>
-            </button>
-            <button class="filter-chip" data-filter="favorites">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              <span>Favorites</span>
-            </button>
-            <button class="filter-chip" data-filter="recent">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span>Recently Played</span>
-            </button>
-            <button class="filter-chip" data-filter="offline">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Offline Ready</span>
-            </button>
           </div>
         </div>
 
-        <!-- 3. Section: Jump Back In (Spotify-style Compact Launch Pad) -->
+        <!-- 2. Section: Jump Back In (Chronological Recent Resume) -->
         <div class="home-catalog-section" id="sectionJumpBackIn" style="display:none;">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -273,7 +217,35 @@
           <div class="jump-back-in-grid" id="gridJumpBackIn"></div>
         </div>
 
-        <!-- 4. Featured Spotlight Section ("Track of the Moment") -->
+        <!-- 3. Shelf: Global Cloud Catalog (Chronological Order) -->
+        <div class="home-catalog-section" id="sectionGlobalCatalog">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(244,162,97,0.15); color:#f4a261;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Global Cloud Catalog <span class="home-section-amharic">የደመና ካታሎግ</span></h2>
+                <div class="home-section-subtitle" id="catalogCounterSubtitle">Streaming live via Cloudflare R2 object storage</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <div class="catalog-sort-wrap">
+                <select id="selectCatalogSort" class="catalog-sort-select" title="Sort Catalog">
+                  <option value="newest">Chronological (Newest First)</option>
+                  <option value="oldest">Chronological (Oldest First)</option>
+                  <option value="year">Release Year</option>
+                  <option value="title">Song Title (A-Z)</option>
+                  <option value="artist">Artist Name (A-Z)</option>
+                  <option value="lrc">Synced Lyrics First</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridGlobalCatalog"></div>
+        </div>
+
+        <!-- 4. Featured Spotlight Section -->
         <div class="home-hero-section">
           <div class="hero-card" id="heroCard">
             <div class="hero-glow-bg" id="heroGlowBg"></div>
@@ -297,7 +269,7 @@
                 <h2 id="heroTitle" class="hero-title">Select a Song to Begin</h2>
                 <div id="heroArtist" class="hero-artist">ELM — Ethio Lyrics Media</div>
                 <p id="heroDescription" class="hero-description">
-                  Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork ambient themes, and offline listening.
+                  Stream Ethiopian music &amp; spiritual melodies with real-time synchronized Amharic lyrics, vibrant themes, and offline listening.
                 </p>
                 <div class="hero-actions">
                   <button id="btnHeroPlay" class="btn-primary hero-btn-play">
@@ -343,7 +315,7 @@
           </div>
         </div>
 
-        <!-- 5. Shelf 1: Recommended For You ("Made For You / Smart Mix") -->
+        <!-- 5. Shelf: Recommended For You -->
         <div class="home-catalog-section" id="sectionRecommendations">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -365,7 +337,7 @@
           <div class="home-music-grid" id="gridSuggestions"></div>
         </div>
 
-        <!-- 6. Shelf 2: "Because You Listened To..." Context Shelf -->
+        <!-- 6. Shelf: "Because You Listened To..." Context Shelf -->
         <div class="home-catalog-section" id="sectionBecauseYouListened" style="display:none;">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -387,7 +359,7 @@
           <div class="home-music-grid" id="gridBecauseYouListened"></div>
         </div>
 
-        <!-- 7. Shelf 3: Synced Lyrics Showcase (Verified line-by-line Amharic LRC) -->
+        <!-- 7. Shelf: Synced Lyrics Showcase -->
         <div class="home-catalog-section" id="sectionLyricsShowcase">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -409,7 +381,7 @@
           <div class="home-music-grid" id="gridLyricsShowcase"></div>
         </div>
 
-        <!-- 8. Shelf 4: Iconic Ethiopian Artists Discovery Circle -->
+        <!-- 8. Shelf: Artists Discovery Circle -->
         <div class="home-catalog-section" id="sectionIconicArtists">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -417,38 +389,12 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               </div>
               <div>
-                <h2 class="home-section-title">Iconic Artists <span class="home-section-amharic">ታዋቂ ድምጻውያን</span></h2>
-                <div class="home-section-subtitle">Explore catalog tracks grouped by legendary Ethiopian singers</div>
+                <h2 class="home-section-title">Featured Artists &amp; Singers <span class="home-section-amharic">ድምጻውያን</span></h2>
+                <div class="home-section-subtitle">Explore catalog tracks grouped by artist</div>
               </div>
             </div>
           </div>
           <div class="artists-circle-scroll" id="rowIconicArtists"></div>
-        </div>
-
-        <!-- 9. Shelf 5: Global Cloud Catalog -->
-        <div class="home-catalog-section" id="sectionGlobalCatalog">
-          <div class="home-section-header">
-            <div class="section-title-wrap">
-              <div class="section-icon-badge" style="background:rgba(244,162,97,0.15); color:#f4a261;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-              </div>
-              <div>
-                <h2 class="home-section-title">Global Cloud Catalog <span class="home-section-amharic">የደመና ካታሎግ</span></h2>
-                <div class="home-section-subtitle" id="catalogCounterSubtitle">Streaming live via Cloudflare R2 object storage</div>
-              </div>
-            </div>
-            <div class="section-actions-right">
-              <div class="catalog-sort-wrap">
-                <select id="selectCatalogSort" class="catalog-sort-select" title="Sort Catalog">
-                  <option value="newest">Latest Added</option>
-                  <option value="title">Song Title (A-Z)</option>
-                  <option value="artist">Artist Name (A-Z)</option>
-                  <option value="lrc">Synced Lyrics First</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="home-music-grid" id="gridGlobalCatalog"></div>
         </div>
       </section>
 
@@ -1059,7 +1005,37 @@
             </div>
           </div>
 
-          <!-- Setting Card 5: App Information & Update Status -->
+          <!-- Setting Card 5: Listening Overview & Greeting Summary -->
+          <div class="settings-card">
+            <div class="home-greeting-banner" style="border:none; background:transparent; padding:0.25rem 0;">
+              <div class="greeting-left">
+                <div class="greeting-period-badge" id="greetingMoodBadge">
+                  <span class="live-dot-pulse"></span>
+                  <span id="greetingMoodText">Evening Reflection</span>
+                </div>
+                <h1 class="greeting-heading" id="greetingHeadingText" style="font-size:1.35rem;">Good evening <span class="greeting-amharic-sub" id="greetingHeadingAmharic">እንደምን አመሹ</span></h1>
+                <p class="greeting-subtext" id="greetingSubtext">Curated Ethiopian melodies, synchronized lyrics, and offline listening</p>
+              </div>
+              <div class="greeting-dna-stats" id="greetingDnaStats">
+                <div class="dna-stat-item">
+                  <span class="dna-stat-val" id="dnaStatTotal">0</span>
+                  <span class="dna-stat-lbl">Songs</span>
+                </div>
+                <div class="dna-stat-divider"></div>
+                <div class="dna-stat-item">
+                  <span class="dna-stat-val" id="dnaStatLrc">0</span>
+                  <span class="dna-stat-lbl">Synced LRC</span>
+                </div>
+                <div class="dna-stat-divider"></div>
+                <div class="dna-stat-item">
+                  <span class="dna-stat-val" id="dnaStatFavs">0</span>
+                  <span class="dna-stat-lbl">Favorites</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting Card 6: App Information & Update Status -->
           <div class="settings-card">
             <div class="settings-card-header">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1078,7 +1054,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.6</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.5.7</span>
                 </div>
               </div>
 
@@ -1086,7 +1062,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v31 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v32 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1348,10 +1324,16 @@
               </svg>
             </button>
             <div id="volumePopupTray" class="volume-popup-tray">
-              <span class="vol-icon-min">🔈</span>
+              <button id="btnTrayMute" class="btn-tray-mute" title="Mute / Unmute" type="button" aria-label="Mute or Unmute">
+                <svg id="trayMuteIconHigh" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                </svg>
+                <svg id="trayMuteIconMuted" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                </svg>
+              </button>
               <input type="range" id="volumeSlider" class="volume-slider-range" min="0" max="1" step="0.01" value="0.8"
                 aria-label="Volume">
-              <span class="vol-icon-max">🔊</span>
               <span id="volumePercentBadge" class="volume-percent-badge">80%</span>
             </div>
           </div>
@@ -1660,9 +1642,9 @@
                 </svg>
               </div>
               <div style="flex:1;">
-                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Host Phone Party (DJ)</div>
+                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Host Phone Session</div>
                 <div style="font-size:0.76rem; color:var(--color-text-dim); margin-top:2px;">
-                  Turn on hotspot. Up to 8 friends can join and stream your songs!
+                  Turn on hotspot. Up to 8 listeners can join and stream your songs in sync!
                 </div>
               </div>
               <button id="btnStartP2pHost" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap; background:#10b981; border-color:#059669;" type="button">
@@ -1679,9 +1661,9 @@
                 </svg>
               </div>
               <div style="flex:1;">
-                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Join Friend's Party</div>
+                <div style="font-weight:700; font-size:0.95rem; color:#fff;">Join Friend's Session</div>
                 <div style="font-size:0.76rem; color:var(--color-text-dim); margin-top:2px;">
-                  Connect to friend's hotspot, scan their QR code, and listen in sync.
+                  Connect to a friend's hotspot, scan their QR code, and listen together in sync.
                 </div>
               </div>
               <button id="btnScanJoinP2p" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
@@ -1704,7 +1686,7 @@
               <div style="flex:1;">
                 <div style="font-weight:700; font-size:0.95rem; color:#fff;">Start a Live Session</div>
                 <div style="font-size:0.78rem; color:var(--color-text-dim); margin-top:2px;">
-                  Become the DJ. Stream music &amp; synchronized lyrics in lockstep to your friends.
+                  Become the Session Host. Stream audio &amp; synchronized lyrics in lockstep to your listeners.
                 </div>
               </div>
               <button id="btnCreateRoom" class="btn-primary"
@@ -1776,7 +1758,7 @@
                 <h3 id="activeRoomCodeTitle"
                   style="font-size:1.4rem; font-weight:800; letter-spacing:0.06em; color:#fff; margin:0.4rem 0 0.1rem 0;">
                   ETHIO-XXXX</h3>
-                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Host (DJ)
+                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Session Host
                 </div>
               </div>
               <button id="btnShareInviteLinkModal" class="btn-pill"
@@ -2019,10 +2001,24 @@
           <div class="song-details-actions-grid">
             <button id="btnDetailPlayNow" class="btn-primary"
               style="justify-content:center; gap:0.5rem; font-size:0.85rem; padding:0.6rem 1rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <svg id="detailPlayNowIcon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="6 3 20 12 6 21 6 3" />
               </svg>
               <span id="detailPlayNowLabel">Play Now</span>
+            </button>
+            <button id="btnDetailAddToQueue" class="btn-pill"
+              style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem;"
+              title="Add to Up Next Queue">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="15" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="19" y1="15" x2="19" y2="21"></line>
+                <line x1="16" y1="18" x2="22" y2="18"></line>
+              </svg>
+              <span>Add to Queue</span>
             </button>
             <button id="btnDetailViewLyrics" class="btn-pill"
               style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 1rem;">
@@ -2386,12 +2382,12 @@
 
   </div>
 
-  <!-- Party Mode Live Debug Overlay (?syncdebug=1) -->
+  <!-- Live Sync Debug Overlay (?syncdebug=1) -->
   <div id="partySyncDebugOverlay" class="party-sync-debug-panel" style="display:none;">
     <div class="debug-panel-header">
       <div style="display:flex; align-items:center; gap:0.4rem;">
         <span class="live-dot-pulse" style="width:6px; height:6px;"></span>
-        <span style="font-weight:700; font-size:0.75rem; letter-spacing:0.04em; color:var(--color-gold);">PARTY SYNC
+        <span style="font-weight:700; font-size:0.75rem; letter-spacing:0.04em; color:var(--color-gold);">LIVE SYNC
           DEBUG v2</span>
       </div>
       <button id="btnDebugClose" class="debug-close-btn" type="button" aria-label="Close debug">&times;</button>
