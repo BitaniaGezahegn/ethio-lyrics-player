@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v33';
+const CACHE_NAME = 'ethio-lyrics-cache-v34';
 
 const STATIC_ASSETS = [
   './',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   './css/style.css',
   './css/themes.css',
   './js/app.js',
+  './js/components/elm-logo.js',
   './js/utils/sanitize.js',
   './js/recommendation-engine.js',
   './js/party-sync.js',
@@ -24,7 +25,14 @@ const STATIC_ASSETS = [
   './js/lrc-editor.js',
   './js/theme-manager.js',
   './js/firebase-service.js',
-  './assets/weleta_cover.jpg'
+  './assets/weleta_cover.jpg',
+  './brand/elm-icon.svg',
+  './brand/elm-logo-horizontal.svg',
+  './brand/elm-logo-stacked.svg',
+  './brand/icon-192x192.png',
+  './brand/icon-512x512.png',
+  './brand/icon-maskable-512x512.png',
+  './brand/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {

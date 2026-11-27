@@ -10,6 +10,7 @@ import { LocalSyncService } from './local-sync-service.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
+import './components/elm-logo.js';
 
 let _qrCodeModulePromise = null;
 let _cameraScannerModulePromise = null;
@@ -150,8 +151,10 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.5.8';
-    this.cacheVersion = 'v33';
+    this.appVersion = 'v2.6.0';
+    this.cacheVersion = 'v34';
+    // Safety fallback so splash never blocks offline or slow networks
+    setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     if ('serviceWorker' in navigator && !isNativeWebView) {
       window.addEventListener('load', () => {
@@ -240,6 +243,29 @@ class LyricsApp {
       }
     } catch (e) {
       console.warn('URL room check error:', e);
+    } finally {
+      this.dismissSplashScreen();
+    }
+  }
+
+  dismissSplashScreen() {
+    if (!this.appSplashScreen || this.appSplashScreen.classList.contains('is-hidden')) return;
+    this.appSplashScreen.classList.add('is-hidden');
+    setTimeout(() => {
+      if (this.appSplashScreen) this.appSplashScreen.style.display = 'none';
+    }, 380);
+  }
+
+  _hasCustomArtwork(cover) {
+    return Boolean(cover && cover !== 'assets/weleta_cover.jpg');
+  }
+
+  _setArtworkFallback(containerEl, imgEl, cover) {
+    if (!containerEl) return;
+    const hasCustom = this._hasCustomArtwork(cover);
+    containerEl.classList.toggle('has-default-artwork', !hasCustom);
+    if (hasCustom && imgEl) {
+      imgEl.src = sanitizeUrl(cover);
     }
   }
 
@@ -368,7 +394,9 @@ class LyricsApp {
     this.btnP2pSubmitHostAnswer = document.getElementById('btnP2pSubmitHostAnswer');
 
     // Hero Spotlight Section
+    this.appSplashScreen = document.getElementById('appSplashScreen');
     this.heroCard = document.getElementById('heroCard');
+    this.heroArtworkBox = document.getElementById('heroArtworkBox');
     this.heroArtworkImg = document.getElementById('heroArtworkImg');
     this.btnHeroPlayBadge = document.getElementById('btnHeroPlayBadge');
     this.heroTitle = document.getElementById('heroTitle');
@@ -426,6 +454,7 @@ class LyricsApp {
 
     // Mini Player Info & Dock
     this.playerBarDock = document.getElementById('playerBarDock');
+    this.playerMiniArtWrap = document.getElementById('playerMiniArtWrap');
     this.playerMiniArt = document.getElementById('playerMiniArt');
     this.playerMiniTitle = document.getElementById('playerMiniTitle');
     this.playerMiniArtist = document.getElementById('playerMiniArtist');
@@ -1409,6 +1438,9 @@ class LyricsApp {
           isPlaying
         });
       }
+      if (this.appEl) {
+        this.appEl.classList.toggle('is-playing', isPlaying);
+      }
       if (isPlaying) {
         if (this.playIcon) this.playIcon.style.display = 'none';
         if (this.pauseIcon) this.pauseIcon.style.display = 'block';
@@ -1465,6 +1497,7 @@ class LyricsApp {
 
     // Smart Queue: When a song ends, respect repeat mode & play next
     this.player.onEnded = async () => {
+      if (this.appEl) this.appEl.classList.remove('is-playing');
       if (this.playIcon) this.playIcon.style.display = 'block';
       if (this.pauseIcon) this.pauseIcon.style.display = 'none';
       if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'block';
@@ -2411,9 +2444,7 @@ class LyricsApp {
         : '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
     }
     if (spotlightTrack) {
-      if (this.heroArtworkImg) {
-        this.heroArtworkImg.src = spotlightTrack.cover || 'assets/weleta_cover.jpg';
-      }
+      this._setArtworkFallback(this.heroArtworkBox, this.heroArtworkImg, spotlightTrack.cover);
       if (this.heroTitle) this.heroTitle.textContent = spotlightTrack.title;
       if (this.heroArtist) this.heroArtist.textContent = spotlightTrack.artist;
       if (this.heroLrcBadge) {
@@ -2423,6 +2454,8 @@ class LyricsApp {
         const dur = this.getTrackDuration(spotlightTrack);
         this.heroDurationBadge.textContent = dur > 0 ? LyricsParser.formatTime(dur) : '3:45';
       }
+    } else {
+      this._setArtworkFallback(this.heroArtworkBox, this.heroArtworkImg, '');
     }
   }
 
@@ -2927,8 +2960,8 @@ class LyricsApp {
     // Update Images & Mini Player Dock
     const coverUrl = sanitizeUrl(resolvedTrack.cover);
     const discUrl = sanitizeUrl(resolvedTrack.discCenter || coverUrl);
-    if (this.discArtwork) this.discArtwork.src = discUrl;
-    if (this.playerMiniArt) this.playerMiniArt.src = coverUrl;
+    this._setArtworkFallback(this.vinylDisc, this.discArtwork, resolvedTrack.discCenter || resolvedTrack.cover);
+    this._setArtworkFallback(this.playerMiniArtWrap, this.playerMiniArt, resolvedTrack.cover);
     if (this.playerMiniTitle) this.playerMiniTitle.textContent = resolvedTrack.title;
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = resolvedTrack.artist;
 
@@ -3007,6 +3040,9 @@ class LyricsApp {
     if (this.albumTitle) this.albumTitle.textContent = 'Library';
     if (this.albumYear) this.albumYear.textContent = new Date().getFullYear().toString();
 
+    this._setArtworkFallback(this.heroArtworkBox, this.heroArtworkImg, '');
+    this._setArtworkFallback(this.vinylDisc, this.discArtwork, '');
+    this._setArtworkFallback(this.playerMiniArtWrap, this.playerMiniArt, '');
     if (this.playerMiniTitle) this.playerMiniTitle.textContent = 'No Track Loaded';
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = 'Select a track to begin';
 

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 280" fill="none" role="img" aria-label="ELM — Ethio Lyrics Media">
+  <g transform="translate(20, 10)">
+    <!-- Outer Bars -->
+    <g fill="#FFFFFF">
+      <rect x="66" y="24" width="7.5" height="34" />
+      <rect x="81.125" y="16" width="7.5" height="42" />
+      <rect x="96.25" y="4" width="7.5" height="54" />
+      <rect x="111.375" y="16" width="7.5" height="42" />
+      <rect x="126.5" y="24" width="7.5" height="34" />
+
+      <rect x="66" y="142" width="7.5" height="34" />
+      <rect x="81.125" y="142" width="7.5" height="42" />
+      <rect x="96.25" y="142" width="7.5" height="54" />
+      <rect x="111.375" y="142" width="7.5" height="42" />
+      <rect x="126.5" y="142" width="7.5" height="34" />
+
+      <rect x="19" y="66" width="39" height="7.5" />
+      <rect x="4" y="86.17" width="54" height="7.5" />
+      <rect x="4" y="106.33" width="54" height="7.5" />
+      <rect x="19" y="126.5" width="39" height="7.5" />
+
+      <rect x="142" y="66" width="39" height="7.5" />
+      <rect x="142" y="86.17" width="54" height="7.5" />
+      <rect x="142" y="106.33" width="54" height="7.5" />
+      <rect x="142" y="126.5" width="39" height="7.5" />
+    </g>
+
+    <!-- Center Gold Knot -->
+    <g stroke="#C4A259" stroke-width="8.5" stroke-linecap="butt" stroke-linejoin="miter">
+      <path d="M 66 70.25 H 92 L 113.5 91.75" />
+      <path d="M 134 129.75 H 108 L 86.5 108.25" />
+      <path d="M 129.75 66 V 92 L 108.25 113.5" />
+      <path d="M 70.25 134 V 108 L 91.75 86.5" />
+    </g>
+    <rect x="66" y="86.17" width="8.5" height="8.5" fill="#C4A259" />
+    <rect x="125.5" y="105.33" width="8.5" height="8.5" fill="#C4A259" />
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="120"
+    y="258"
+    text-anchor="middle"
+    fill="#FFFFFF"
+    font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif"
+    font-size="46"
+    font-weight="800"
+    letter-spacing="10"
+  >ELM</text>
+</svg>

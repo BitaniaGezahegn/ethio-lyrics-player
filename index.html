@@ -27,14 +27,16 @@
 
   <!-- PWA & Mobile Web Meta -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b0507">
+  <meta name="theme-color" content="#141414">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Favicon -->
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5b95a%22 stroke-width=%222%22><path d=%22M9 18V5l12-2v13%22/><circle cx=%226%22 cy=%2218%22 r=%223%22/><circle cx=%2218%22 cy=%2216%22 r=%223%22/></svg>">
+  <!-- Favicon & Apple Touch Icon -->
+  <link rel="icon" type="image/svg+xml" href="/brand/elm-icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/brand/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/brand/icon-512x512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png">
 
   <!-- Preconnect for Google Fonts (non-render-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +58,12 @@
 
   <div id="app" class="theme-artwork-ambient">
 
+    <!-- Splash / Initial Loading Screen -->
+    <div id="appSplashScreen" class="app-splash-screen" aria-hidden="true">
+      <elm-logo variant="stacked" class="splash-elm-logo"></elm-logo>
+      <span class="splash-tagline">Ethio Lyrics Media</span>
+    </div>
+
     <!-- Modern Pull-to-Refresh Indicator -->
     <div id="pullToRefreshIndicator" class="pull-to-refresh-indicator">
       <div class="ptr-content">
@@ -71,12 +79,8 @@
     <!-- Top Navigation Bar -->
     <header class="top-bar">
       <div class="brand-badge" title="ELM - Ethio Lyrics Media">
-        <svg class="brand-svg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18V5l12-2v13"></path>
-          <circle cx="6" cy="18" r="3"></circle>
-          <circle cx="18" cy="16" r="3"></circle>
-        </svg>
+        <elm-logo variant="horizontal" animated class="brand-logo-desktop"></elm-logo>
+        <elm-logo variant="icon" animated class="brand-logo-mobile"></elm-logo>
         <div class="brand-text-lockup">
           <span class="brand-title">ELM</span>
           <span class="brand-tagline">Ethio Lyrics Media</span>
@@ -255,9 +259,12 @@
           <div class="hero-card" id="heroCard">
             <div class="hero-glow-bg" id="heroGlowBg"></div>
             <div class="hero-content-wrap">
-              <div class="hero-artwork-box">
+              <div id="heroArtworkBox" class="hero-artwork-box has-default-artwork">
+                <div class="elm-default-artwork elm-default-artwork--hero" aria-hidden="true">
+                  <elm-logo variant="icon" class="elm-default-artwork-logo"></elm-logo>
+                </div>
                 <img id="heroArtworkImg" src="assets/weleta_cover.jpg" alt="Featured Track" class="hero-artwork-img"
-                  crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                  crossorigin="anonymous" onerror="this.parentElement.classList.add('has-default-artwork')">
                 <div class="hero-play-badge" id="btnHeroPlayBadge">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="6 3 20 12 6 21 6 3" />
@@ -759,7 +766,7 @@
         <!-- Attribution Watermark Overlay (Active in Fullscreen Record Mode) -->
         <div id="tiktokWatermark" class="tiktok-watermark-overlay" style="display:none;">
           <div class="watermark-pill">
-            <span class="watermark-dot"></span>
+            <elm-logo variant="icon" animated class="watermark-elm-icon"></elm-logo>
             <span class="watermark-brand">ELM</span>
             <span class="watermark-sep">•</span>
             <span class="watermark-handle">@EthioLyricsMedia</span>
@@ -789,9 +796,12 @@
           <div class="visualizer-container">
             <div class="disc-wrapper">
               <div class="disc-outer-grooves"></div>
-              <div class="vinyl-disc" id="vinylDisc">
+              <div class="vinyl-disc has-default-artwork" id="vinylDisc">
+                <div class="elm-default-artwork elm-default-artwork--disc" aria-hidden="true">
+                  <elm-logo variant="icon" class="elm-default-artwork-logo"></elm-logo>
+                </div>
                 <img id="discArtwork" class="disc-artwork-img" src="assets/weleta_cover.jpg" alt="Album Cover Disc"
-                  crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+                  crossorigin="anonymous" onerror="this.parentElement.classList.add('has-default-artwork')">
                 <div class="disc-center-hole"></div>
               </div>
             </div>
@@ -817,11 +827,7 @@
           <!-- Setting Card 1: Account & Authentication -->
           <div class="settings-card">
             <div class="settings-card-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <elm-logo variant="icon" class="auth-card-elm-icon"></elm-logo>
               <h2>Account &amp; Cloud Sync</h2>
             </div>
             <div class="settings-card-body">
@@ -1076,12 +1082,7 @@
           <!-- Setting Card 6: App Information & Update Status -->
           <div class="settings-card">
             <div class="settings-card-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
+              <elm-logo variant="icon" class="settings-info-elm-icon"></elm-logo>
               <h2>App Information &amp; Updates</h2>
             </div>
             <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
@@ -1092,7 +1093,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.8</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.6.0</span>
                 </div>
               </div>
 
@@ -1100,7 +1101,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v33 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v34 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1217,8 +1218,13 @@
       <footer id="playerBarDock" class="player-bar-dock">
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
-          <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art"
-            crossorigin="anonymous">
+          <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork">
+            <div class="elm-default-artwork elm-default-artwork--mini" aria-hidden="true">
+              <elm-logo variant="icon" animated class="elm-default-artwork-logo"></elm-logo>
+            </div>
+            <img id="playerMiniArt" class="track-mini-art" src="assets/weleta_cover.jpg" alt="Mini Art"
+              crossorigin="anonymous" onerror="this.parentElement.classList.add('has-default-artwork')">
+          </div>
           <div class="track-text-meta">
             <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
             <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
@@ -1608,14 +1614,7 @@
       <div class="modal-card room-modal-card">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
-              <circle cx="12" cy="12" r="2" />
-              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
-              <path d="M19.1 4.9C23 8.8 23 15.1 19.1 19" />
-            </svg>
+            <elm-logo variant="icon" class="modal-header-elm-icon"></elm-logo>
             <div>
               <h2 style="font-size:1.15rem; margin:0; font-weight:700;">Listen Together</h2>
               <div style="font-size:0.75rem; color:#93c5fd;">Real-Time Synced Ethiopian Music &amp; Lyrics</div>

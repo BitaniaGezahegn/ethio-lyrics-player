@@ -3,18 +3,35 @@
   "short_name": "ELM",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0b0507",
-  "theme_color": "#160910",
+  "background_color": "#141414",
+  "theme_color": "#141414",
   "description": "ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player with real-time dynamic artwork ambient themes and offline library.",
   "categories": ["music", "entertainment"],
-  "version": "2.5.8",
+  "version": "2.6.0",
   "icons": [
     {
-      "src": "assets/weleta_cover.jpg",
+      "src": "/brand/elm-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
-
