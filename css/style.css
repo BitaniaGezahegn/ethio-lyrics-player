@@ -7341,56 +7341,51 @@ elm-logo {
   transform: translateX(20px);
 }
 
-/* Creative Lyrics View Toolbar */
-.lyrics-view-toolbar {
+/* Settings Preferences Rows */
+.settings-pref-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.65rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.lyrics-mode-group,
-.lyrics-tools-group {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
+.settings-compact-select {
+  width: auto !important;
+  min-width: 145px;
+  padding: 0.42rem 0.75rem !important;
+  font-size: 0.82rem !important;
+  flex-shrink: 0;
 }
 
-.lyrics-mode-btn,
-.lyrics-tool-btn {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--color-text-dim);
-  font-size: 0.74rem;
-  font-weight: 600;
-  padding: 0.32rem 0.68rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.18s ease;
+/* Lyrics Text Size Presets (applied across all themes) */
+#app.lyrics-size-compact .lyric-line {
+  font-size: 1.05rem !important;
+}
+#app.lyrics-size-compact .lyric-line.active {
+  font-size: 1.18rem !important;
 }
 
-.lyrics-mode-btn:hover,
-.lyrics-tool-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+#app.lyrics-size-standard .lyric-line {
+  font-size: 1.32rem !important;
+}
+#app.lyrics-size-standard .lyric-line.active {
+  font-size: 1.5rem !important;
 }
 
-.lyrics-mode-btn.active,
-.lyrics-tool-btn.active {
-  background: rgba(229, 185, 90, 0.22);
-  border-color: rgba(229, 185, 90, 0.6);
-  color: #fce7b2;
+#app.lyrics-size-large .lyric-line {
+  font-size: 1.58rem !important;
+}
+#app.lyrics-size-large .lyric-line.active {
+  font-size: 1.8rem !important;
 }
 
-.lyric-line {
-  font-size: calc(1.35rem * var(--lyrics-font-scale, 1));
+#app.lyrics-size-xlarge .lyric-line {
+  font-size: 1.85rem !important;
+}
+#app.lyrics-size-xlarge .lyric-line.active {
+  font-size: 2.1rem !important;
 }
 
 .lyric-line-ts {
@@ -7410,26 +7405,7 @@ elm-logo {
   display: inline-block;
 }
 
-/* Focus Mode: Hide vinyl disc, center lyrics full-width */
-#app.lyrics-mode-focus .visualizer-container {
-  display: none !important;
-}
-
-#app.lyrics-mode-focus .stage-split {
-  grid-template-columns: 1fr !important;
-}
-
-#app.lyrics-mode-focus .lyrics-container {
-  max-width: 780px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-#app.lyrics-mode-focus .lyric-line.active {
-  transform: scale(1.06);
-}
-
-/* Full Sheet Mode: Crisp, scrollable full-song lyric sheet */
+/* Full Sheet Mode: Crisp, scrollable full-song lyric sheet (overrides theme distant hiding) */
 #app.lyrics-mode-sheet .visualizer-container {
   display: none !important;
 }
@@ -7440,29 +7416,72 @@ elm-logo {
 
 #app.lyrics-mode-sheet .lyrics-container {
   overflow-y: auto !important;
+  max-height: 64vh;
+  height: auto !important;
   max-width: 780px;
   margin: 0 auto;
   width: 100%;
+  display: block !important;
   mask-image: none !important;
   -webkit-mask-image: none !important;
 }
 
 #app.lyrics-mode-sheet .lyrics-scroll-wrap {
   transform: none !important;
-  padding: 1rem 0.5rem 3rem !important;
+  position: static !important;
+  padding: 1rem 0.5rem 3.5rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-#app.lyrics-mode-sheet .lyric-line {
-  opacity: 0.78 !important;
+#app.lyrics-mode-sheet .lyric-line,
+#app.lyrics-mode-sheet .lyric-line.distant,
+#app.lyrics-mode-sheet .lyric-line.past,
+#app.lyrics-mode-sheet .lyric-line.upcoming {
+  opacity: 0.82 !important;
   filter: none !important;
   visibility: visible !important;
+  display: block !important;
   pointer-events: auto !important;
   transform: none !important;
-  margin: 0.45rem 0;
-  font-size: calc(1.08rem * var(--lyrics-font-scale, 1));
+  position: static !important;
+  margin: 0.2rem 0;
 }
 
 #app.lyrics-mode-sheet .lyric-line.active {
   opacity: 1 !important;
-  color: var(--color-gold, #e5b95a);
+  visibility: visible !important;
+  display: block !important;
+  color: var(--color-gold, #e5b95a) !important;
+  transform: none !important;
+}
+
+/* Compact Theme Cards on Mobile */
+@media (max-width: 768px) {
+  .theme-compact-strip {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+  }
+
+  .theme-compact-card {
+    padding: 0.5rem 0.4rem !important;
+    min-width: 0 !important;
+    border-radius: 12px !important;
+    gap: 0.3rem !important;
+  }
+
+  .theme-swatch-circle {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .theme-compact-name {
+    font-size: 0.72rem !important;
+  }
+
+  .theme-compact-badge {
+    display: none !important;
+  }
 }

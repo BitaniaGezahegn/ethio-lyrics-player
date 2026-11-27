@@ -941,21 +941,6 @@
           </div>
         </div>
 
-        <!-- Creative Lyrics View Toolbar -->
-        <div id="lyricsViewToolbar" class="lyrics-view-toolbar">
-          <div class="lyrics-mode-group" role="group" aria-label="Lyrics View Mode">
-            <button type="button" class="lyrics-mode-btn active" id="btnLyricsModeSynced" data-lyrics-mode="synced" title="Classic Synced Stage">Synced</button>
-            <button type="button" class="lyrics-mode-btn" id="btnLyricsModeFocus" data-lyrics-mode="focus" title="Distraction-free Focus Spotlight">Focus</button>
-            <button type="button" class="lyrics-mode-btn" id="btnLyricsModeSheet" data-lyrics-mode="sheet" title="Full Readable Lyric Sheet">Full Sheet</button>
-          </div>
-          <div class="lyrics-tools-group">
-            <button type="button" class="lyrics-tool-btn" id="btnLyricsFontDec" title="Decrease Lyrics Text Size">A-</button>
-            <button type="button" class="lyrics-tool-btn" id="btnLyricsFontInc" title="Increase Lyrics Text Size">A+</button>
-            <button type="button" class="lyrics-tool-btn" id="btnLyricsToggleTimestamps" title="Show/Hide Timestamps">00:00</button>
-            <button type="button" class="lyrics-tool-btn" id="btnCopyAllLyrics" title="Copy All Lyrics">Copy</button>
-          </div>
-        </div>
-
         <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
         <div class="stage-split">
           <!-- Lyrics Viewport -->
@@ -1133,6 +1118,66 @@
             </div>
           </div>
 
+          <!-- Setting Card 2A: Lyrics Display & Player Preferences -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              <h2>Lyrics &amp; Player Display</h2>
+            </div>
+            <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.85rem;">
+              <div class="settings-pref-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Lyrics View Mode</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Choose between live synced stage or a full-song readable sheet</div>
+                </div>
+                <select id="selectLyricsViewMode" class="form-input form-select settings-compact-select">
+                  <option value="synced">Synced Stage</option>
+                  <option value="sheet">Full Sheet</option>
+                </select>
+              </div>
+
+              <div class="settings-pref-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Lyrics Text Size</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Adjust lyric line size for comfortable reading</div>
+                </div>
+                <select id="selectLyricsFontSize" class="form-input form-select settings-compact-select">
+                  <option value="compact">Compact</option>
+                  <option value="standard" selected>Standard</option>
+                  <option value="large">Large</option>
+                  <option value="xlarge">Extra Large</option>
+                </select>
+              </div>
+
+              <div class="settings-pref-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Show Lyric Timestamps</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Display [mm:ss] timecodes beside each lyric line</div>
+                </div>
+                <label class="elm-switch" title="Toggle lyric timestamps">
+                  <input type="checkbox" id="toggleLyricsTimestamps">
+                  <span class="elm-switch-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-pref-row" style="border-bottom:none; padding-bottom:0;">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Auto-Collapse Media Controller</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Automatically minimize the player bar after inactivity</div>
+                </div>
+                <label class="elm-switch" title="Toggle auto-collapse player bar">
+                  <input type="checkbox" id="toggleAutoCollapsePlayer" checked>
+                  <span class="elm-switch-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Setting Card 2B: Performance Mode (Potato-PC / Battery Saver) -->
           <div class="settings-card" id="settingsPerformanceCard">
             <div class="settings-card-header" style="justify-content: space-between;">
@@ -1266,7 +1311,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.7.5</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.7.6</span>
                 </div>
               </div>
 
@@ -1274,7 +1319,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0;">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v40 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v41 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
