@@ -36,11 +36,16 @@
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5b95a%22 stroke-width=%222%22><path d=%22M9 18V5l12-2v13%22/><circle cx=%226%22 cy=%2218%22 r=%223%22/><circle cx=%2218%22 cy=%2216%22 r=%223%22/></svg>">
 
-  <!-- Preconnect for Google Fonts -->
+  <!-- Preconnect for Google Fonts (non-render-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap">
+    href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap"
+    media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Ethiopic:wght@300;400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap">
+  </noscript>
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/style.css">
@@ -940,6 +945,39 @@
             </div>
           </div>
 
+          <!-- Setting Card 2B: Performance Mode (Potato-PC / Battery Saver) -->
+          <div class="settings-card" id="settingsPerformanceCard">
+            <div class="settings-card-header" style="justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                <h2>Performance Mode</h2>
+              </div>
+              <span class="badge-status-active" id="perfModeResolvedBadge">Auto</span>
+            </div>
+            <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <p style="font-size:0.8rem; color:var(--color-text-dim); margin:0; line-height:1.45;">
+                Optimize graphics, blur effects, and animations for older PCs or smoother Chrome playback.
+              </p>
+              <div class="perf-mode-group" id="perfModeGroup" role="group" aria-label="Performance Mode">
+                <button type="button" class="perf-mode-btn active" id="btnPerfAuto" data-perf-mode="auto">
+                  <span>Auto (Recommended)</span>
+                </button>
+                <button type="button" class="perf-mode-btn" id="btnPerfHigh" data-perf-mode="high">
+                  <span>High Quality</span>
+                </button>
+                <button type="button" class="perf-mode-btn" id="btnPerfLite" data-perf-mode="lite">
+                  <span>Lite (Potato PC)</span>
+                </button>
+              </div>
+              <div id="perfModeStatusNote" style="font-size:0.76rem; color:var(--color-text-dim);">
+                Detecting hardware capabilities...
+              </div>
+            </div>
+          </div>
+
           <!-- Setting Card 3: Creative Studio Tools -->
           <div class="settings-card">
             <div class="settings-card-header">
@@ -1054,7 +1092,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.5.7</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.5.8</span>
                 </div>
               </div>
 
@@ -1062,7 +1100,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v32 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v33 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1275,9 +1313,8 @@
             <span id="currentTimeLabel" class="time-label">0:00</span>
             <div id="scrubberTrack" class="scrubber-track">
               <div id="scrubberBuffered" class="scrubber-buffered"></div>
-              <div id="scrubberFill" class="scrubber-fill">
-                <div class="scrubber-thumb"></div>
-              </div>
+              <div id="scrubberFill" class="scrubber-fill"></div>
+              <div id="scrubberThumb" class="scrubber-thumb"></div>
             </div>
             <span id="durationLabel" class="time-label">0:00</span>
           </div>

@@ -49,6 +49,8 @@ async function run() {
   assert.ok(css.includes('.track-card-actions'), 'Missing .track-card-actions CSS rule');
   assert.ok(css.includes('.btn-track-icon'), 'Missing .btn-track-icon CSS rule');
   assert.ok(css.includes('.scrubber-track.is-scrubbing'), 'Missing .scrubber-track.is-scrubbing CSS rule');
+  assert.ok(css.includes('#app.perf-lite'), 'Missing #app.perf-lite CSS optimization rules');
+  assert.ok(css.includes('.perf-mode-btn'), 'Missing .perf-mode-btn CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
   assert.ok(!fs.existsSync(path.join(ROOT, 'js/data/sample-songs.js')), 'Unused sample-songs.js should be removed');
   console.log('   OK');
@@ -66,8 +68,12 @@ async function run() {
   const parsed = LyricsParser.parse('\uFEFF[ti:Test]\n[00:10.50]First line\n[00:20.00][00:30.00]Chorus');
   assert.equal(parsed.length, 3);
   assert.equal(parsed[0].text, 'First line');
+  assert.equal(LyricsParser.getActiveIndex(parsed, 0), -1);
+  assert.equal(LyricsParser.getActiveIndex(parsed, 10.5), 0);
   assert.equal(LyricsParser.getActiveIndex(parsed, 15), 0);
   assert.equal(LyricsParser.getActiveIndex(parsed, 25), 1);
+  assert.equal(LyricsParser.getActiveIndex(parsed, 99), 2);
+  assert.equal(LyricsParser.getActiveIndex([], 10), -1);
   assert.equal(LyricsParser.estimateDurationFromLrc('[01:00.00]End'), 65);
   console.log('   OK');
 

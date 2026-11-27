@@ -41,8 +41,14 @@ export class AudioPlayer {
     this.synthStartTime = 0;
     this.synthPauseOffset = 0;
     this._rafId = null;
+    this._rafIntervalMs = 50; // ~20 FPS UI/lyric updates (plenty smooth, 3x less CPU than 60fps)
+    this._lastRafEmitMs = 0;
 
     this.initAudioListeners();
+  }
+
+  setTickIntervalMs(ms) {
+    this._rafIntervalMs = Math.max(16, Math.min(250, Number(ms) || 50));
   }
 
   initAudioListeners() {
@@ -374,15 +380,19 @@ export class AudioPlayer {
 
   _startRafTicker() {
     this._stopRafTicker();
-    const tick = () => {
+    this._lastRafEmitMs = 0;
+    const tick = (now) => {
       if (!this.isPlaying) return;
       if (!this.isSynthetic && this.audioElement && !this.audioElement.paused) {
-        this.currentTime = this.audioElement.currentTime;
-        if (this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0) {
-          this.duration = this.audioElement.duration;
-        }
-        if (this.onTimeUpdate) {
-          this.onTimeUpdate(this.currentTime, this.duration);
+        if (!this._lastRafEmitMs || (now - this._lastRafEmitMs) >= this._rafIntervalMs) {
+          this._lastRafEmitMs = now;
+          this.currentTime = this.audioElement.currentTime;
+          if (this.audioElement.duration && isFinite(this.audioElement.duration) && this.audioElement.duration > 0) {
+            this.duration = this.audioElement.duration;
+          }
+          if (this.onTimeUpdate) {
+            this.onTimeUpdate(this.currentTime, this.duration);
+          }
         }
       }
       this._rafId = requestAnimationFrame(tick);

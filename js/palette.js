@@ -6,6 +6,15 @@
 export class PaletteExtractor {
   static _cache = new Map();
 
+  static _cacheSet(key, val) {
+    if (!key) return;
+    if (this._cache.size >= 50) {
+      const oldest = this._cache.keys().next().value;
+      this._cache.delete(oldest);
+    }
+    this._cache.set(key, val);
+  }
+
   static async extractFromImage(imageSource) {
     if (!imageSource) return this.getDefaultPalette();
 
@@ -42,55 +51,57 @@ export class PaletteExtractor {
         img.onload = () => {
           try {
             const canvas = document.createElement('canvas');
-            canvas.width = 48;
-            canvas.height = 48;
+            const size = 24;
+            canvas.width = size;
+            canvas.height = size;
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(img, 0, 0, 48, 48);
+            ctx.drawImage(img, 0, 0, size, size);
 
-            const imageData = ctx.getImageData(0, 0, 48, 48);
-            const data = imageData.data;
+            const data = ctx.getImageData(0, 0, size, size).data;
 
-            const validColors = [];
-            for (let i = 0; i < data.length; i += 4) {
+            // Single-pass O(N) scan without sorting arrays
+            let primary = null;
+            let bestScore = -1;
+            const samples = [];
+
+            for (let i = 0; i < data.length; i += 8) { // sample every 2nd pixel (~288 samples)
               const r = data[i];
               const g = data[i + 1];
               const b = data[i + 2];
               const a = data[i + 3];
-
               if (a < 128) continue;
 
               const max = Math.max(r, g, b);
               const min = Math.min(r, g, b);
               const lum = (max + min) / 510;
-              const sat = max === 0 ? 0 : (max - min) / max;
+              if (lum <= 0.08 || lum >= 0.92) continue;
 
-              // Filter out extreme pitch blacks and pure whites for vibrant tones
-              if (lum > 0.08 && lum < 0.92) {
-                validColors.push({ r, g, b, sat, lum });
+              const sat = max === 0 ? 0 : (max - min) / max;
+              const score = sat * 2.0 + (1 - Math.abs(lum - 0.5));
+              samples.push({ r, g, b, score });
+              if (score > bestScore) {
+                bestScore = score;
+                primary = { r, g, b };
               }
             }
 
-            if (validColors.length === 0) {
+            if (!primary) {
               return resolve(this.getDefaultPalette());
             }
 
-            // Rank by saturation and chromatic interest
-            validColors.sort((a, b) => {
-              const scoreA = a.sat * 2.0 + (1 - Math.abs(a.lum - 0.5));
-              const scoreB = b.sat * 2.0 + (1 - Math.abs(b.lum - 0.5));
-              return scoreB - scoreA;
-            });
-
-            const primary = validColors[0];
-
-            // Find complementary / distinct secondary color
-            let secondary = validColors.find(c => {
+            // Pick highest-scoring sample sufficiently distinct from primary
+            let secondary = null;
+            let bestSecScore = -1;
+            for (let i = 0; i < samples.length; i++) {
+              const c = samples[i];
               const dist = Math.abs(c.r - primary.r) + Math.abs(c.g - primary.g) + Math.abs(c.b - primary.b);
-              return dist > 80;
-            });
+              if (dist > 80 && c.score > bestSecScore) {
+                bestSecScore = c.score;
+                secondary = c;
+              }
+            }
 
             if (!secondary) {
-              // Synthesize a harmonious complementary tone
               secondary = {
                 r: Math.min(255, Math.max(0, Math.floor(primary.r * 0.4 + 30))),
                 g: Math.min(255, Math.max(0, Math.floor(primary.g * 0.8 + 40))),
@@ -132,7 +143,7 @@ export class PaletteExtractor {
         img.src = resolvedSrc;
       });
 
-      if (cacheKey) this._cache.set(cacheKey, palette);
+      this._cacheSet(cacheKey, palette);
       return palette;
     } catch (outerErr) {
       console.warn('PaletteExtractor outer error:', outerErr);

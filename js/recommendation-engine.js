@@ -11,6 +11,19 @@
  */
 
 export class RecommendationEngine {
+  static _metaCache = new WeakMap();
+
+  static _buildTrackIndex(allTracks) {
+    const map = new Map();
+    for (let i = 0; i < allTracks.length; i++) {
+      const t = allTracks[i];
+      if (t && t.id && !map.has(t.id)) {
+        map.set(t.id, t);
+      }
+    }
+    return map;
+  }
+
   /**
    * Determine time-of-day greeting and Ethiopian musical mood
    */
@@ -67,12 +80,13 @@ export class RecommendationEngine {
    */
   static getJumpBackIn(allTracks, recentlyPlayedIds = [], favoriteIds = [], limit = 6) {
     if (!allTracks || allTracks.length === 0) return [];
+    const trackMap = this._buildTrackIndex(allTracks);
     const pool = [];
     const seenIds = new Set();
 
     // 1. Add recent tracks first
     (recentlyPlayedIds || []).forEach(id => {
-      const match = allTracks.find(t => t.id === id);
+      const match = trackMap.get(id);
       if (match && !seenIds.has(match.id)) {
         pool.push(match);
         seenIds.add(match.id);
@@ -82,7 +96,7 @@ export class RecommendationEngine {
     // 2. Supplement with favorites if recent is less than limit
     if (pool.length < limit) {
       (favoriteIds || []).forEach(id => {
-        const match = allTracks.find(t => t.id === id);
+        const match = trackMap.get(id);
         if (match && !seenIds.has(match.id)) {
           pool.push(match);
           seenIds.add(match.id);
@@ -92,12 +106,13 @@ export class RecommendationEngine {
 
     // 3. Fallback to catalog tracks with rich lyrics if still less than limit
     if (pool.length < limit) {
-      allTracks.forEach(t => {
-        if (!seenIds.has(t.id) && pool.length < limit) {
+      for (let i = 0; i < allTracks.length && pool.length < limit; i++) {
+        const t = allTracks[i];
+        if (!seenIds.has(t.id)) {
           pool.push(t);
           seenIds.add(t.id);
         }
-      });
+      }
     }
 
     return pool.slice(0, limit);
@@ -115,23 +130,23 @@ export class RecommendationEngine {
   } = {}) {
     if (!allTracks || allTracks.length === 0) return [];
 
+    const trackMap = this._buildTrackIndex(allTracks);
     const favSet = new Set(favorites || []);
     const recentSet = new Set(recentlyPlayed || []);
     const recentList = recentlyPlayed || [];
 
-    // Calculate artist frequency weights
+    // Calculate artist frequency weights in O(R + F)
     const artistScores = {};
     recentList.forEach((id, idx) => {
-      const tr = allTracks.find(t => t.id === id);
+      const tr = trackMap.get(id);
       if (tr && tr.artist) {
-        // More recent tracks have higher weight
         const recencyMultiplier = Math.max(1, 5 - idx * 0.5);
         artistScores[tr.artist] = (artistScores[tr.artist] || 0) + (3 * recencyMultiplier);
       }
     });
 
     favorites.forEach(id => {
-      const tr = allTracks.find(t => t.id === id);
+      const tr = trackMap.get(id);
       if (tr && tr.artist) {
         artistScores[tr.artist] = (artistScores[tr.artist] || 0) + 6;
       }
@@ -140,6 +155,9 @@ export class RecommendationEngine {
     if (currentTrack && currentTrack.artist) {
       artistScores[currentTrack.artist] = (artistScores[currentTrack.artist] || 0) + 4;
     }
+
+    const hour = new Date().getHours();
+    const isLateOrEvening = hour >= 18 || hour < 6;
 
     // Score and filter each track
     const scored = allTracks.map(track => {
@@ -181,8 +199,6 @@ export class RecommendationEngine {
       }
 
       // 7. Time of Day & Ethiopian Musical Scale/Vibe Match
-      const hour = new Date().getHours();
-      const isLateOrEvening = hour >= 18 || hour < 6;
       const isClassic = (track.year && parseInt(track.year) < 2010) || 
                         meta.vibe === 'tizita' ||
                         (track.album && /tizita|classic|vintage|memories|ትዝታ/i.test(track.album)) ||
@@ -198,8 +214,7 @@ export class RecommendationEngine {
         }
       }
 
-      // 8. Cold-Start Novelty Exploration (Multi-Armed Bandit):
-      // If a song has zero plays and sparse metadata, give it an exploration lift so it surfaces for users to discover!
+      // 8. Cold-Start Novelty Exploration (Multi-Armed Bandit)
       if (!recentSet.has(track.id) && !favSet.has(track.id)) {
         score += 3.5;
       }
@@ -243,14 +258,15 @@ export class RecommendationEngine {
    */
   static getBecauseYouListenedShelf(allTracks, { recentlyPlayed = [], favorites = [], currentTrack = null } = {}) {
     if (!allTracks || allTracks.length < 2) return null;
+    const trackMap = this._buildTrackIndex(allTracks);
 
     // Pick seed track or artist
     let seedTrack = currentTrack;
     if (!seedTrack && recentlyPlayed.length > 0) {
-      seedTrack = allTracks.find(t => t.id === recentlyPlayed[0]);
+      seedTrack = trackMap.get(recentlyPlayed[0]);
     }
     if (!seedTrack && favorites.length > 0) {
-      seedTrack = allTracks.find(t => t.id === favorites[0]);
+      seedTrack = trackMap.get(favorites[0]);
     }
     if (!seedTrack) {
       seedTrack = allTracks[0];
@@ -305,6 +321,11 @@ export class RecommendationEngine {
   static parseFallbackMetadata(track) {
     if (!track) return { title: 'Untitled', artist: 'Unknown Artist', hasEthiopic: false, vibe: 'general' };
 
+    const cached = this._metaCache.get(track);
+    if (cached && cached._title === track.title && cached._artist === track.artist && cached._lrcLen === (track.lrc ? track.lrc.length : 0)) {
+      return cached.result;
+    }
+
     let title = (track.title || '').trim();
     let artist = (track.artist || '').trim();
 
@@ -336,12 +357,22 @@ export class RecommendationEngine {
     // Detect Ethiopian traditional scales & regional rhythms
     const vibe = this.detectEthioVibe(track, title);
 
-    return {
+    const result = {
       title: title || 'Untitled Track',
       artist: artist || 'Ethiopian Artist',
       hasEthiopic,
       vibe
     };
+
+    if (typeof track === 'object') {
+      this._metaCache.set(track, {
+        _title: track.title,
+        _artist: track.artist,
+        _lrcLen: track.lrc ? track.lrc.length : 0,
+        result
+      });
+    }
+    return result;
   }
 
   /**

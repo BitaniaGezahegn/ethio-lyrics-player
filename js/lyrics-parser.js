@@ -2,6 +2,18 @@
  * Robust LRC Parser and Lyrics Synchronizer
  */
 export class LyricsParser {
+  static _parseCache = new Map();
+  static _durationCache = new Map();
+
+  static _remember(cache, key, value, maxEntries = 150) {
+    if (cache.size >= maxEntries) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
+    cache.set(key, value);
+    return value;
+  }
+
   /**
    * Check if line looks like an Artist - Title header or track metadata
    * @param {string} text
@@ -23,10 +35,14 @@ export class LyricsParser {
   static parse(lrcContent) {
     if (!lrcContent || typeof lrcContent !== 'string') return [];
 
-    // Strip UTF-8 BOM if present (added by PowerShell or some text editors)
-    lrcContent = lrcContent.replace(/^\uFEFF/, '');
+    if (this._parseCache.has(lrcContent)) {
+      return this._parseCache.get(lrcContent);
+    }
 
-    const lines = lrcContent.split(/\r?\n/);
+    // Strip UTF-8 BOM if present (added by PowerShell or some text editors)
+    const normalized = lrcContent.replace(/^\uFEFF/, '');
+
+    const lines = normalized.split(/\r?\n/);
     const parsed = [];
     const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
     // LRC metadata tags like [ti:...] [ar:...] [al:...] [by:...] — skip these
@@ -70,11 +86,11 @@ export class LyricsParser {
     // Sort chronologically
     parsed.sort((a, b) => a.time - b.time);
 
-    return parsed;
+    return this._remember(this._parseCache, lrcContent, parsed);
   }
 
   /**
-   * Find index of active line for given current timestamp
+   * Find index of active line for given current timestamp using binary search (O(log n))
    * @param {Array} lyrics
    * @param {number} currentTime
    * @param {number} [offsetSeconds=0] Optional sync compensation / lead time in seconds
@@ -94,12 +110,19 @@ export class LyricsParser {
       return -1;
     }
 
-    for (let i = lyrics.length - 1; i >= 0; i--) {
-      if (effectiveTime >= lyrics[i].time) {
-        return i;
+    let lo = 0;
+    let hi = lyrics.length - 1;
+    let ans = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (lyrics[mid].time <= effectiveTime) {
+        ans = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
       }
     }
-    return 0;
+    return ans;
   }
 
   /**
@@ -109,10 +132,24 @@ export class LyricsParser {
    */
   static estimateDurationFromLrc(lrcContent) {
     if (!lrcContent || typeof lrcContent !== 'string') return 0;
-    const parsed = this.parse(lrcContent);
-    if (!parsed || parsed.length === 0) return 0;
-    const maxTime = Math.max(...parsed.map(p => p.time));
-    return maxTime > 0 ? Math.ceil(maxTime + 5) : 0;
+    if (this._durationCache.has(lrcContent)) {
+      return this._durationCache.get(lrcContent);
+    }
+    const timeRegex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
+    let maxTime = 0;
+    let match;
+    while ((match = timeRegex.exec(lrcContent)) !== null) {
+      const minutes = parseInt(match[1], 10);
+      const seconds = parseInt(match[2], 10);
+      const millisStr = match[3] || '0';
+      const millis = millisStr.length === 2
+        ? parseInt(millisStr, 10) * 10
+        : parseInt(millisStr.padEnd(3, '0'), 10);
+      const t = minutes * 60 + seconds + millis / 1000;
+      if (t > maxTime) maxTime = t;
+    }
+    const est = maxTime > 0 ? Math.ceil(maxTime + 5) : 0;
+    return this._remember(this._durationCache, lrcContent, est, 300);
   }
 
   /**

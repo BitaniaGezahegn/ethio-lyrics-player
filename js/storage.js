@@ -5,8 +5,11 @@ const DB_NAME = 'EthioLyricsDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'tracks';
 
+let _dbPromise = null;
+
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (_dbPromise) return _dbPromise;
+  _dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
@@ -14,9 +17,21 @@ function openDB() {
         db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onclose = () => { _dbPromise = null; };
+      db.onversionchange = () => {
+        try { db.close(); } catch (e) {}
+        _dbPromise = null;
+      };
+      resolve(db);
+    };
+    request.onerror = () => {
+      _dbPromise = null;
+      reject(request.error);
+    };
   });
+  return _dbPromise;
 }
 
 export const Storage = {
@@ -121,6 +136,22 @@ export const Storage = {
   async hasTrack(id) {
     const item = await this.getTrack(id);
     return !!item;
+  },
+
+  async getOfflineTrackIds() {
+    try {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAllKeys();
+        req.onsuccess = () => resolve(new Set(req.result || []));
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('IndexedDB getOfflineTrackIds error:', e);
+      return new Set();
+    }
   },
 
   async downloadTrackForOffline(track, onProgress = null) {

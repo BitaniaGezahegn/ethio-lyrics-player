@@ -8,16 +8,13 @@
    -------------------------------------------------------------------------- */
 @keyframes ambient-mesh-drift {
   0% {
-    transform: scale(1) translate3d(0, 0, 0);
-    filter: blur(55px);
+    transform: scale(1.04) translate3d(0, 0, 0);
   }
   50% {
-    transform: scale(1.12) translate3d(24px, -18px, 0);
-    filter: blur(65px);
+    transform: scale(1.14) translate3d(20px, -14px, 0);
   }
   100% {
-    transform: scale(1) translate3d(0, 0, 0);
-    filter: blur(55px);
+    transform: scale(1.04) translate3d(0, 0, 0);
   }
 }
 
@@ -50,14 +47,13 @@
    ========================================================================== */
 #app.theme-artwork-ambient .backdrop-gradient {
   background: 
-    radial-gradient(ellipse at 18% 22%, var(--art-primary, #9b1d20) 0%, transparent 55%),
-    radial-gradient(ellipse at 82% 78%, var(--art-secondary, #2563eb) 0%, transparent 58%),
-    radial-gradient(ellipse at 50% 48%, var(--art-highlight, #e11d48) 0%, transparent 65%),
+    radial-gradient(ellipse at 18% 22%, var(--art-primary, #9b1d20) 0%, transparent 62%),
+    radial-gradient(ellipse at 82% 78%, var(--art-secondary, #2563eb) 0%, transparent 64%),
+    radial-gradient(ellipse at 50% 48%, var(--art-highlight, #e11d48) 0%, transparent 72%),
     linear-gradient(180deg, var(--art-dark, #0a0206) 0%, #030104 100%);
-  animation: ambient-mesh-drift 20s ease-in-out infinite alternate;
-  will-change: transform, opacity;
-  filter: blur(55px);
-  opacity: 1;
+  animation: ambient-mesh-drift 22s ease-in-out infinite alternate;
+  will-change: transform;
+  opacity: 0.92;
   transition: background 1.2s ease;
 }
 
@@ -312,8 +308,7 @@
   padding: 0.35rem 2rem;
   transform-origin: left center;
   transform: scale(0.92) translate3d(0, 0, 0);
-  filter: blur(2px);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, filter 0.3s ease;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
   pointer-events: none;
   contain: style;
 }
@@ -321,10 +316,9 @@
 #app.theme-apple-kinetic .lyric-line.prev,
 #app.theme-apple-kinetic .lyric-line.next,
 #app.theme-apple-kinetic .lyric-line.near {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.78);
   opacity: 0.74;
   transform: scale(0.97) translate3d(0, 0, 0);
-  filter: blur(1px);
   pointer-events: auto;
   visibility: visible !important;
 }
@@ -334,7 +328,6 @@
   font-size: 2.5rem;
   font-weight: 700;
   opacity: 1;
-  filter: blur(0px);
   transform: scale(1.04) translate3d(12px, 0, 0);
   text-shadow: 0 8px 30px rgba(255, 255, 255, 0.6), 0 2px 10px rgba(0, 0, 0, 0.8);
   pointer-events: auto;
@@ -343,7 +336,6 @@
 
 #app.theme-apple-kinetic .lyric-line.distant {
   opacity: 0 !important;
-  filter: blur(4px);
   visibility: hidden !important;
   pointer-events: none !important;
 }
@@ -659,5 +651,61 @@
   #app .lyric-line.next,
   #app .lyric-line.near {
     font-size: 1.1rem !important;
+  }
+}
+
+/* ==========================================================================
+   Pause Background Stage Animations When Playback Is Paused
+   ========================================================================== */
+#app:not(.is-playing) .disc-outer-grooves,
+#app:not(.is-playing) .visualizer-container::before,
+#app:not(.is-playing) .lyric-line.active {
+  animation-play-state: paused !important;
+}
+
+/* ==========================================================================
+   Lite / Potato-PC Performance Mode & Reduced Motion Overrides
+   ========================================================================== */
+#app.perf-lite .backdrop-gradient {
+  animation: none !important;
+  will-change: auto !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+#app.perf-lite .visualizer-container::before,
+#app.perf-lite .disc-outer-grooves,
+#app.perf-lite .lyric-line.active {
+  animation: none !important;
+}
+
+#app.perf-lite .disc-wrapper {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7) !important;
+}
+
+#app.perf-lite .lyric-line {
+  transition: transform 0.18s ease-out, opacity 0.16s ease-out !important;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85) !important;
+}
+
+#app.perf-lite .lyric-line.active {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;
+  box-shadow: none !important;
+}
+
+#app.perf-lite .artist-amharic,
+#app.perf-lite .song-title-amharic,
+#app.perf-lite .album-meta-tag {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app .backdrop-gradient,
+  #app .visualizer-container::before,
+  #app .disc-outer-grooves,
+  #app .lyric-line.active {
+    animation: none !important;
   }
 }

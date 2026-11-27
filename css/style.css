@@ -96,13 +96,11 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: rgba(24, 16, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   padding: 0.45rem 1rem;
   border-radius: 9999px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   contain: layout style;
 }
 
@@ -143,26 +141,23 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   color: #fff;
   padding: 0.45rem 1rem;
   border-radius: 9999px;
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
   contain: layout style;
 }
 
 .btn-pill:hover {
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.24);
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .btn-pill:active {
@@ -357,8 +352,7 @@ html, body {
   line-height: 1.45;
   font-weight: 500;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease, filter 0.25s ease;
-  will-change: transform, opacity;
+  transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.24s ease;
   transform: translate3d(0, 0, 0);
   color: rgba(255, 255, 255, 0.6);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
@@ -515,8 +509,11 @@ html, body {
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   animation: pulse-subtle 4s infinite ease-in-out;
-  will-change: transform, opacity;
   transform: translateZ(0);
+}
+
+#app:not(.is-playing) .disc-outer-grooves {
+  animation-play-state: paused;
 }
 
 /* Spinning Disc Record */
@@ -527,12 +524,12 @@ html, body {
   position: relative;
   overflow: hidden;
   background: #111;
-  will-change: transform;
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
 
 .vinyl-disc.spinning {
+  will-change: transform;
   animation: spin-disc 22s linear infinite;
 }
 
@@ -791,9 +788,10 @@ html, body {
   background: rgba(255, 255, 255, 0.28);
   border-radius: 999px;
   pointer-events: none;
-  width: 0%;
-  transition: width 0.25s ease;
-  will-change: width;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
 }
 
 .scrubber-fill {
@@ -804,30 +802,33 @@ html, body {
   background: #ffffff;
   border-radius: 999px;
   pointer-events: none;
-  width: 0%;
-  transition: width 0.1s linear;
-  will-change: width;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
   z-index: 2;
 }
 
 .scrubber-thumb {
   position: absolute;
   top: 50%;
-  right: -6px;
-  transform: translateY(-50%);
+  left: 0;
+  margin-left: -6px;
+  transform: translate3d(0, -50%, 0);
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.55);
   opacity: 0.72;
-  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  pointer-events: none;
+  z-index: 3;
 }
 
 .scrubber-track:hover .scrubber-thumb,
 .scrubber-track.is-scrubbing .scrubber-thumb {
   opacity: 1;
-  transform: translateY(-50%) scale(1.25);
   background: var(--color-gold);
 }
 
@@ -2751,11 +2752,10 @@ html, body {
 .hero-card {
   position: relative;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(28, 14, 24, 0.8), rgba(14, 7, 12, 0.92));
+  background: linear-gradient(135deg, rgba(28, 14, 24, 0.88), rgba(14, 7, 12, 0.95));
   border: 1px solid rgba(255, 255, 255, 0.12);
   overflow: hidden;
-  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(25px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
 }
 
 .hero-glow-bg {
@@ -2764,10 +2764,9 @@ html, body {
   right: -10%;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, var(--art-glow, rgba(16, 185, 129, 0.35)) 0%, transparent 70%);
-  filter: blur(55px);
+  background: radial-gradient(circle, var(--art-glow, rgba(16, 185, 129, 0.25)) 0%, transparent 68%);
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.65;
   transition: background 0.8s ease;
 }
 
@@ -2919,11 +2918,9 @@ html, body {
   gap: 1.5rem;
   padding: 1.4rem 1.8rem;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(35, 18, 28, 0.75), rgba(18, 10, 16, 0.85));
+  background: linear-gradient(135deg, rgba(35, 18, 28, 0.85), rgba(18, 10, 16, 0.92));
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
@@ -2935,9 +2932,8 @@ html, body {
   left: 20%;
   width: 320px;
   height: 200px;
-  background: radial-gradient(circle, var(--color-gold, #e5b95a) 0%, transparent 70%);
-  opacity: 0.12;
-  filter: blur(40px);
+  background: radial-gradient(circle, var(--color-gold, #e5b95a) 0%, transparent 68%);
+  opacity: 0.1;
   pointer-events: none;
 }
 
@@ -3043,14 +3039,12 @@ html, body {
   align-items: center;
   width: 100%;
   max-width: 680px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 9999px;
   padding: 0.2rem 1.15rem;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 
 .home-search-input-wrap:focus-within {
@@ -3265,11 +3259,9 @@ html, body {
   position: relative;
   border-radius: 20px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(35, 20, 28, 0.8), rgba(18, 10, 16, 0.9));
+  background: linear-gradient(135deg, rgba(35, 20, 28, 0.88), rgba(18, 10, 16, 0.95));
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   padding: 1.5rem;
 }
 
@@ -3279,9 +3271,8 @@ html, body {
   right: -50px;
   width: 280px;
   height: 280px;
-  background: radial-gradient(circle, var(--color-gold, #e5b95a) 0%, transparent 70%);
-  opacity: 0.15;
-  filter: blur(50px);
+  background: radial-gradient(circle, var(--color-gold, #e5b95a) 0%, transparent 68%);
+  opacity: 0.14;
   pointer-events: none;
 }
 
@@ -3617,9 +3608,11 @@ html, body {
   border-radius: 18px;
   padding: 0.85rem;
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
   position: relative;
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 260px;
 }
 
 .music-card:hover {
@@ -4041,13 +4034,11 @@ html, body {
 }
 
 .settings-card {
-  background: rgba(18, 12, 16, 0.75);
+  background: rgba(18, 12, 16, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 20px;
   padding: 1.4rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -6574,6 +6565,125 @@ body.is-party-guest .guest-locked-control:hover::after {
   border-radius: 999px;
   background: linear-gradient(90deg, #f4a261, #e5b95a, #10b981);
   transition: width 0.2s ease;
+}
+
+/* ==========================================================================
+   Performance Mode Selector & Potato-PC Lite Overrides
+   ========================================================================== */
+.perf-mode-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.perf-mode-btn {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-family: var(--font-sans);
+}
+
+.perf-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.perf-mode-btn.active {
+  background: rgba(229, 185, 90, 0.18);
+  border-color: rgba(229, 185, 90, 0.65);
+  color: #fce7b2;
+}
+
+@media (max-width: 560px) {
+  .perf-mode-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Lite Mode: disable all backdrop-filter readbacks, shadows, and decorative idle animations */
+#app.perf-lite .brand-badge,
+#app.perf-lite .btn-pill,
+#app.perf-lite .player-bar-dock,
+#app.perf-lite .desktop-nav-tabs,
+#app.perf-lite .volume-popup-tray,
+#app.perf-lite .modal-overlay,
+#app.perf-lite .modal-card,
+#app.perf-lite .toast-notification,
+#app.perf-lite .app-global-toast,
+#app.perf-lite .reaction-pill,
+#app.perf-lite .tiktok-watermark,
+#app.perf-lite .queue-drawer-sheet,
+#app.perf-lite .mobile-bottom-nav,
+#app.perf-lite .pull-to-refresh-indicator,
+#app.perf-lite .fullscreen-exit-btn {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+#app.perf-lite .player-bar-dock,
+#app.perf-lite .desktop-nav-tabs,
+#app.perf-lite .volume-popup-tray,
+#app.perf-lite .mobile-bottom-nav,
+#app.perf-lite .queue-drawer-sheet {
+  background: rgba(16, 10, 14, 0.96) !important;
+}
+
+#app.perf-lite .brand-icon,
+#app.perf-lite .spotlight-dot,
+#app.perf-lite .disc-outer-grooves,
+#app.perf-lite .live-dot-pulse,
+#app.perf-lite .live-pulse-dot,
+#app.perf-lite .live-pulse-dot-green,
+#app.perf-lite .queue-equalizer-bars span,
+#app.perf-lite .lrc-sync-instruction {
+  animation: none !important;
+}
+
+#app.perf-lite .music-card,
+#app.perf-lite .jump-card,
+#app.perf-lite .hero-card,
+#app.perf-lite .settings-card,
+#app.perf-lite .home-greeting-banner,
+#app.perf-lite .player-bar-dock {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+}
+
+#app.perf-lite .ambient-particles-canvas,
+#app.perf-lite .backdrop-particles {
+  display: none !important;
+}
+
+#app.perf-lite .vinyl-disc,
+#app.perf-lite .lyrics-scroll-wrap,
+#app.perf-lite .scrubber-fill,
+#app.perf-lite .scrubber-buffered {
+  will-change: auto !important;
+}
+
+#app.perf-lite .music-card:hover,
+#app.perf-lite .jump-card:hover,
+#app.perf-lite .artist-circle-card:hover,
+#app.perf-lite .btn-pill:hover {
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app .brand-icon,
+  #app .spotlight-dot,
+  #app .disc-outer-grooves,
+  #app .live-dot-pulse,
+  #app .live-pulse-dot,
+  #app .live-pulse-dot-green,
+  #app .queue-equalizer-bars span,
+  #app .lrc-sync-instruction {
+    animation: none !important;
+  }
 }
 
 

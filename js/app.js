@@ -7,11 +7,20 @@ import { PaletteExtractor } from './palette.js';
 import { AmbientParticles } from './particles.js';
 import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service.js';
 import { LocalSyncService } from './local-sync-service.js';
-import { QRCodeGenerator } from './qr-code.js';
-import { CameraScanner } from './camera-scanner.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
+
+let _qrCodeModulePromise = null;
+let _cameraScannerModulePromise = null;
+function loadQRCodeGenerator() {
+  if (!_qrCodeModulePromise) _qrCodeModulePromise = import('./qr-code.js');
+  return _qrCodeModulePromise.then(m => m.QRCodeGenerator);
+}
+function loadCameraScanner() {
+  if (!_cameraScannerModulePromise) _cameraScannerModulePromise = import('./camera-scanner.js');
+  return _cameraScannerModulePromise.then(m => m.CameraScanner);
+}
 
 class LyricsApp {
   constructor() {
@@ -96,6 +105,16 @@ class LyricsApp {
     this._r2UploadPromise = null;
     this._volumeTrayHideTimer = null;
     this._isDraggingVolume = false;
+    this._homeDirty = true;
+    this._lastHomeSignature = '';
+    this._scrubberTrackWidth = 0;
+    this._lyricsViewportHeight = 420;
+    this._lyricPositions = [];
+    this._lastTimelinePct = -1;
+    this._lastBufferPct = -1;
+    this.perfModeSetting = 'auto';
+    this.isPerfLite = false;
+    this._perfAutoInfo = { isLite: false, reason: '' };
 
     this.initDOMElements();
 
@@ -121,6 +140,7 @@ class LyricsApp {
     });
 
     this.initThemeSystem();
+    this.initPerformanceMode();
     this.initAuth();
     this.initEvents();
     this.initPullToRefresh();
@@ -130,8 +150,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.5.3';
-    this.cacheVersion = 'v28';
+    this.appVersion = 'v2.5.8';
+    this.cacheVersion = 'v33';
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     if ('serviceWorker' in navigator && !isNativeWebView) {
       window.addEventListener('load', () => {
@@ -420,6 +440,11 @@ class LyricsApp {
     this.lyricsScrollWrap = document.getElementById('lyricsScrollWrap');
     this.noLyricsFileInput = document.getElementById('noLyricsFileInput');
 
+    // Performance Mode Settings Controls
+    this.perfModeGroup = document.getElementById('perfModeGroup');
+    this.perfModeResolvedBadge = document.getElementById('perfModeResolvedBadge');
+    this.perfModeStatusNote = document.getElementById('perfModeStatusNote');
+
     // Ambient Particles Canvas
     this.ambientParticlesCanvas = document.getElementById('ambientParticlesCanvas');
     if (this.ambientParticlesCanvas) {
@@ -446,9 +471,34 @@ class LyricsApp {
     this.scrubberTrack = document.getElementById('scrubberTrack');
     this.scrubberBuffered = document.getElementById('scrubberBuffered');
     this.scrubberFill = document.getElementById('scrubberFill');
+    this.scrubberThumb = document.getElementById('scrubberThumb');
     this.currentTimeLabel = document.getElementById('currentTimeLabel');
     this.durationLabel = document.getElementById('durationLabel');
     this.btnToggleFullscreen = document.getElementById('btnToggleFullscreen');
+
+    // Cache layout dimensions via ResizeObserver so playback ticks never trigger forced reflow
+    if (typeof ResizeObserver !== 'undefined') {
+      if (this.scrubberTrack) {
+        this._scrubberResizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            this._scrubberTrackWidth = entry.contentRect.width || this.scrubberTrack.offsetWidth || 0;
+          }
+          this._syncScrubberThumbPosition();
+        });
+        this._scrubberResizeObserver.observe(this.scrubberTrack);
+      }
+      if (this.lyricsViewport) {
+        this._lyricsResizeObserver = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            if (entry.contentRect.height > 0) {
+              this._lyricsViewportHeight = entry.contentRect.height;
+            }
+          }
+          this._measureLyricPositions();
+        });
+        this._lyricsResizeObserver.observe(this.lyricsViewport);
+      }
+    }
 
     // Modern Playback Controls: Shuffle, Prev, Next, Repeat, Sleep, Queue, Add-to-Playlist
     this.btnShuffle = document.getElementById('btnShuffle');
@@ -788,7 +838,12 @@ class LyricsApp {
     });
 
     if (tabId === 'home') {
-      this.renderHomePage();
+      if (this._homeDirty) {
+        this.renderHomePage();
+      } else {
+        this.updateHeroState();
+        this.syncDynamicPlayButtons();
+      }
     } else if (tabId === 'library') {
       this.renderLibraryView();
     } else if (tabId === 'lyrics') {
@@ -796,10 +851,22 @@ class LyricsApp {
         this.playerBarDock.classList.remove('is-collapsed');
       }
       requestAnimationFrame(() => {
+        if (this.lyricsViewport) {
+          const h = this.lyricsViewport.offsetHeight;
+          if (h > 0) this._lyricsViewportHeight = h;
+        }
+        this._measureLyricPositions();
         this.syncLyrics(this.player.currentTime);
       });
     } else if (tabId === 'settings') {
       this.renderSettingsView();
+    }
+
+    if (this.ambientParticles) {
+      this.ambientParticles.setActiveContext({
+        isLyricsTab: tabId === 'lyrics',
+        isPlaying: !!(this.player && this.player.isPlaying)
+      });
     }
 
     if (this.tiktokWatermark) {
@@ -1039,14 +1106,19 @@ class LyricsApp {
       });
     }
 
-    // Search Input with Clear Button
+    // Search Input with Debounce & Clear Button
     if (this.inputHomeSearch) {
+      let homeSearchTimer = null;
       this.inputHomeSearch.addEventListener('input', (e) => {
-        this.searchQuery = e.target.value.trim().toLowerCase();
+        const nextQuery = e.target.value.trim().toLowerCase();
         if (this.btnClearHomeSearch) {
-          this.btnClearHomeSearch.style.display = this.searchQuery ? 'inline-flex' : 'none';
+          this.btnClearHomeSearch.style.display = nextQuery ? 'inline-flex' : 'none';
         }
-        this.renderHomePage();
+        if (homeSearchTimer) clearTimeout(homeSearchTimer);
+        homeSearchTimer = setTimeout(() => {
+          this.searchQuery = nextQuery;
+          this.renderHomePage();
+        }, 150);
       });
     }
 
@@ -1056,6 +1128,16 @@ class LyricsApp {
         this.searchQuery = '';
         this.btnClearHomeSearch.style.display = 'none';
         this.renderHomePage();
+      });
+    }
+
+    // Performance Mode Switcher (Auto / High Quality / Lite)
+    if (this.perfModeGroup) {
+      this.perfModeGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.perf-mode-btn[data-perf-mode]');
+        if (!btn) return;
+        const mode = btn.getAttribute('data-perf-mode') || 'auto';
+        this.setPerformanceMode(mode);
       });
     }
 
@@ -1317,7 +1399,17 @@ class LyricsApp {
     };
 
     this.player.onStateChange = (state) => {
-      if (state === 'playing') {
+      const isPlaying = state === 'playing';
+      if (this.appEl) {
+        this.appEl.classList.toggle('is-playing', isPlaying);
+      }
+      if (this.ambientParticles) {
+        this.ambientParticles.setActiveContext({
+          isLyricsTab: this.currentView === 'lyrics',
+          isPlaying
+        });
+      }
+      if (isPlaying) {
         if (this.playIcon) this.playIcon.style.display = 'none';
         if (this.pauseIcon) this.pauseIcon.style.display = 'block';
         if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'none';
@@ -1362,7 +1454,12 @@ class LyricsApp {
 
     this.player.onBufferUpdate = (bufferedPercent) => {
       if (this.scrubberBuffered) {
-        this.scrubberBuffered.style.width = `${Math.min(100, Math.max(0, bufferedPercent))}%`;
+        const clamped = Math.min(100, Math.max(0, bufferedPercent));
+        const rounded = Math.round(clamped * 2) / 2;
+        if (rounded !== this._lastBufferPct) {
+          this._lastBufferPct = rounded;
+          this.scrubberBuffered.style.transform = `scaleX(${(clamped / 100).toFixed(4)})`;
+        }
       }
     };
 
@@ -1709,7 +1806,7 @@ class LyricsApp {
             await this.loadTrack(this._detailTrack, true);
           }
           if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
-          this.renderHomePage();
+          this.syncDynamicPlayButtons();
         }
       });
     }
@@ -1723,7 +1820,7 @@ class LyricsApp {
             await this.loadTrack(this._detailTrack, true);
           }
           if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
-          this.renderHomePage();
+          this.syncDynamicPlayButtons();
         }
       });
     }
@@ -2091,13 +2188,17 @@ class LyricsApp {
     }
 
     if (this.inputCatalogSearch) {
+      let catalogSearchTimer = null;
       this.inputCatalogSearch.addEventListener('input', (e) => {
         const query = e.target.value.trim().toLowerCase();
-        if (this.currentLibraryTab === 'global') {
-          this.renderPublicCatalog(query);
-        } else {
-          this.renderOfflineLibrary(query);
-        }
+        if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
+        catalogSearchTimer = setTimeout(() => {
+          if (this.currentLibraryTab === 'global') {
+            this.renderPublicCatalog(query);
+          } else {
+            this.renderOfflineLibrary(query);
+          }
+        }, 150);
       });
     }
 
@@ -2327,6 +2428,7 @@ class LyricsApp {
 
   renderHomePage() {
     if (!this.homeExploreView) return;
+    this._homeDirty = false;
 
     // 1. Live Greeting & Listening DNA Stats
     const userFirstName = this.currentUser && this.currentUser.displayName ? this.currentUser.displayName.split(' ')[0] : '';
@@ -2546,21 +2648,24 @@ class LyricsApp {
     this.sectionJumpBackIn.style.display = 'block';
     this.gridJumpBackIn.innerHTML = '';
 
+    const frag = document.createDocumentFragment();
     jumpTracks.forEach(track => {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
+      const safeId = escapeHtml(track.id || '');
       const safeTitle = escapeHtml(track.title || 'Untitled');
       const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
       const safeCover = sanitizeUrl(track.cover);
       const card = document.createElement('div');
       card.className = `jump-card ${isCurrent ? 'playing' : ''}`;
+      card.dataset.trackId = track.id || '';
       card.innerHTML = `
-        <img src="${safeCover}" alt="${safeTitle}" class="jump-card-art jump-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="jump-card-art jump-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         <div class="jump-card-info jump-card-meta">
           <div class="jump-card-title" title="${safeTitle}">${safeTitle}</div>
           <div class="jump-card-artist" title="${safeArtist}">${safeArtist}</div>
         </div>
-        <button class="jump-card-play-btn" title="${isPlaying ? 'Pause' : 'Play'}" type="button">
+        <button class="jump-card-play-btn" data-play-track-id="${safeId}" title="${isPlaying ? 'Pause' : 'Play'}" type="button">
           ${isPlaying 
             ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
             : '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}
@@ -2571,18 +2676,20 @@ class LyricsApp {
         if (e.target.closest('.jump-card-play-btn')) {
           e.stopPropagation();
         }
-        if (isCurrent) {
+        const activeNow = this.currentTrack && this.currentTrack.id === track.id;
+        if (activeNow) {
           this.player.togglePlay();
         } else {
           const pool = [...this.publicTracks, ...this.tracks];
           this.setQueue(pool, pool.findIndex(t => t.id === track.id));
           await this.loadTrack(track, true);
         }
-        this.renderHomePage();
+        this.syncDynamicPlayButtons();
       });
 
-      this.gridJumpBackIn.appendChild(card);
+      frag.appendChild(card);
     });
+    this.gridJumpBackIn.appendChild(frag);
   }
 
   renderIconicArtistsRow(artists) {
@@ -2594,6 +2701,7 @@ class LyricsApp {
     this.sectionIconicArtists.style.display = 'block';
     this.rowIconicArtists.innerHTML = '';
 
+    const frag = document.createDocumentFragment();
     artists.forEach(artist => {
       const safeName = escapeHtml(artist.name || 'Ethiopian Artist');
       const safeCover = sanitizeUrl(artist.cover);
@@ -2601,7 +2709,7 @@ class LyricsApp {
       card.className = 'artist-circle-card';
       card.innerHTML = `
         <div class="artist-circle-avatar">
-          <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
         </div>
         <div class="artist-circle-name" title="${safeName}">${safeName}</div>
         <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
@@ -2615,13 +2723,14 @@ class LyricsApp {
           if (this.btnClearHomeSearch) this.btnClearHomeSearch.style.display = 'block';
           this.renderHomePage();
           if (this.sectionGlobalCatalog) {
-            this.sectionGlobalCatalog.scrollIntoView({ behavior: 'smooth' });
+            this.sectionGlobalCatalog.scrollIntoView({ behavior: this.isPerfLite ? 'auto' : 'smooth' });
           }
         }
       });
 
-      this.rowIconicArtists.appendChild(card);
+      frag.appendChild(card);
     });
+    this.rowIconicArtists.appendChild(frag);
   }
 
   getSmartSuggestions(tracksList) {
@@ -2646,12 +2755,15 @@ class LyricsApp {
       return;
     }
 
+    const favSet = new Set(this.favorites || []);
+    const frag = document.createDocumentFragment();
     tracks.forEach(track => {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
-      const isFav = this.favorites && this.favorites.includes(track.id);
+      const isFav = favSet.has(track.id);
       const dur = this.getTrackDuration(track);
       const durFormatted = dur > 0 ? LyricsParser.formatTime(dur) : '';
+      const safeId = escapeHtml(track.id || '');
       const safeTitle = escapeHtml(track.title || 'Untitled');
       const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
       const safeCover = sanitizeUrl(track.cover);
@@ -2659,11 +2771,12 @@ class LyricsApp {
 
       const card = document.createElement('div');
       card.className = `music-card ${isCurrent ? 'playing' : ''}`;
+      card.dataset.trackId = track.id || '';
       card.innerHTML = `
         <div class="card-art-wrap">
-          <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div class="card-play-overlay">
-            <div class="card-play-icon">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
+            <div class="card-play-icon" data-play-track-id="${safeId}">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
         </div>
         <div class="card-meta">
@@ -2701,13 +2814,14 @@ class LyricsApp {
       if (artWrap) {
         artWrap.addEventListener('click', async (e) => {
           e.stopPropagation();
-          if (isCurrent) {
+          const activeNow = this.currentTrack && this.currentTrack.id === track.id;
+          if (activeNow) {
             this.player.togglePlay();
           } else {
             this.setQueue(tracks, tracks.indexOf(track));
             await this.loadTrack(track, true);
           }
-          this.renderHomePage();
+          this.syncDynamicPlayButtons();
         });
       }
 
@@ -2758,6 +2872,7 @@ class LyricsApp {
             dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
             dlBtn.title = 'Saved Offline';
             this.tracks = await Storage.getAllTracks();
+            this._homeDirty = true;
           } catch (err) {
             dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
             setTimeout(() => { dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'; }, 2000);
@@ -2771,8 +2886,9 @@ class LyricsApp {
         this.openSongDetails(track);
       });
 
-      container.appendChild(card);
+      frag.appendChild(card);
     });
+    container.appendChild(frag);
   }
 
   // --------------------------------------------------------------------------
@@ -2817,7 +2933,8 @@ class LyricsApp {
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = resolvedTrack.artist;
 
     // Load Audio in Engine
-    if (this.scrubberBuffered) this.scrubberBuffered.style.width = '0%';
+    this._lastBufferPct = -1;
+    if (this.scrubberBuffered) this.scrubberBuffered.style.transform = 'scaleX(0)';
     this.player.loadTrack(resolvedTrack);
     this.player.updateMediaSession(resolvedTrack, {
       onPlay: () => { if (!this.isGuestLocked('playback')) this.player.play(); },
@@ -2826,9 +2943,12 @@ class LyricsApp {
       onNexttrack: () => { if (!this.isGuestLocked('tracks')) this.playNextTrack(); }
     });
 
-    // Dynamic color extraction with mobile blob safety
+    // Dynamic color extraction with race guard so fast skipping never applies stale colors
+    const targetTrackId = resolvedTrack.id;
     PaletteExtractor.extractFromImage(coverUrl).then(palette => {
-      PaletteExtractor.applyToElement(this.appEl, palette);
+      if (this.currentTrack && this.currentTrack.id === targetTrackId) {
+        PaletteExtractor.applyToElement(this.appEl, palette);
+      }
     });
 
     // Parse Lyrics
@@ -2842,9 +2962,10 @@ class LyricsApp {
       this.player.play();
     }
 
-    // Record into recently played
+    // Record into recently played & mark Home dirty for next visit
     Storage.addRecentlyPlayed(track.id);
     this.recentlyPlayed = Storage.getRecentlyPlayed();
+    this._homeDirty = true;
     this.updateFavoriteButtonsState();
     if (this.currentUser) {
       this.pushCloudSyncDebounced();
@@ -2956,6 +3077,7 @@ class LyricsApp {
       return;
     }
 
+    const frag = document.createDocumentFragment();
     this.parsedLyrics.forEach((line, index) => {
       const lineEl = document.createElement('div');
       lineEl.className = 'lyric-line distant';
@@ -2968,8 +3090,32 @@ class LyricsApp {
         if (!this.player.isPlaying) this.player.play();
       });
 
-      this.lyricsScrollWrap.appendChild(lineEl);
+      frag.appendChild(lineEl);
     });
+    this.lyricsScrollWrap.appendChild(frag);
+    this._lyricPositions = [];
+    this._measureLyricPositions();
+  }
+
+  _measureLyricPositions() {
+    if (!this.lyricsScrollWrap || !this.parsedLyrics || this.parsedLyrics.length === 0) {
+      this._lyricPositions = [];
+      return;
+    }
+    const lines = this.lyricsScrollWrap.children;
+    if (!lines || lines.length === 0) return;
+    if (this.lyricsViewport && this.lyricsViewport.offsetHeight > 0) {
+      this._lyricsViewportHeight = this.lyricsViewport.offsetHeight;
+    }
+    const positions = new Array(lines.length);
+    for (let i = 0; i < lines.length; i++) {
+      const el = lines[i];
+      positions[i] = {
+        top: el.offsetTop,
+        height: el.offsetHeight || 48
+      };
+    }
+    this._lyricPositions = positions;
   }
 
   syncLyrics(currentTime) {
@@ -3019,21 +3165,23 @@ class LyricsApp {
     if (this._scrollRafId) cancelAnimationFrame(this._scrollRafId);
     this._scrollRafId = requestAnimationFrame(() => {
       if (!this.lyricsViewport) return;
-      if (newIndex >= 0 && lines[newIndex]) {
-        const activeEl = lines[newIndex];
-        const wrapHeight = this.lyricsViewport.offsetHeight || 420;
-        const elTop = activeEl.offsetTop;
-        const elHeight = activeEl.offsetHeight || 48;
-        const targetScroll = (wrapHeight / 2) - elTop - (elHeight / 2);
-        this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
-      } else if (newIndex === -1 && lines[0]) {
-        const firstEl = lines[0];
-        const wrapHeight = this.lyricsViewport.offsetHeight || 420;
-        const elTop = firstEl.offsetTop;
-        const elHeight = firstEl.offsetHeight || 48;
-        const targetScroll = (wrapHeight / 2) - elTop - (elHeight / 2) + 65;
-        this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
+      if (!this._lyricPositions || this._lyricPositions.length !== lines.length) {
+        this._measureLyricPositions();
       }
+      const wrapHeight = this._lyricsViewportHeight || this.lyricsViewport.offsetHeight || 420;
+      const targetIdx = newIndex >= 0 ? newIndex : 0;
+      const pos = this._lyricPositions && this._lyricPositions[targetIdx];
+      if (!pos || (pos.top === 0 && targetIdx > 0)) {
+        // Fallback measurement if lyrics tab was hidden when rendered
+        this._measureLyricPositions();
+      }
+      const resolvedPos = (this._lyricPositions && this._lyricPositions[targetIdx]) || {
+        top: lines[targetIdx] ? lines[targetIdx].offsetTop : 0,
+        height: lines[targetIdx] ? (lines[targetIdx].offsetHeight || 48) : 48
+      };
+      const extraOffset = newIndex === -1 ? 65 : 0;
+      const targetScroll = (wrapHeight / 2) - resolvedPos.top - (resolvedPos.height / 2) + extraOffset;
+      this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
     });
   }
 
@@ -3045,14 +3193,34 @@ class LyricsApp {
     if (track.duration && isFinite(track.duration) && track.duration > 0 && track.duration !== 180) {
       return track.duration;
     }
+    if (typeof track._cachedDuration === 'number' && track._cachedDuration > 0) {
+      return track._cachedDuration;
+    }
     if (track.lrc) {
       const est = LyricsParser.estimateDurationFromLrc(track.lrc);
-      if (est > 0) return est;
+      if (est > 0) {
+        track._cachedDuration = est;
+        return est;
+      }
     }
     if (track.duration && isFinite(track.duration) && track.duration > 0) {
       return track.duration;
     }
     return 0;
+  }
+
+  _syncScrubberThumbPosition(ratio = null) {
+    if (!this.scrubberThumb) return;
+    const r = ratio !== null ? ratio : Math.max(0, Math.min(1, (this._lastTimelinePct >= 0 ? this._lastTimelinePct : 0)));
+    if (this._scrubberTrackWidth <= 0 && this.scrubberTrack) {
+      this._scrubberTrackWidth = this.scrubberTrack.offsetWidth || 0;
+    }
+    if (this._scrubberTrackWidth > 0) {
+      const px = r * this._scrubberTrackWidth;
+      this.scrubberThumb.style.transform = `translate3d(${px.toFixed(1)}px, -50%, 0)`;
+    } else {
+      this.scrubberThumb.style.left = `${(r * 100).toFixed(2)}%`;
+    }
   }
 
   updateTimeline(currentTime, duration) {
@@ -3066,11 +3234,18 @@ class LyricsApp {
       this.durationLabel.textContent = formattedDuration;
     }
     if (duration > 0) {
-      const percent = Math.min(100, Math.max(0, (currentTime / duration) * 100));
-      this.scrubberFill.style.width = `${percent}%`;
-    } else {
-      this.scrubberFill.style.width = '0%';
-      if (this.scrubberBuffered) this.scrubberBuffered.style.width = '0%';
+      const ratio = Math.min(1, Math.max(0, currentTime / duration));
+      if (Math.abs(ratio - this._lastTimelinePct) >= 0.0005 || ratio === 0 || ratio === 1) {
+        this._lastTimelinePct = ratio;
+        this.scrubberFill.style.transform = `scaleX(${ratio.toFixed(4)})`;
+        this._syncScrubberThumbPosition(ratio);
+      }
+    } else if (this._lastTimelinePct !== 0) {
+      this._lastTimelinePct = 0;
+      this._lastBufferPct = 0;
+      this.scrubberFill.style.transform = 'scaleX(0)';
+      this._syncScrubberThumbPosition(0);
+      if (this.scrubberBuffered) this.scrubberBuffered.style.transform = 'scaleX(0)';
     }
   }
 
@@ -3245,11 +3420,13 @@ class LyricsApp {
       return;
     }
 
+    const offlineIds = await Storage.getOfflineTrackIds();
+    if (this._catalogRenderToken !== currentToken) return;
+
+    const frag = document.createDocumentFragment();
     for (const song of tracksToDisplay) {
-      if (this._catalogRenderToken !== currentToken) return;
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
-      const isOfflineReady = await Storage.hasTrack(song.id);
-      if (this._catalogRenderToken !== currentToken) return;
+      const isOfflineReady = offlineIds.has(song.id);
 
       const safeTitle = escapeHtml(song.title || 'Untitled');
       const safeArtist = escapeHtml(song.artist || 'Unknown Artist');
@@ -3270,7 +3447,7 @@ class LyricsApp {
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${safeTitle} - ${safeArtist}
@@ -3326,7 +3503,6 @@ class LyricsApp {
           await this.loadTrack(song, true);
         }
         this.syncDynamicPlayButtons();
-        this.renderHomePage();
       });
 
       const dlBtn = card.querySelector('.btn-download-offline');
@@ -3344,7 +3520,7 @@ class LyricsApp {
           dlBtn.title = 'Saved Offline';
           dlBtn.setAttribute('aria-label', 'Saved Offline');
           this.tracks = await Storage.getAllTracks();
-          this.renderHomePage();
+          this._homeDirty = true;
           this.showToast(`Saved "${song.title}" for offline playback.`);
         } catch (err) {
           dlBtn.classList.remove('is-loading');
@@ -3365,7 +3541,7 @@ class LyricsApp {
                 await FirebaseService.deletePublicTrack(song);
                 await this.loadPublicCatalog();
                 this.renderPublicCatalog();
-                this.renderHomePage();
+                this._homeDirty = true;
                 this.showToast(`Deleted "${song.title}" and its Cloudflare R2 audio.`, 3500);
 
                 if (this.currentTrack && this.currentTrack.id === song.id) {
@@ -3391,8 +3567,9 @@ class LyricsApp {
         this.openSongDetails(song);
       });
 
-      this.globalCatalogList.appendChild(card);
+      frag.appendChild(card);
     }
+    this.globalCatalogList.appendChild(frag);
   }
 
   renderOfflineLibrary(filterText = '') {
@@ -3429,6 +3606,7 @@ class LyricsApp {
       return;
     }
 
+    const frag = document.createDocumentFragment();
     tracksToDisplay.forEach(song => {
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
       const isSongPlaying = isCurrent && this.player.isPlaying;
@@ -3446,7 +3624,7 @@ class LyricsApp {
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${safeTitle} - ${safeArtist}
@@ -3506,7 +3684,6 @@ class LyricsApp {
           await this.loadTrack(song, true);
         }
         this.syncDynamicPlayButtons();
-        this.renderHomePage();
       });
 
       card.querySelector('.btn-edit-custom').addEventListener('click', (e) => {
@@ -3523,8 +3700,9 @@ class LyricsApp {
         this.openSongDetails(song);
       });
 
-      this.localTracksList.appendChild(card);
+      frag.appendChild(card);
     });
+    this.localTracksList.appendChild(frag);
   }
 
   populateTracksModal() {
@@ -4443,6 +4621,136 @@ class LyricsApp {
     });
   }
 
+  _detectAutoPerformanceLite() {
+    const reasons = [];
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        reasons.push('reduced-motion preference');
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof navigator !== 'undefined') {
+        if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) {
+          reasons.push(`${navigator.hardwareConcurrency} CPU cores`);
+        }
+        if (navigator.deviceMemory && navigator.deviceMemory <= 4) {
+          reasons.push(`${navigator.deviceMemory}GB RAM`);
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (!gl) {
+        reasons.push('no WebGL hardware acceleration');
+      } else {
+        const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+        if (dbg) {
+          const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
+          if (/swiftshader|llvmpipe|software|basic render|mesa offscreen/i.test(renderer)) {
+            reasons.push('software GPU rasterizer');
+          }
+        }
+      }
+    } catch (e) {}
+
+    return {
+      isLite: reasons.length > 0,
+      reason: reasons.join(', ')
+    };
+  }
+
+  initPerformanceMode() {
+    let saved = 'auto';
+    try {
+      const raw = localStorage.getItem('ethio_perf_mode');
+      if (raw === 'auto' || raw === 'high' || raw === 'lite') {
+        saved = raw;
+      }
+    } catch (e) {}
+
+    this._perfAutoInfo = this._detectAutoPerformanceLite();
+    this.perfModeSetting = saved;
+    this.applyPerformanceMode();
+
+    try {
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (mq && mq.addEventListener) {
+          mq.addEventListener('change', () => {
+            if (this.perfModeSetting === 'auto') {
+              this._perfAutoInfo = this._detectAutoPerformanceLite();
+              this.applyPerformanceMode();
+            }
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  setPerformanceMode(mode) {
+    if (mode !== 'auto' && mode !== 'high' && mode !== 'lite') mode = 'auto';
+    this.perfModeSetting = mode;
+    try {
+      localStorage.setItem('ethio_perf_mode', mode);
+    } catch (e) {}
+    this.applyPerformanceMode();
+    const label = this.isPerfLite ? 'Lite (Potato PC)' : 'High Quality';
+    this.showToast(`Performance mode: ${mode === 'auto' ? `Auto → ${label}` : label}`);
+  }
+
+  applyPerformanceMode() {
+    let resolvedLite = false;
+    if (this.perfModeSetting === 'lite') {
+      resolvedLite = true;
+    } else if (this.perfModeSetting === 'high') {
+      resolvedLite = false;
+    } else {
+      resolvedLite = !!(this._perfAutoInfo && this._perfAutoInfo.isLite);
+    }
+
+    this.isPerfLite = resolvedLite;
+    if (this.appEl) {
+      this.appEl.classList.toggle('perf-lite', resolvedLite);
+    }
+    if (this.player && this.player.setTickIntervalMs) {
+      this.player.setTickIntervalMs(resolvedLite ? 100 : 50);
+    }
+    if (this.ambientParticles) {
+      this.ambientParticles.setEnabled(!resolvedLite);
+      this.ambientParticles.setActiveContext({
+        isLyricsTab: this.currentView === 'lyrics',
+        isPlaying: !!(this.player && this.player.isPlaying)
+      });
+    }
+
+    if (this.perfModeGroup) {
+      this.perfModeGroup.querySelectorAll('.perf-mode-btn[data-perf-mode]').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-perf-mode') === this.perfModeSetting);
+      });
+    }
+    if (this.perfModeResolvedBadge) {
+      if (this.perfModeSetting === 'auto') {
+        this.perfModeResolvedBadge.textContent = resolvedLite ? 'Auto • Lite' : 'Auto • High';
+      } else {
+        this.perfModeResolvedBadge.textContent = resolvedLite ? 'Lite' : 'High Quality';
+      }
+    }
+    if (this.perfModeStatusNote) {
+      if (this.perfModeSetting === 'auto') {
+        this.perfModeStatusNote.textContent = resolvedLite
+          ? `Auto selected Lite Mode (${this._perfAutoInfo.reason || 'low-spec hardware detected'}) to keep Chrome smooth.`
+          : 'Auto selected High Quality Mode (hardware acceleration detected).';
+      } else if (resolvedLite) {
+        this.perfModeStatusNote.textContent = 'Lite Mode active: blur filters, floating particles, and decorative animations are disabled.';
+      } else {
+        this.perfModeStatusNote.textContent = 'High Quality Mode active: glass blur and Lyrics stage particles enabled.';
+      }
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Cross-Device Cloud Sync Engine (Favorites, History, Themes & Playlists)
   // --------------------------------------------------------------------------
@@ -4774,18 +5082,30 @@ class LyricsApp {
 
     const playSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
     const pauseSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    const cardPlaySvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+    const cardPauseSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 
     document.querySelectorAll('[data-play-track-id]').forEach((btn) => {
       const id = btn.getAttribute('data-play-track-id');
-      const activePlaying = !!(curId && id === curId && isPlaying);
-      btn.innerHTML = activePlaying ? pauseSvg : playSvg;
+      const isCurrentTrack = !!(curId && id === curId);
+      const activePlaying = isCurrentTrack && isPlaying;
+      const isLargeCardIcon = btn.classList.contains('card-play-icon');
+      btn.innerHTML = activePlaying
+        ? (isLargeCardIcon ? cardPauseSvg : pauseSvg)
+        : (isLargeCardIcon ? cardPlaySvg : playSvg);
       btn.classList.toggle('is-playing', activePlaying);
-      btn.title = activePlaying ? 'Pause' : 'Play';
-      btn.setAttribute('aria-label', activePlaying ? 'Pause' : 'Play');
+      if (btn.tagName === 'BUTTON') {
+        btn.title = activePlaying ? 'Pause' : 'Play';
+        btn.setAttribute('aria-label', activePlaying ? 'Pause' : 'Play');
+      }
 
       const card = btn.closest('.theme-card-option');
       if (card) {
-        card.classList.toggle('active', !!(curId && id === curId));
+        card.classList.toggle('active', isCurrentTrack);
+      }
+      const homeCard = btn.closest('.music-card, .jump-card');
+      if (homeCard) {
+        homeCard.classList.toggle('playing', isCurrentTrack);
       }
     });
 
@@ -5195,7 +5515,7 @@ class LyricsApp {
     }
   }
 
-  openP2pCameraScanner(role, title, onCodeReceived) {
+  async openP2pCameraScanner(role, title, onCodeReceived) {
     if (!this.p2pCameraModal || !this.p2pScannerVideo) return;
     this.pendingP2pScanRole = role;
     if (this.p2pCameraTitle) this.p2pCameraTitle.textContent = title;
@@ -5203,20 +5523,28 @@ class LyricsApp {
 
     this.onP2pScanSuccess = onCodeReceived;
 
-    CameraScanner.start(
-      this.p2pScannerVideo,
-      (detectedCode) => {
-        this.closeP2pCameraScanner();
-        if (this.onP2pScanSuccess) this.onP2pScanSuccess(detectedCode.trim());
-      },
-      (err) => {
-        console.warn('Camera error:', err);
-      }
-    );
+    try {
+      const CameraScanner = await loadCameraScanner();
+      if (!this.p2pCameraModal.classList.contains('active')) return;
+      CameraScanner.start(
+        this.p2pScannerVideo,
+        (detectedCode) => {
+          this.closeP2pCameraScanner();
+          if (this.onP2pScanSuccess) this.onP2pScanSuccess(detectedCode.trim());
+        },
+        (err) => {
+          console.warn('Camera error:', err);
+        }
+      );
+    } catch (err) {
+      console.warn('Failed to load camera scanner:', err);
+    }
   }
 
   closeP2pCameraScanner() {
-    CameraScanner.stop();
+    if (_cameraScannerModulePromise) {
+      loadCameraScanner().then(CameraScanner => CameraScanner.stop()).catch(() => {});
+    }
     if (this.p2pCameraModal) this.p2pCameraModal.classList.remove('active');
     if (this.pendingP2pScanRole === 'host_answer' && !this._isSubmittingAnswer) {
       if (this.p2pPairingModal) this.p2pPairingModal.classList.add('active');
@@ -5275,6 +5603,7 @@ class LyricsApp {
       this.localQrUrlLabel.textContent = joinUrl;
     }
 
+    const QRCodeGenerator = await loadQRCodeGenerator();
     const svgMarkup = QRCodeGenerator.generateSVG(joinUrl, 160, '#000000', '#ffffff');
     this.localQrContainer.innerHTML = svgMarkup;
   }
