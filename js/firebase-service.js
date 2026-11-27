@@ -220,7 +220,9 @@ export const FirebaseService = {
       snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
       return list;
     } catch (e) {
-      console.warn('Could not fetch artists collection:', e);
+      if (e?.code !== 'permission-denied') {
+        console.warn('Could not fetch artists collection:', e);
+      }
       return [];
     }
   },
@@ -256,7 +258,9 @@ export const FirebaseService = {
       snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
       return list;
     } catch (e) {
-      console.warn('Could not fetch albums collection:', e);
+      if (e?.code !== 'permission-denied') {
+        console.warn('Could not fetch albums collection:', e);
+      }
       return [];
     }
   },

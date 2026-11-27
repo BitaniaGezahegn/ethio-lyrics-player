@@ -152,8 +152,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.0';
-    this.cacheVersion = 'v35';
+    this.appVersion = 'v2.7.1';
+    this.cacheVersion = 'v36';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -3517,6 +3517,26 @@ class LyricsApp {
     if (refsChanged && this.currentUser) {
       this.pushCloudSyncDebounced();
     }
+  }
+
+  getAllTracksMerged() {
+    const pub = Array.isArray(this.publicTracks) ? this.publicTracks : [];
+    const loc = Array.isArray(this.tracks) ? this.tracks : [];
+    const seen = new Set();
+    const merged = [];
+    for (const t of pub) {
+      if (t && t.id && !seen.has(t.id)) {
+        seen.add(t.id);
+        merged.push(t);
+      }
+    }
+    for (const t of loc) {
+      if (t && t.id && !seen.has(t.id)) {
+        seen.add(t.id);
+        merged.push(t);
+      }
+    }
+    return merged;
   }
 
   rebuildCatalogIndex() {
