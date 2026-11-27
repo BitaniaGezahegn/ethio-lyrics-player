@@ -247,7 +247,7 @@ export const LocalSyncService = {
         artist: trackData.artist || 'Unknown Artist',
         album: trackData.album || 'Single',
         year: trackData.year || '2024',
-        cover: trackData.cover || 'assets/weleta_cover.jpg',
+        cover: trackData.cover || 'brand/elm-default-cover.svg',
         audioUrl: trackData.audioUrl || '',
         lrc: trackData.lrc || '',
       } : null,

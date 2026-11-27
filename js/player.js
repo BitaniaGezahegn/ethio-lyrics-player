@@ -174,7 +174,7 @@ export class AudioPlayer {
   updateMediaSession(track, handlers = {}) {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || !track) return;
     try {
-      const artworkUrl = track.cover && !track.cover.startsWith('blob:') ? track.cover : 'assets/weleta_cover.jpg';
+      const artworkUrl = track.cover && !track.cover.startsWith('blob:') ? track.cover : 'brand/elm-default-cover.svg';
       if (typeof MediaMetadata !== 'undefined') {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.title || 'Untitled Track',

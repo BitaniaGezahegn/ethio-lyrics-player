@@ -12,7 +12,7 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-export function sanitizeUrl(url, fallback = 'assets/weleta_cover.jpg') {
+export function sanitizeUrl(url, fallback = 'brand/elm-default-cover.svg') {
   if (!url || typeof url !== 'string') return fallback;
   const trimmed = url.trim();
   if (!trimmed) return fallback;
@@ -22,8 +22,8 @@ export function sanitizeUrl(url, fallback = 'assets/weleta_cover.jpg') {
     return trimmed;
   }
 
-  // Allow safe relative local asset paths (disallow '..' traversal)
-  if (/^\.?\/?assets\/[a-zA-Z0-9_./-]+$/i.test(trimmed) && !trimmed.includes('..')) {
+  // Allow safe relative local asset/brand paths (disallow '..' traversal)
+  if (/^\.?\/?(assets|brand)\/[a-zA-Z0-9_./-]+$/i.test(trimmed) && !trimmed.includes('..')) {
     return trimmed;
   }
 

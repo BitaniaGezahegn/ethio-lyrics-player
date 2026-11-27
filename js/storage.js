@@ -82,8 +82,8 @@ export const Storage = {
           artistEn: track.artistEn || track.artist || 'Unknown Artist',
           album: track.album || 'My Album',
           year: track.year || new Date().getFullYear().toString(),
-          cover: track.cover || 'assets/weleta_cover.jpg',
-          discCenter: track.discCenter || track.cover || 'assets/weleta_cover.jpg',
+          cover: track.cover || 'brand/elm-default-cover.svg',
+          discCenter: track.discCenter || track.cover || 'brand/elm-default-cover.svg',
           duration: (track.duration && track.duration !== 180) ? track.duration : 0,
           lrc: track.lrc || '',
           audioBlob: track.audioBlob || null,
@@ -165,7 +165,7 @@ export const Storage = {
       }
 
       if (onProgress) onProgress('downloading_cover');
-      let cover = track.cover || 'assets/weleta_cover.jpg';
+      let cover = track.cover || 'brand/elm-default-cover.svg';
       let discCenter = track.discCenter || cover;
 
       // Convert remote cover to blob data if remote
@@ -297,7 +297,7 @@ export const Storage = {
           id: 'playlist_vibes',
           title: 'Ethio Chill & Tizita',
           description: 'Soothing Ethiopian melodies and acoustic vibes with synchronized lyrics.',
-          cover: 'assets/weleta_cover.jpg',
+          cover: 'brand/elm-default-cover.svg',
           gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)',
           trackIds: [],
           createdAt: Date.now(),

@@ -255,8 +255,8 @@ export const FirebaseService = {
       artistEn: trackData.artistEn || trackData.artist || 'Unknown Artist',
       album: trackData.album || 'Single',
       year: trackData.year || new Date().getFullYear().toString(),
-      cover: trackData.cover || 'assets/weleta_cover.jpg',
-      discCenter: trackData.discCenter || trackData.cover || 'assets/weleta_cover.jpg',
+      cover: trackData.cover || 'brand/elm-default-cover.svg',
+      discCenter: trackData.discCenter || trackData.cover || 'brand/elm-default-cover.svg',
       duration: trackData.duration || 180,
       lrc: trackData.lrc || '',
       audioUrl: trackData.audioUrl || '',
@@ -331,7 +331,7 @@ export const FirebaseService = {
       artistEn: submission.artistEn || submission.artist || 'Unknown Artist',
       album: submission.album || 'Single',
       year: submission.year || new Date().getFullYear().toString(),
-      cover: submission.cover || 'assets/weleta_cover.jpg',
+      cover: submission.cover || 'brand/elm-default-cover.svg',
       lrc: submission.lrc || '',
       audioUrl: submission.audioUrl || '',
       audioFileName: submission.audioFileName || '',
@@ -385,7 +385,7 @@ export const FirebaseService = {
         lrc: submission.lrc || '',
         updatedAt: serverTimestamp()
       };
-      if (submission.cover && submission.cover !== 'assets/weleta_cover.jpg') {
+      if (submission.cover && submission.cover !== 'brand/elm-default-cover.svg') {
         updateData.cover = submission.cover;
         updateData.discCenter = submission.cover;
       }
@@ -405,8 +405,8 @@ export const FirebaseService = {
       artistEn: submission.artistEn || submission.artist,
       album: submission.album || 'Single',
       year: submission.year || '2024',
-      cover: submission.cover || 'assets/weleta_cover.jpg',
-      discCenter: submission.discCenter || submission.cover || 'assets/weleta_cover.jpg',
+      cover: submission.cover || 'brand/elm-default-cover.svg',
+      discCenter: submission.discCenter || submission.cover || 'brand/elm-default-cover.svg',
       duration: submission.duration || 180,
       lrc: submission.lrc || '',
       audioUrl: customAudioUrl || submission.audioUrl || '',
@@ -623,7 +623,7 @@ export const FirebaseService = {
         artist: trackData.artist || 'Unknown Artist',
         album: trackData.album || 'Single',
         year: trackData.year || '2024',
-        cover: trackData.cover || 'assets/weleta_cover.jpg',
+        cover: trackData.cover || 'brand/elm-default-cover.svg',
         audioUrl: trackData.audioUrl || '',
         lrc: trackData.lrc || ''
       } : null,

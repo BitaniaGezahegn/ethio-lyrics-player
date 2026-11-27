@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   './js/firebase-service.js',
   './assets/weleta_cover.jpg',
   './brand/elm-icon.svg',
+  './brand/elm-default-cover.svg',
   './brand/elm-logo-horizontal.svg',
   './brand/elm-logo-stacked.svg',
   './brand/icon-192x192.png',

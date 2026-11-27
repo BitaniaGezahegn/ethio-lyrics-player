@@ -16,7 +16,9 @@ export class PaletteExtractor {
   }
 
   static async extractFromImage(imageSource) {
-    if (!imageSource) return this.getDefaultPalette();
+    if (!imageSource || (typeof imageSource === 'string' && imageSource.includes('elm-default-cover'))) {
+      return this.getDefaultPalette();
+    }
 
     const cacheKey = typeof imageSource === 'string' ? imageSource : imageSource.src;
     if (cacheKey && this._cache.has(cacheKey)) {

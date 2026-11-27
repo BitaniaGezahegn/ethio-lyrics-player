@@ -257,7 +257,7 @@ class LyricsApp {
   }
 
   _hasCustomArtwork(cover) {
-    return Boolean(cover && cover !== 'assets/weleta_cover.jpg');
+    return Boolean(cover && cover !== 'brand/elm-default-cover.svg');
   }
 
   _setArtworkFallback(containerEl, imgEl, cover) {
@@ -2298,7 +2298,7 @@ class LyricsApp {
         this.selectedCoverDataUrl = '';
         this.selectedCoverFile = null;
         this.uploadedR2CoverUrl = null;
-        if (this.coverPreviewImg) this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
+        if (this.coverPreviewImg) this.coverPreviewImg.src = 'brand/elm-default-cover.svg';
         if (this.coverFileInput) this.coverFileInput.value = '';
       });
     }
@@ -2693,7 +2693,7 @@ class LyricsApp {
       card.className = `jump-card ${isCurrent ? 'playing' : ''}`;
       card.dataset.trackId = track.id || '';
       card.innerHTML = `
-        <img src="${safeCover}" alt="${safeTitle}" class="jump-card-art jump-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="jump-card-art jump-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
         <div class="jump-card-info jump-card-meta">
           <div class="jump-card-title" title="${safeTitle}">${safeTitle}</div>
           <div class="jump-card-artist" title="${safeArtist}">${safeArtist}</div>
@@ -2742,7 +2742,7 @@ class LyricsApp {
       card.className = 'artist-circle-card';
       card.innerHTML = `
         <div class="artist-circle-avatar">
-          <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
         </div>
         <div class="artist-circle-name" title="${safeName}">${safeName}</div>
         <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
@@ -2807,7 +2807,7 @@ class LyricsApp {
       card.dataset.trackId = track.id || '';
       card.innerHTML = `
         <div class="card-art-wrap">
-          <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
           <div class="card-play-overlay">
             <div class="card-play-icon" data-play-track-id="${safeId}">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
@@ -3483,7 +3483,7 @@ class LyricsApp {
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${safeTitle} - ${safeArtist}
@@ -3660,7 +3660,7 @@ class LyricsApp {
       card.style.padding = '0.75rem 1rem';
       card.innerHTML = `
         <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
-          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" class="track-thumb-img" alt="${safeTitle}" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
               ${safeTitle} - ${safeArtist}
@@ -3862,7 +3862,7 @@ class LyricsApp {
       if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = 'Existing Audio Attached (Click to replace file)';
 
       this.selectedCoverDataUrl = trackToEdit.cover || null;
-      if (this.coverPreviewImg) this.coverPreviewImg.src = trackToEdit.cover || 'assets/weleta_cover.jpg';
+      if (this.coverPreviewImg) this.coverPreviewImg.src = trackToEdit.cover || 'brand/elm-default-cover.svg';
       if (this.checkSubmitToPublic) {
         this.checkSubmitToPublic.checked = !!(trackToEdit.publicAudioUrl || trackToEdit.submissionStatus === 'pending');
       }
@@ -3895,7 +3895,7 @@ class LyricsApp {
       if (this.audioDropzoneLabel) this.audioDropzoneLabel.textContent = 'Click or Drag & Drop Audio File (MP3, WAV, AAC, M4A)';
 
       this.selectedCoverDataUrl = null;
-      if (this.coverPreviewImg) this.coverPreviewImg.src = 'assets/weleta_cover.jpg';
+      if (this.coverPreviewImg) this.coverPreviewImg.src = 'brand/elm-default-cover.svg';
       if (this.coverFileInput) this.coverFileInput.value = '';
       if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
       if (this.formPublicPendingBadge) this.formPublicPendingBadge.style.display = 'none';
@@ -3974,7 +3974,7 @@ class LyricsApp {
     if (this.inputCustomTitle) this.inputCustomTitle.style.borderColor = '';
   }
 
-  async _resolvePublicCoverUrl(fallbackCover = 'assets/weleta_cover.jpg') {
+  async _resolvePublicCoverUrl(fallbackCover = 'brand/elm-default-cover.svg') {
     if (this.uploadedR2CoverUrl) return this.uploadedR2CoverUrl;
     if (this.selectedCoverFile && this.currentUser) {
       try {
@@ -3989,10 +3989,10 @@ class LyricsApp {
         console.warn('Cover R2 upload failed, falling back to default cover:', err);
       }
     }
-    const candidate = this.selectedCoverDataUrl || fallbackCover || 'assets/weleta_cover.jpg';
+    const candidate = this.selectedCoverDataUrl || fallbackCover || 'brand/elm-default-cover.svg';
     // Avoid storing multi-hundred-KB base64 images in Firestore documents
     if (typeof candidate === 'string' && candidate.startsWith('data:') && candidate.length > 60000) {
-      return 'assets/weleta_cover.jpg';
+      return 'brand/elm-default-cover.svg';
     }
     return candidate;
   }
@@ -4059,7 +4059,7 @@ class LyricsApp {
       }
 
       try {
-        const publicCoverUrl = await this._resolvePublicCoverUrl(existingTrack ? existingTrack.cover : 'assets/weleta_cover.jpg');
+        const publicCoverUrl = await this._resolvePublicCoverUrl(existingTrack ? existingTrack.cover : 'brand/elm-default-cover.svg');
         const publicAudioUrl = this.uploadedR2AudioUrl;
 
         if (this.isAdmin) {
@@ -4117,8 +4117,8 @@ class LyricsApp {
           album,
           year,
           lrc,
-          cover: this.selectedCoverDataUrl || existingTrack.cover || 'assets/weleta_cover.jpg',
-          discCenter: this.selectedCoverDataUrl || existingTrack.discCenter || 'assets/weleta_cover.jpg',
+          cover: this.selectedCoverDataUrl || existingTrack.cover || 'brand/elm-default-cover.svg',
+          discCenter: this.selectedCoverDataUrl || existingTrack.discCenter || 'brand/elm-default-cover.svg',
           audioBlob: this.selectedAudioFile || existingTrack.audioBlob || null,
           publicAudioUrl,
           submissionStatus: 'pending'
@@ -4130,8 +4130,8 @@ class LyricsApp {
           artistEn: artist,
           album,
           year,
-          cover: this.selectedCoverDataUrl || 'assets/weleta_cover.jpg',
-          discCenter: this.selectedCoverDataUrl || 'assets/weleta_cover.jpg',
+          cover: this.selectedCoverDataUrl || 'brand/elm-default-cover.svg',
+          discCenter: this.selectedCoverDataUrl || 'brand/elm-default-cover.svg',
           duration: 180,
           lrc,
           audioBlob: this.selectedAudioFile,
@@ -4185,11 +4185,11 @@ class LyricsApp {
     // Offline-only Save / Edit Mode
     let coverArt = this.selectedCoverDataUrl;
     if (!coverArt && !this.editingTrackId) {
-      coverArt = 'assets/weleta_cover.jpg';
+      coverArt = 'brand/elm-default-cover.svg';
     }
     let discArt = this.selectedCoverDataUrl;
     if (!discArt && !this.editingTrackId) {
-      discArt = 'assets/weleta_cover.jpg';
+      discArt = 'brand/elm-default-cover.svg';
     }
 
     if (existingTrack) {
@@ -4202,8 +4202,8 @@ class LyricsApp {
       existingTrack.lrc = lrc;
 
       if (this.selectedCoverDataUrl !== null) {
-        existingTrack.cover = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
-        existingTrack.discCenter = this.selectedCoverDataUrl || 'assets/weleta_cover.jpg';
+        existingTrack.cover = this.selectedCoverDataUrl || 'brand/elm-default-cover.svg';
+        existingTrack.discCenter = this.selectedCoverDataUrl || 'brand/elm-default-cover.svg';
       }
 
       if (this.selectedAudioFile) {
@@ -4231,8 +4231,8 @@ class LyricsApp {
       artistEn: artist,
       album: album,
       year: year,
-      cover: coverArt || 'assets/weleta_cover.jpg',
-      discCenter: discArt || 'assets/weleta_cover.jpg',
+      cover: coverArt || 'brand/elm-default-cover.svg',
+      discCenter: discArt || 'brand/elm-default-cover.svg',
       duration: 180,
       lrc: lrc,
       audioBlob: this.selectedAudioFile,
@@ -4454,7 +4454,7 @@ class LyricsApp {
         item.className = 'admin-submission-item';
         item.innerHTML = `
           <div class="submission-meta-row">
-            <img src="${safeSubCover}" class="submission-thumb" alt="${safeSubTitle}" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+            <img src="${safeSubCover}" class="submission-thumb" alt="${safeSubTitle}" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
             <div style="flex:1; min-width:0;">
               <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:2px;">
                 ${isMetadataEdit ? '<span style="background:rgba(229,185,90,0.2); color:var(--color-gold); font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700; border:1px solid rgba(229,185,90,0.4);">COMMUNITY EDIT</span>' : '<span style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700;">NEW TRACK</span>'}
@@ -4554,7 +4554,7 @@ class LyricsApp {
     const audioUrl = this.adminNewAudioUrl.value.trim();
     const album = this.adminNewAlbum.value.trim() || 'Single';
     const year = this.adminNewYear.value.trim() || '2024';
-    const coverUrl = this.adminNewCoverUrl.value.trim() || 'assets/weleta_cover.jpg';
+    const coverUrl = this.adminNewCoverUrl.value.trim() || 'brand/elm-default-cover.svg';
     const lrc = this.adminNewLrc.value.trim() || '';
 
     if (!artist || !title) {
@@ -5030,7 +5030,7 @@ class LyricsApp {
     this._detailModalActiveTrack = track;
 
     if (this.detailModalCover) {
-      this.detailModalCover.src = track.cover || 'assets/weleta_cover.jpg';
+      this.detailModalCover.src = track.cover || 'brand/elm-default-cover.svg';
     }
     if (this.detailModalTitle) {
       this.detailModalTitle.textContent = track.title || 'Untitled Track';
@@ -5163,7 +5163,7 @@ class LyricsApp {
 
     // Target song preview
     if (this.editReviewCurrentArt) {
-      this.editReviewCurrentArt.src = track.cover || 'assets/weleta_cover.jpg';
+      this.editReviewCurrentArt.src = track.cover || 'brand/elm-default-cover.svg';
     }
     if (this.editReviewCurrentTitle) {
       this.editReviewCurrentTitle.textContent = track.title || 'Untitled Track';
@@ -5215,7 +5215,7 @@ class LyricsApp {
       artistEn: this.inputEditReviewArtistEn ? this.inputEditReviewArtistEn.value.trim() : artist,
       album: this.inputEditReviewAlbum ? this.inputEditReviewAlbum.value.trim() : 'Single',
       year: this.inputEditReviewYear ? this.inputEditReviewYear.value.trim() : '2024',
-      cover: this.inputEditReviewCover ? this.inputEditReviewCover.value.trim() : (this._editingReviewTrack.cover || 'assets/weleta_cover.jpg'),
+      cover: this.inputEditReviewCover ? this.inputEditReviewCover.value.trim() : (this._editingReviewTrack.cover || 'brand/elm-default-cover.svg'),
       lrc: this.inputEditReviewLrc ? this.inputEditReviewLrc.value.trim() : '',
       audioUrl: this._editingReviewTrack.audioUrl || '',
       audioFileName: this._editingReviewTrack.audioFileName || '',
@@ -5746,7 +5746,7 @@ class LyricsApp {
           artist: this.currentTrack.artist,
           album: this.currentTrack.album || 'Single',
           year: this.currentTrack.year || '2024',
-          cover: this.currentTrack.cover || 'assets/weleta_cover.jpg',
+          cover: this.currentTrack.cover || 'brand/elm-default-cover.svg',
           audioUrl: this.syncMode === 'local'
             ? (this.currentTrack.audioUrl || LocalSyncService.getStreamAudioUrl(this.currentTrack.id))
             : (this.currentTrack.audioUrl || ''),
@@ -5989,7 +5989,7 @@ class LyricsApp {
             artist: room.currentTrack.artist,
             album: room.currentTrack.album || 'Single',
             year: room.currentTrack.year || '2024',
-            cover: room.currentTrack.cover || 'assets/weleta_cover.jpg',
+            cover: room.currentTrack.cover || 'brand/elm-default-cover.svg',
             audioUrl: trackAudioUrl,
             audioBlob: trackAudioBlob,
             lrc: room.currentTrack.lrc || ''
@@ -6304,7 +6304,7 @@ class LyricsApp {
     }
 
     if (room.currentTrack) {
-      if (this.activeRoomTrackArt) this.activeRoomTrackArt.src = room.currentTrack.cover || 'assets/weleta_cover.jpg';
+      if (this.activeRoomTrackArt) this.activeRoomTrackArt.src = room.currentTrack.cover || 'brand/elm-default-cover.svg';
       if (this.activeRoomTrackTitle) this.activeRoomTrackTitle.textContent = room.currentTrack.title || 'Untitled';
       if (this.activeRoomTrackArtist) this.activeRoomTrackArtist.textContent = room.currentTrack.artist || 'Unknown Artist';
       if (this.activeRoomTrackStateBadge) {
@@ -6598,7 +6598,7 @@ class LyricsApp {
     if (!this.queueDrawerModal) return;
 
     if (this.currentTrack) {
-      if (this.queueNowPlayingArt) this.queueNowPlayingArt.src = this.currentTrack.cover || 'assets/weleta_cover.jpg';
+      if (this.queueNowPlayingArt) this.queueNowPlayingArt.src = this.currentTrack.cover || 'brand/elm-default-cover.svg';
       if (this.queueNowPlayingTitle) this.queueNowPlayingTitle.textContent = this.currentTrack.title || 'Untitled';
       if (this.queueNowPlayingArtist) this.queueNowPlayingArtist.textContent = this.currentTrack.artist || 'Unknown Artist';
     }
@@ -6628,7 +6628,7 @@ class LyricsApp {
       const item = document.createElement('div');
       item.className = 'queue-track-item';
       item.innerHTML = `
-        <img src="${safeCover}" alt="${safeTitle}" class="queue-thumb-img" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="queue-thumb-img" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
         <div style="flex:1; min-width:0;">
           <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeTitle}</div>
           <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeArtist}</div>
@@ -6923,7 +6923,7 @@ class LyricsApp {
       const safeCover = sanitizeUrl(track.cover);
       row.innerHTML = `
         <span class="playlist-track-idx">${idx + 1}</span>
-        <img src="${safeCover}" alt="${safeTitle}" class="playlist-track-thumb" crossorigin="anonymous" onerror="this.src='assets/weleta_cover.jpg'">
+        <img src="${safeCover}" alt="${safeTitle}" class="playlist-track-thumb" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
         <div style="flex:1; min-width:0;">
           <div class="playlist-track-title">${safeTitle}</div>
           <div class="playlist-track-artist">${safeArtist}</div>
@@ -7010,7 +7010,7 @@ class LyricsApp {
     }
 
     if (this.addToPlaylistCover) {
-      this.addToPlaylistCover.src = this.currentPendingPlaylistTrack.cover || 'assets/weleta_cover.jpg';
+      this.addToPlaylistCover.src = this.currentPendingPlaylistTrack.cover || 'brand/elm-default-cover.svg';
     }
     if (this.addToPlaylistTitle) {
       this.addToPlaylistTitle.textContent = this.currentPendingPlaylistTrack.title || 'Untitled';
@@ -7116,7 +7116,7 @@ class LyricsApp {
       row.className = 'playlist-choice-row';
       row.innerHTML = `
         <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0;">
-          <img src="${safeCover}" alt="${safeTitle}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;" onerror="this.src='assets/weleta_cover.jpg'">
+          <img src="${safeCover}" alt="${safeTitle}" style="width:36px; height:36px; border-radius:6px; object-fit:cover;" onerror="this.src='brand/elm-default-cover.svg'">
           <div style="overflow:hidden;">
             <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeTitle}</div>
             <div style="font-size:0.72rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeArtist}</div>

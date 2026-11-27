@@ -57,11 +57,12 @@ async function run() {
 
   console.log('3. Testing sanitize utilities...');
   assert.equal(escapeHtml('<img src=x onerror="alert(1)">'), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
-  assert.equal(sanitizeUrl('javascript:alert(1)'), 'assets/weleta_cover.jpg');
-  assert.equal(sanitizeUrl('data:text/html,<script>alert(1)</script>'), 'assets/weleta_cover.jpg');
+  assert.equal(sanitizeUrl('javascript:alert(1)'), 'brand/elm-default-cover.svg');
+  assert.equal(sanitizeUrl('data:text/html,<script>alert(1)</script>'), 'brand/elm-default-cover.svg');
   assert.equal(sanitizeUrl('https://pub-123.r2.dev/cover.jpg'), 'https://pub-123.r2.dev/cover.jpg');
   assert.equal(sanitizeUrl('assets/weleta_cover.jpg'), 'assets/weleta_cover.jpg');
-  assert.equal(sanitizeUrl('assets/../local-sync-server.js'), 'assets/weleta_cover.jpg');
+  assert.equal(sanitizeUrl('brand/elm-default-cover.svg'), 'brand/elm-default-cover.svg');
+  assert.equal(sanitizeUrl('assets/../local-sync-server.js'), 'brand/elm-default-cover.svg');
   console.log('   OK');
 
   console.log('4. Testing LyricsParser...');

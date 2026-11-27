@@ -413,7 +413,7 @@ export class RecommendationEngine {
       if (!artistMap[artist]) {
         artistMap[artist] = {
           name: artist,
-          cover: track.cover || 'assets/weleta_cover.jpg',
+          cover: track.cover || 'brand/elm-default-cover.svg',
           trackCount: 0,
           sampleTrack: track
         };
