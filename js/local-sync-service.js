@@ -752,7 +752,11 @@ export const LocalSyncService = {
         break;
 
       case 'error':
-        alert(msg.error || 'Local room error');
+        if (typeof this.onError === 'function') {
+          this.onError(msg.error || 'Local room error');
+        } else {
+          console.warn('[LocalSync] Room error:', msg.error || 'Local room error');
+        }
         break;
     }
   },

@@ -1,4 +1,5 @@
 import { LyricsParser } from './lyrics-parser.js';
+import { AudioEqualizer } from './utils/audio-eq.js';
 
 /**
  * Audio Engine: Handles HTML5 Audio playback + Web Audio API synthesizer fallback
@@ -25,15 +26,22 @@ export class AudioPlayer {
     this.onTimeUpdate = null;
     this.onDurationChange = null;
     this.onBufferUpdate = null;
+    this.onBufferingChange = null;
     this.onStateChange = null;
     this.onEnded = null;
     this.onPlaying = null;
     this.onSeeked = null;
     this.onWaiting = null;
     this.onError = null;
+    this.isBuffering = false;
     this._isBlobUrl = false;
     this._corsFallbackTried = false;
     this._wantedPlayOnLoad = false;
+    this._lastPositionStateMs = 0;
+
+    // CORS-safe 5-band Equalizer
+    this.equalizer = new AudioEqualizer();
+    this.equalizer.loadSavedPreset();
 
     // Web Audio Synthesizer state
     this.audioCtx = null;
@@ -45,6 +53,43 @@ export class AudioPlayer {
     this._lastRafEmitMs = 0;
 
     this.initAudioListeners();
+  }
+
+  _setBuffering(active) {
+    const next = Boolean(active);
+    if (this.isBuffering === next) return;
+    this.isBuffering = next;
+    if (this.onBufferingChange) this.onBufferingChange(next);
+  }
+
+  isCorsSafeStream() {
+    return Boolean(this._isBlobUrl || (this.audioElement && this.audioElement.crossOrigin && !this._corsFallbackTried));
+  }
+
+  _replaceElementIfEqBoundForNonCors() {
+    if (this.equalizer && this.equalizer.attachedElement === this.audioElement && !this.isCorsSafeStream()) {
+      try { this.audioElement.pause(); } catch {}
+      try { this.audioElement.removeAttribute('src'); this.audioElement.load(); } catch {}
+      this.audioElement = new Audio();
+      this.audioElement.preload = 'metadata';
+      this.audioElement.preservesPitch = true;
+      this.audioElement.mozPreservesPitch = true;
+      this.audioElement.webkitPreservesPitch = true;
+      this.initAudioListeners();
+    }
+  }
+
+  setEqPreset(presetId) {
+    const resolved = this.equalizer.setPreset(presetId, true);
+    if (resolved !== 'flat' && this.isCorsSafeStream() && !this.isSynthetic) {
+      this.equalizer.ensureGraphForElement(this.audioElement, true);
+    }
+    return resolved;
+  }
+
+  getEqEnergy() {
+    if (!this.isPlaying || this.isSynthetic || !this.equalizer) return 0;
+    return this.equalizer.getEnergyLevel();
   }
 
   setTickIntervalMs(ms) {
@@ -68,29 +113,36 @@ export class AudioPlayer {
     this.audioElement.addEventListener('play', () => {
       this.isPlaying = true;
       this._startRafTicker();
+      this.updateMediaSessionPosition(this.currentTime, this.duration, this.getEffectivePlaybackRate(), true);
       if (this.onStateChange) this.onStateChange('playing');
     });
 
     this.audioElement.addEventListener('playing', () => {
+      this._setBuffering(false);
       if (this.onPlaying) this.onPlaying();
     });
 
     this.audioElement.addEventListener('seeked', () => {
+      this.updateMediaSessionPosition(this.currentTime, this.duration, this.getEffectivePlaybackRate(), true);
       if (this.onSeeked) this.onSeeked();
     });
 
     this.audioElement.addEventListener('waiting', () => {
+      if (this.isPlaying || this._wantedPlayOnLoad) this._setBuffering(true);
       if (this.onWaiting) this.onWaiting();
     });
 
     this.audioElement.addEventListener('pause', () => {
       this.isPlaying = false;
+      this._setBuffering(false);
       this._stopRafTicker();
+      this.updateMediaSessionPosition(this.currentTime, this.duration, this.getEffectivePlaybackRate(), true);
       if (this.onStateChange) this.onStateChange('paused');
     });
 
     this.audioElement.addEventListener('ended', () => {
       this.isPlaying = false;
+      this._setBuffering(false);
       this._stopRafTicker();
       if (this.onEnded) this.onEnded();
       if (this.onStateChange) this.onStateChange('ended');
@@ -123,13 +175,17 @@ export class AudioPlayer {
       this.onBufferUpdate(Math.min(100, Math.max(0, (end / dur) * 100)));
     };
     this.audioElement.addEventListener('progress', emitBuffered);
-    this.audioElement.addEventListener('canplay', emitBuffered);
+    this.audioElement.addEventListener('canplay', () => {
+      this._setBuffering(false);
+      emitBuffered();
+    });
     this.audioElement.addEventListener('error', () => {
       if (this.isSynthetic || !this.audioElement.getAttribute('src')) return;
       if (this.audioElement.crossOrigin && !this._corsFallbackTried && this.audioUrl && !this._isBlobUrl) {
         this._corsFallbackTried = true;
         const shouldPlay = this._wantedPlayOnLoad;
         this.audioElement.removeAttribute('crossOrigin');
+        this._replaceElementIfEqBoundForNonCors();
         this.audioElement.src = this.audioUrl;
         this.audioElement.load();
         if (shouldPlay) {
@@ -138,6 +194,7 @@ export class AudioPlayer {
         return;
       }
       this.isPlaying = false;
+      this._setBuffering(false);
       this._wantedPlayOnLoad = false;
       this._stopRafTicker();
       if (this.onStateChange) this.onStateChange('paused');
@@ -183,13 +240,44 @@ export class AudioPlayer {
           artwork: [{ src: artworkUrl, sizes: '512x512', type: 'image/jpeg' }]
         });
       }
-      if (handlers.onPlay) navigator.mediaSession.setActionHandler('play', handlers.onPlay);
-      if (handlers.onPause) navigator.mediaSession.setActionHandler('pause', handlers.onPause);
-      if (handlers.onPrevioustrack) navigator.mediaSession.setActionHandler('previoustrack', handlers.onPrevioustrack);
-      if (handlers.onNexttrack) navigator.mediaSession.setActionHandler('nexttrack', handlers.onNexttrack);
+      const bindAction = (action, fn) => {
+        if (!fn) return;
+        try { navigator.mediaSession.setActionHandler(action, fn); } catch {}
+      };
+      bindAction('play', handlers.onPlay);
+      bindAction('pause', handlers.onPause);
+      bindAction('previoustrack', handlers.onPrevioustrack);
+      bindAction('nexttrack', handlers.onNexttrack);
+      bindAction('seekto', handlers.onSeekTo ? (details) => {
+        if (details && Number.isFinite(details.seekTime)) {
+          handlers.onSeekTo(details.seekTime);
+        }
+      } : null);
+      bindAction('seekbackward', handlers.onSeekBackward ? (details) => {
+        handlers.onSeekBackward((details && Number.isFinite(details.seekOffset)) ? details.seekOffset : 10);
+      } : null);
+      bindAction('seekforward', handlers.onSeekForward ? (details) => {
+        handlers.onSeekForward((details && Number.isFinite(details.seekOffset)) ? details.seekOffset : 10);
+      } : null);
     } catch (e) {
       // MediaSession not supported in all contexts
     }
+  }
+
+  updateMediaSessionPosition(position = 0, duration = 0, playbackRate = 1.0, force = false) {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || typeof navigator.mediaSession.setPositionState !== 'function') {
+      return;
+    }
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (!force && (now - this._lastPositionStateMs) < 900) return;
+    const dur = Number(duration);
+    if (!Number.isFinite(dur) || dur <= 0) return;
+    const pos = Math.max(0, Math.min(dur, Number(position) || 0));
+    const rate = Math.max(0.25, Math.min(4.0, Number(playbackRate) || 1.0));
+    try {
+      navigator.mediaSession.setPositionState({ duration: dur, playbackRate: rate, position: pos });
+      this._lastPositionStateMs = now;
+    } catch {}
   }
 
   _normalizeStreamUrl(url) {
@@ -236,6 +324,7 @@ export class AudioPlayer {
         this.audioElement.crossOrigin = 'anonymous';
       } else {
         this.audioElement.removeAttribute('crossOrigin');
+        this._replaceElementIfEqBoundForNonCors();
       }
       // Progressive HTTP Range streaming: fetch only metadata until playback starts
       this.audioElement.preload = 'metadata';
@@ -243,6 +332,9 @@ export class AudioPlayer {
       this.audioElement.load();
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.getEffectivePlaybackRate();
+      if (this.equalizer.preset !== 'flat' && this.isCorsSafeStream()) {
+        this.equalizer.ensureGraphForElement(this.audioElement, true);
+      }
     } else if (track.isDemoSynth === true) {
       this._revokeBlobUrl();
       this.isSynthetic = true;
@@ -279,6 +371,9 @@ export class AudioPlayer {
     this.audioElement.load();
     this.audioElement.volume = this.volume;
     this.audioElement.playbackRate = this.getEffectivePlaybackRate();
+    if (this.equalizer.preset !== 'flat') {
+      this.equalizer.ensureGraphForElement(this.audioElement, true);
+    }
     this.seek(0);
     if (this.onBufferUpdate) this.onBufferUpdate(100);
   }
@@ -322,15 +417,20 @@ export class AudioPlayer {
       }
       // Switch to progressive buffering as soon as playback is requested
       this._wantedPlayOnLoad = true;
+      if (this.equalizer.preset !== 'flat' && this.isCorsSafeStream()) {
+        this.equalizer.ensureGraphForElement(this.audioElement, true);
+      }
       this.audioElement.preload = 'auto';
       this.audioElement.volume = this.volume;
       this.audioElement.playbackRate = this.getEffectivePlaybackRate();
       return this.audioElement.play().then(() => {
         this.isPlaying = true;
+        this._setBuffering(false);
         this._startRafTicker();
         if (this.onStateChange) this.onStateChange('playing');
         return true;
       }).catch(e => {
+        this._setBuffering(false);
         console.warn('Audio play prevented:', e);
         if (e && e.name !== 'NotAllowedError' && this.onError) {
           this.onError('Could not start audio stream. Check connection and try again.');

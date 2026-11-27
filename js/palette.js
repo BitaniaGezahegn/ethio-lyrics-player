@@ -111,19 +111,18 @@ export class PaletteExtractor {
               };
             }
 
-            // Ambient dark base (10-15% of primary)
-            const dark = {
-              r: Math.floor(primary.r * 0.12),
-              g: Math.floor(primary.g * 0.12),
-              b: Math.floor(primary.b * 0.14)
-            };
+            // Clamp accent lightness/saturation and keep dark backdrop contrast high
+            const adjPrimary = this._clampAccentRgb(primary, { minL: 0.44, maxL: 0.66, minS: 0.42 });
+            const adjSecondary = this._clampAccentRgb(secondary, { minL: 0.40, maxL: 0.62, minS: 0.35 });
+            const adjHighlight = this._clampAccentRgb(adjPrimary, { minL: 0.68, maxL: 0.80, minS: 0.45 });
+            const dark = this._clampAccentRgb(adjPrimary, { minL: 0.04, maxL: 0.09, minS: 0.25 });
 
             const result = {
-              primary: `rgb(${primary.r}, ${primary.g}, ${primary.b})`,
-              secondary: `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`,
+              primary: `rgb(${adjPrimary.r}, ${adjPrimary.g}, ${adjPrimary.b})`,
+              secondary: `rgb(${adjSecondary.r}, ${adjSecondary.g}, ${adjSecondary.b})`,
               dark: `rgb(${dark.r}, ${dark.g}, ${dark.b})`,
-              glow: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.55)`,
-              highlight: `rgb(${Math.min(255, primary.r + 40)}, ${Math.min(255, primary.g + 40)}, ${Math.min(255, primary.b + 40)})`
+              glow: `rgba(${adjPrimary.r}, ${adjPrimary.g}, ${adjPrimary.b}, 0.52)`,
+              highlight: `rgb(${adjHighlight.r}, ${adjHighlight.g}, ${adjHighlight.b})`
             };
 
             resolve(result);
@@ -151,6 +150,53 @@ export class PaletteExtractor {
       console.warn('PaletteExtractor outer error:', outerErr);
       return this.getDefaultPalette();
     }
+  }
+
+  static _clampAccentRgb(rgb, { minL = 0.42, maxL = 0.68, minS = 0.35 } = {}) {
+    let r = (rgb.r || 0) / 255;
+    let g = (rgb.g || 0) / 255;
+    let b = (rgb.b || 0) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0;
+    let s = 0;
+    let l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+
+    // Preserve muted gray artwork gracefully if near monochrome, otherwise boost saturation floor
+    if (s > 0.08 && s < minS) s = minS;
+    l = Math.min(maxL, Math.max(minL, l));
+
+    if (s === 0) {
+      const gray = Math.round(l * 255);
+      return { r: gray, g: gray, b: gray };
+    }
+
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    return {
+      r: Math.round(hue2rgb(p, q, h + 1 / 3) * 255),
+      g: Math.round(hue2rgb(p, q, h) * 255),
+      b: Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
+    };
   }
 
   static getDefaultPalette() {

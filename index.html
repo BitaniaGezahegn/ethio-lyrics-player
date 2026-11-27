@@ -16,14 +16,14 @@
   <meta property="og:title" content="ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics">
   <meta property="og:description"
     content="Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork themes, and listening parties.">
-  <meta property="og:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
+  <meta property="og:image" content="https://ethio-lyrics-player.pages.dev/brand/icon-512x512.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ELM | Ethio Lyrics Media">
   <meta name="twitter:description"
     content="Synchronized Ethiopian Music Lyrics with live listening rooms and dynamic ambient themes.">
-  <meta name="twitter:image" content="https://ethio-lyrics-player.pages.dev/assets/weleta_cover.jpg">
+  <meta name="twitter:image" content="https://ethio-lyrics-player.pages.dev/brand/icon-512x512.png">
 
   <!-- PWA & Mobile Web Meta -->
   <link rel="manifest" href="manifest.json">
@@ -131,6 +131,14 @@
 
       <!-- Top Right Actions -->
       <div class="top-actions">
+        <button id="btnOpenGlobalSearch" class="btn-pill btn-icon-only" title="Search Songs &amp; Lyrics (/ or Ctrl+K)" aria-label="Search Songs and Lyrics" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+        </button>
+
         <!-- Listen Together (Live Session Button) -->
         <button id="btnOpenListenTogether" class="btn-pill btn-broadcast-pill" title="Listen Together (Live Session)">
           <svg class="broadcast-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -190,6 +198,34 @@
            TAB 1: HOME (Redesigned Music Discovery & Recommendation Hub)
            ==================================================================== -->
       <section id="tabViewHome" class="tab-view active">
+        <!-- 0. Compact Greeting & Library Pulse Strip -->
+        <div class="home-greeting-banner home-greeting-compact">
+          <div class="greeting-left">
+            <div class="greeting-period-badge" id="greetingMoodBadge">
+              <span class="live-dot-pulse"></span>
+              <span id="greetingMoodText">Your Library</span>
+            </div>
+            <h2 class="greeting-heading" id="greetingHeadingText">Listening Overview <span class="greeting-amharic-sub" id="greetingHeadingAmharic">የሙዚቃ ስብስብ</span></h2>
+            <p class="greeting-subtext" id="greetingSubtext">Catalog songs, synchronized lyrics, and your saved favorites</p>
+          </div>
+          <div class="greeting-dna-stats" id="greetingDnaStats">
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatTotal">0</span>
+              <span class="dna-stat-lbl">Songs</span>
+            </div>
+            <div class="dna-stat-divider"></div>
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatLrc">0</span>
+              <span class="dna-stat-lbl">Synced LRC</span>
+            </div>
+            <div class="dna-stat-divider"></div>
+            <div class="dna-stat-item">
+              <span class="dna-stat-val" id="dnaStatFavs">0</span>
+              <span class="dna-stat-lbl">Favorites</span>
+            </div>
+          </div>
+        </div>
+
         <!-- 1. Search & Dynamic Filter Bar -->
         <div class="home-search-filter-container">
           <div class="home-search-input-wrap">
@@ -199,7 +235,7 @@
               <path d="m21 21-4.3-4.3" />
             </svg>
             <input type="text" id="inputHomeSearch" class="home-search-input"
-              placeholder="Search by song, artist, album, or lyrics...">
+              placeholder="Search Amharic/English song, artist, album, or lyrics... (Press /)">
             <button id="btnClearHomeSearch" class="btn-clear-search" style="display:none;" title="Clear search">&times;</button>
           </div>
           <!-- Dynamic Filter Pills (populated strictly from tracks present in catalog) -->
@@ -208,6 +244,23 @@
               <span>All Music</span>
             </button>
           </div>
+        </div>
+
+        <!-- 1b. Instant Bilingual & Lyrics Search Results (Shown when searching) -->
+        <div class="home-catalog-section" id="sectionHomeSearchResults" style="display:none;">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(229,185,90,0.16); color:var(--color-gold);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+              <div>
+                <h2 class="home-section-title" id="homeSearchTitleText">Search Results</h2>
+                <div class="home-section-subtitle" id="homeSearchSubtitleText">Matched across titles, artists, albums &amp; lyrics</div>
+              </div>
+            </div>
+          </div>
+          <div id="homeSearchEntityRow" class="home-search-entity-row" style="display:none;"></div>
+          <div class="home-music-grid" id="gridHomeSearchResults"></div>
         </div>
 
         <!-- 2. Section: Jump Back In (Chronological Recent Resume) -->
@@ -229,7 +282,7 @@
           <div class="jump-back-in-grid" id="gridJumpBackIn"></div>
         </div>
 
-        <!-- 3. Shelf: Global Cloud Catalog (Chronological Order) -->
+        <!-- 3. Shelf: New Drops (Preview of Catalog; Full Catalog lives in Library -> Songs) -->
         <div class="home-catalog-section" id="sectionGlobalCatalog">
           <div class="home-section-header">
             <div class="section-title-wrap">
@@ -237,8 +290,8 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
               </div>
               <div>
-                <h2 class="home-section-title">Global Cloud Catalog <span class="home-section-amharic">የደመና ካታሎግ</span></h2>
-                <div class="home-section-subtitle" id="catalogCounterSubtitle">Streaming live via Cloudflare R2 object storage</div>
+                <h2 class="home-section-title">New Drops <span class="home-section-amharic">አዲስ ዜማዎች</span></h2>
+                <div class="home-section-subtitle" id="catalogCounterSubtitle">Latest additions &amp; filtered tracks</div>
               </div>
             </div>
             <div class="section-actions-right">
@@ -252,7 +305,7 @@
                   <option value="lrc">Synced Lyrics First</option>
                 </select>
               </div>
-              <button id="btnViewMoreGlobalCatalog" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
+              <button id="btnViewMoreGlobalCatalog" class="btn-pill btn-xs btn-view-more" type="button">Browse All</button>
             </div>
           </div>
           <div class="home-music-grid" id="gridGlobalCatalog"></div>
@@ -592,6 +645,15 @@
                   </svg>
                   <span>Shuffle</span>
                 </button>
+                <button id="btnAlbumDownloadAll" class="btn-pill"
+                  style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>Save Offline</span>
+                </button>
               </div>
               <div id="albumTracksList" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
             </div>
@@ -709,6 +771,15 @@
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                   </svg>
                   <span>Add Songs</span>
+                </button>
+                <button id="btnPlaylistDownloadAll" class="btn-pill"
+                  style="padding:0.6rem 1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>Save Offline</span>
                 </button>
                 <button id="btnPlaylistEdit" class="btn-pill"
                   style="padding:0.6rem 1rem; font-size:0.85rem; gap:0.45rem;" type="button">
@@ -932,6 +1003,10 @@
 
         <!-- Song Header Metadata -->
         <div class="song-header-section">
+          <div class="stage-mobile-art-box">
+            <img id="stageMobileCoverImg" class="stage-mobile-cover" src="brand/elm-default-cover.svg" alt="Album Cover"
+              crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+          </div>
           <div class="artist-heading">
             <h1 id="artistAmharic" class="artist-amharic">የሙዚቃ ማጫወቻ</h1>
             <h2 id="artistEnglish" class="artist-english">ETHIO LYRICS PLAYER</h2>
@@ -941,17 +1016,49 @@
           </div>
         </div>
 
+        <!-- Floating Stage Quick-Bar (Hidden in Fullscreen) -->
+        <div id="lyricsStageQuickBar" class="lyrics-stage-quickbar" aria-label="Lyrics controls">
+          <button id="btnStageModeToggle" class="stage-quick-btn" type="button" title="Toggle Synced / Full Sheet View">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span id="stageModeLabel">Synced</span>
+          </button>
+          <button id="btnStageFontCycle" class="stage-quick-btn" type="button" title="Cycle Lyrics Font Size">
+            <span style="font-weight:700;">Aa</span>
+          </button>
+          <button id="btnStageShareLyric" class="stage-quick-btn" type="button" title="Create Shareable Lyric Card">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <span>Share</span>
+          </button>
+          <button id="btnStageLrcStudio" class="stage-quick-btn" type="button" title="Open Sync Studio">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Studio</span>
+          </button>
+          <button id="btnStageTrackMore" class="stage-quick-btn stage-quick-icon" type="button" title="More track actions" aria-label="More track actions">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+          </button>
+        </div>
+
         <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
         <div class="stage-split">
           <!-- Lyrics Viewport -->
           <div class="lyrics-container" id="lyricsViewport">
+            <div id="lyricsInstrumentalCue" class="lyrics-instrumental-cue" style="display:none;" title="Skip to next verse">
+              <div class="cue-dots"><span></span><span></span><span></span></div>
+              <span id="lyricsCueLabel" class="cue-label">Instrumental</span>
+            </div>
             <div class="lyrics-scroll-wrap" id="lyricsScrollWrap"></div>
+            <button id="btnLyricsResumeSync" class="btn-lyrics-resume-sync" style="display:none;" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>
+              <span>Sync to Active Line</span>
+            </button>
             <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
           </div>
 
           <!-- Circular Vinyl Disc / Album Badge -->
           <div class="visualizer-container">
             <div class="disc-wrapper">
+              <img id="kineticSleeveArt" class="kinetic-sleeve-art" src="brand/elm-default-cover.svg" alt=""
+                aria-hidden="true" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
               <div class="disc-outer-grooves"></div>
               <div class="vinyl-disc has-default-artwork" id="vinylDisc">
                 <div class="elm-default-artwork elm-default-artwork--disc" aria-hidden="true">
@@ -995,13 +1102,13 @@
                 <button id="btnSettingsGoogleSignIn" class="btn-primary"
                   style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:fit-content; padding:0.65rem 1.4rem;">
                   <svg width="16" height="16" viewBox="0 0 24 24">
-                    <path fill="#ffffff"
+                    <path fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#ffffff"
+                    <path fill="#34A853"
                       d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#ffffff"
+                    <path fill="#FBBC05"
                       d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#ffffff"
+                    <path fill="#EA4335"
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
                   <span>Sign in with Google</span>
@@ -1188,13 +1295,27 @@
 
               <div class="settings-pref-row">
                 <div>
-                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Auto-Collapse Media Controller</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Automatically minimize the player bar after inactivity</div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Compact Floating Player Dock</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Start in minimal floating pill mode outside the Lyrics Stage</div>
                 </div>
-                <label class="elm-switch" title="Toggle auto-collapse player bar">
-                  <input type="checkbox" id="toggleAutoCollapsePlayer" checked>
+                <label class="elm-switch" title="Toggle compact player dock">
+                  <input type="checkbox" id="toggleAutoCollapsePlayer">
                   <span class="elm-switch-slider"></span>
                 </label>
+              </div>
+
+              <div class="settings-pref-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Audio Equalizer Preset</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">CORS-safe 5-band tone shaping for local &amp; verified streams</div>
+                </div>
+                <select id="selectEqPreset" class="form-input settings-pref-select" title="Audio Equalizer Preset">
+                  <option value="flat">Flat (Original)</option>
+                  <option value="tizita">Tizita Warmth</option>
+                  <option value="vocal">Vocal &amp; Lyrics</option>
+                  <option value="bass">Deep Bass</option>
+                  <option value="treble">Crisp Acoustic</option>
+                </select>
               </div>
 
               <div class="settings-pref-row" style="border-bottom:none; padding-bottom:0;">
@@ -1209,37 +1330,39 @@
             </div>
           </div>
 
-          <!-- 4. Your Library Overview -->
+          <!-- 3b. Offline Storage Manager -->
           <div class="settings-card">
-            <div class="home-greeting-banner" style="border:none; background:transparent; padding:0.15rem 0;">
-              <div class="greeting-left">
-                <div class="greeting-period-badge" id="greetingMoodBadge">
-                  <span class="live-dot-pulse"></span>
-                  <span id="greetingMoodText">Your Library</span>
+            <div class="settings-card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <h2>Offline Storage Manager</h2>
+            </div>
+            <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <div class="settings-pref-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Cached Songs &amp; Uploads</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="storageQuotaLabel">Checking device storage...</div>
                 </div>
-                <h2 class="greeting-heading" id="greetingHeadingText" style="font-size:1.15rem;">Listening Overview <span class="greeting-amharic-sub" id="greetingHeadingAmharic">የሙዚቃ ስብስብ</span></h2>
-                <p class="greeting-subtext" id="greetingSubtext" style="font-size:0.78rem;">Catalog songs, synchronized lyrics, and your saved favorites</p>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                  <span class="card-badge card-badge-lrc" id="storageDownloadedCount">0 downloads</span>
+                  <span class="card-badge" id="storageCustomCount">0 uploads</span>
+                </div>
               </div>
-              <div class="greeting-dna-stats" id="greetingDnaStats">
-                <div class="dna-stat-item">
-                  <span class="dna-stat-val" id="dnaStatTotal">0</span>
-                  <span class="dna-stat-lbl">Songs</span>
-                </div>
-                <div class="dna-stat-divider"></div>
-                <div class="dna-stat-item">
-                  <span class="dna-stat-val" id="dnaStatLrc">0</span>
-                  <span class="dna-stat-lbl">Synced LRC</span>
-                </div>
-                <div class="dna-stat-divider"></div>
-                <div class="dna-stat-item">
-                  <span class="dna-stat-val" id="dnaStatFavs">0</span>
-                  <span class="dna-stat-lbl">Favorites</span>
-                </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
+                <button id="btnOpenOfflineTabFromSettings" class="btn-pill" style="font-size:0.8rem;" type="button">
+                  Manage Offline Songs
+                </button>
+                <button id="btnClearOfflineDownloads" class="btn-pill btn-danger-pill" style="font-size:0.8rem;" type="button">
+                  Clear Downloaded Cache
+                </button>
               </div>
             </div>
           </div>
 
-          <!-- 5. About, Updates & Community -->
+          <!-- 4. About, Updates & Community -->
           <div class="settings-card">
             <div class="settings-card-header">
               <elm-logo variant="icon" class="settings-info-elm-icon"></elm-logo>
@@ -1252,17 +1375,28 @@
                   <div style="font-weight:600; font-size:0.86rem;">App Version</div>
                   <div style="font-size:0.75rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
-                <span class="badge-status-active" id="appVersionBadge">v2.8.0</span>
+                <span class="badge-status-active" id="appVersionBadge">v2.9.0</span>
               </div>
 
               <div
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem;">Service Worker Cache</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v45 (Active)</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v47 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
+                </button>
+              </div>
+
+              <div
+                style="display:flex; align-items:center; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem;">Keyboard Shortcuts</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Quick playback, search &amp; navigation keys</div>
+                </div>
+                <button id="btnOpenShortcutsHelp" class="btn-pill" style="font-size:0.8rem;" type="button">
+                  View Shortcuts (?)
                 </button>
               </div>
 
@@ -1384,6 +1518,9 @@
 
       <!-- Persistent Docked Mini-Player Bar -->
       <footer id="playerBarDock" class="player-bar-dock">
+        <div class="mini-player-hairline" aria-hidden="true">
+          <div id="miniPlayerProgressFill" class="mini-player-hairline-fill"></div>
+        </div>
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
           <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork" title="View Song Details">
@@ -1648,76 +1785,6 @@
 
           <div id="adminSubmissionsSection">
             <div id="adminSubmissionsList" style="display:flex; flex-direction:column; gap:0.8rem;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal: Confirmation for Public Submission -->
-    <div id="submissionConfirmModal" class="modal-overlay">
-      <div class="modal-card" style="max-width: 460px; width: 92%;">
-        <div class="modal-header">
-          <div style="display:flex; align-items:center; gap:0.6rem;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <div>
-              <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Submit to Global Catalog</h2>
-              <div style="font-size:0.75rem; color:var(--color-gold);">Admin Moderation Queue</div>
-            </div>
-          </div>
-          <button class="modal-close-btn" data-close="submissionConfirmModal">&times;</button>
-        </div>
-        <div class="modal-body" style="padding:1.25rem 1.4rem; display:flex; flex-direction:column; gap:1rem;">
-          <div
-            style="display:flex; align-items:center; gap:0.9rem; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:0.85rem;">
-            <img id="confirmSubArtwork" src="brand/elm-default-cover.svg" alt="Artwork"
-              style="width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0;">
-            <div style="flex:1; min-width:0;">
-              <div id="confirmSubTitle"
-                style="font-weight:700; font-size:0.95rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                Song Title</div>
-              <div id="confirmSubArtist"
-                style="font-size:0.82rem; color:var(--color-gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                Artist Name</div>
-              <div id="confirmSubMeta" style="font-size:0.75rem; color:var(--color-text-dim); margin-top:2px;">Single
-                (2024)</div>
-            </div>
-          </div>
-
-          <div
-            style="background:rgba(229,185,90,0.08); border:1px solid rgba(229,185,90,0.25); border-radius:12px; padding:0.85rem; font-size:0.82rem; line-height:1.45; color:rgba(255,255,255,0.85);">
-            <div style="font-weight:600; color:#fce7b2; margin-bottom:0.25rem;">Public Audio Link (Cloudflare R2):</div>
-            <div id="confirmSubAudioUrl"
-              style="word-break:break-all; font-family:monospace; font-size:0.75rem; color:#a7f3d0; background:rgba(0,0,0,0.3); padding:0.35rem 0.5rem; border-radius:6px;">
-            </div>
-            <p style="margin:0.5rem 0 0 0; font-size:0.75rem; color:var(--color-text-dim);">
-              Your submission will be queued for review. Once approved by the admin, it will be instantly published to
-              the Global Catalog for everyone.
-            </p>
-          </div>
-
-          <div id="confirmSubErrorMsg"
-            style="display:none; padding:0.6rem 0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:8px; color:#fca5a5; font-size:0.8rem;">
-          </div>
-
-          <div style="display:flex; gap:0.65rem; justify-content:flex-end; margin-top:0.35rem;">
-            <button type="button" class="btn-pill" id="btnCancelSubModal"
-              style="padding:0.5rem 1.1rem; font-size:0.85rem;">
-              Cancel
-            </button>
-            <button type="button" class="btn-primary" id="btnExecutePublicSubmit"
-              style="padding:0.5rem 1.25rem; font-size:0.85rem; display:inline-flex; align-items:center; gap:0.4rem;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="m22 2-7 20-4-9-9-4Z" />
-                <path d="M22 2 11 13" />
-              </svg>
-              <span id="btnExecutePublicSubmitLabel">Confirm &amp; Submit</span>
-            </button>
           </div>
         </div>
       </div>
@@ -2515,6 +2582,8 @@
             <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Up Next Queue</h3>
           </div>
           <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button id="btnSaveQueueAsPlaylist" class="btn-pill btn-sm" title="Save Queue as Playlist" type="button"
+              style="font-size:0.75rem; padding:0.3rem 0.65rem;">Save Playlist</button>
             <button id="btnClearQueue" class="btn-pill btn-sm" title="Clear Up Next" type="button"
               style="font-size:0.75rem; padding:0.3rem 0.65rem;">Clear Queue</button>
             <button class="modal-close-btn" data-close="queueDrawerModal">&times;</button>
@@ -2593,6 +2662,48 @@
         </div>
         <div id="playlistSongPickerList" class="modal-body"
           style="padding:1rem 1.25rem; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
+      </div>
+    </div>
+
+    <!-- 6. Command Search Modal (/ or Ctrl+K) -->
+    <div id="globalSearchModal" class="modal-overlay">
+      <div class="modal-card command-search-card">
+        <div class="command-search-input-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <input type="text" id="inputCommandSearch" class="command-search-input"
+            placeholder="Search Amharic/English song, artist, album, or lyric line..." autocomplete="off">
+          <button id="btnClearCommandSearch" class="btn-clear-search" style="display:none; position:static;" type="button" aria-label="Clear search">&times;</button>
+          <button class="modal-close-btn" data-close="globalSearchModal" aria-label="Close search">&times;</button>
+        </div>
+        <div id="commandSearchResults" class="command-search-results">
+          <div class="command-search-empty">
+            Type to search titles (Amharic or English), artists, albums, or synced lyric lines. Press <kbd>Esc</kbd> to close.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Keyboard Shortcuts Help Modal (?) -->
+    <div id="shortcutsHelpModal" class="modal-overlay">
+      <div class="modal-card" style="max-width:460px; width:92%;">
+        <div class="modal-header">
+          <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Keyboard Shortcuts</h3>
+          <button class="modal-close-btn" data-close="shortcutsHelpModal">&times;</button>
+        </div>
+        <div class="modal-body shortcuts-grid">
+          <div class="shortcut-row"><span>Play / Pause</span><kbd>Space</kbd></div>
+          <div class="shortcut-row"><span>Seek -5s / +5s</span><span><kbd>&larr;</kbd> <kbd>&rarr;</kbd></span></div>
+          <div class="shortcut-row"><span>Command Search</span><span><kbd>/</kbd> or <kbd>Ctrl+K</kbd></span></div>
+          <div class="shortcut-row"><span>Toggle Queue Drawer</span><kbd>Q</kbd></div>
+          <div class="shortcut-row"><span>Toggle Shuffle / Repeat</span><span><kbd>S</kbd> / <kbd>R</kbd></span></div>
+          <div class="shortcut-row"><span>Mute / Unmute</span><kbd>M</kbd></div>
+          <div class="shortcut-row"><span>Toggle Fullscreen Stage</span><span><kbd>F</kbd> or <kbd>C</kbd></span></div>
+          <div class="shortcut-row"><span>Show This Shortcuts Guide</span><kbd>?</kbd></div>
+        </div>
       </div>
     </div>
 

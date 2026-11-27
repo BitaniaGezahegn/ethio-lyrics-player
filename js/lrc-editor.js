@@ -1,3 +1,5 @@
+import { AppDialog } from './components/app-dialog.js';
+
 /**
  * LRC Editor - Visual tap-sync authoring tool
  * Features:
@@ -7,9 +9,10 @@
  *  - Tab 4 (Export): Preview LRC, copy to clipboard, download .lrc file
  */
 export class LrcEditor {
-  constructor(player, onSave) {
+  constructor(player, onSave, onNotify = null) {
     this.player = player;
     this.onSave = onSave;
+    this.onNotify = onNotify;
     this.lines = [];
     this.syncIndex = 0;
     this.isSyncing = false;
@@ -309,7 +312,14 @@ export class LrcEditor {
 
   _startSync() {
     if (this.lines.length === 0) {
-      alert('Import lyrics first!');
+      if (this.onNotify) {
+        this.onNotify('Import or paste lyrics first before starting Tap Sync.');
+      } else {
+        AppDialog.alert({
+          title: 'Import Lyrics First',
+          message: 'Paste or upload plain text lyrics in the Import tab before starting Tap Sync.'
+        });
+      }
       this._switchTab('import');
       return;
     }
@@ -424,7 +434,14 @@ export class LrcEditor {
       this.lines[0].isIntro = true;
     }
     this._renderEditList();
-    alert('Fixed! All timestamps shifted up by 1 line, and line 1 set as 0:00 Intro. Click "Save & Apply" to apply to playback!');
+    if (this.onNotify) {
+      this.onNotify('Timestamps shifted up by 1 line with a 0:00 Intro. Click "Save & Apply" to preview.');
+    } else {
+      AppDialog.alert({
+        title: '1-Line Offset Fixed',
+        message: 'All timestamps were shifted up by 1 line and line 1 was set as the 0:00 Intro. Click "Save & Apply" to apply to playback.'
+      });
+    }
   }
 
   _shiftTimestampsDown() {

@@ -9,6 +9,9 @@ import { LyricsParser } from '../js/lyrics-parser.js';
 import { computeTarget, DriftController, GuestSyncEngine, HostBroadcaster } from '../js/party-sync.js';
 import { RecommendationEngine } from '../js/recommendation-engine.js';
 import { CatalogSchema, makeArtistId, makeAlbumId } from '../js/catalog-schema.js';
+import { searchCatalog } from '../js/utils/search.js';
+import { PaletteExtractor } from '../js/palette.js';
+import { EQ_PRESETS } from '../js/utils/audio-eq.js';
 import { onRequestPost as uploadPostHandler, onRequestDelete as uploadDeleteHandler } from '../functions/api/upload.js';
 
 const ROOT = process.cwd();
@@ -52,8 +55,14 @@ async function run() {
   assert.ok(css.includes('.scrubber-track.is-scrubbing'), 'Missing .scrubber-track.is-scrubbing CSS rule');
   assert.ok(css.includes('#app.perf-lite'), 'Missing #app.perf-lite CSS optimization rules');
   assert.ok(css.includes('.perf-mode-btn'), 'Missing .perf-mode-btn CSS rule');
+  assert.ok(css.includes('.app-dialog-card'), 'Missing .app-dialog-card CSS rule');
+  assert.ok(css.includes('.track-menu-surface'), 'Missing .track-menu-surface CSS rule');
+  assert.ok(css.includes('.lyrics-stage-quickbar'), 'Missing .lyrics-stage-quickbar CSS rule');
+  assert.ok(css.includes('.lyric-share-card-modal'), 'Missing .lyric-share-card-modal CSS rule');
+  assert.ok(css.includes('.playlist-cover-mosaic'), 'Missing .playlist-cover-mosaic CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
   assert.ok(!fs.existsSync(path.join(ROOT, 'js/data/sample-songs.js')), 'Unused sample-songs.js should be removed');
+  assert.ok(!/\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/.test(appJs.replace(/AppDialog\.(alert|confirm|prompt)\s*\(/g, '')), 'app.js must not call native alert/confirm/prompt');
   console.log('   OK');
 
   console.log('3. Testing sanitize utilities...');
@@ -260,6 +269,43 @@ async function run() {
     assert.equal(playedStream, true);
     assert.equal(fakeAudioEl.preload, 'auto');
 
+    // Simulate buffering transitions
+    let bufEvents = [];
+    testPlayer.onBufferingChange = (state) => bufEvents.push(state);
+    testPlayer.isPlaying = true;
+    listenersMap.waiting();
+    listenersMap.playing();
+    assert.deepEqual(bufEvents, [true, false], 'Buffering callback should toggle waiting->true and playing->false');
+
+    // Verify complete MediaSession handler registration
+    const origNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    const msActions = new Set();
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: {
+        mediaSession: {
+          setActionHandler(action) { msActions.add(action); },
+          setPositionState() {}
+        }
+      }
+    });
+    try {
+      testPlayer.updateMediaSession({ id: 'ms1', title: 'Song' }, {
+        onPlay: () => {},
+        onPause: () => {},
+        onPrevioustrack: () => {},
+        onNexttrack: () => {},
+        onSeekTo: () => {},
+        onSeekBackward: () => {},
+        onSeekForward: () => {}
+      });
+      for (const act of ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto', 'seekbackward', 'seekforward']) {
+        assert.ok(msActions.has(act), `MediaSession missing ${act} handler`);
+      }
+    } finally {
+      if (origNav) Object.defineProperty(globalThis, 'navigator', origNav);
+    }
+
     // Simulate CORS retry + MediaError.code without accessing MediaError.message
     fakeAudioEl.crossOrigin = 'anonymous';
     fakeAudioEl.error = { code: 2 };
@@ -271,6 +317,19 @@ async function run() {
 
     const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
     assert.ok(swSrc.includes('url.origin !== self.location.origin'), 'Service worker must skip all cross-origin requests');
+    const pkgJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+    const manifestJson = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+    assert.equal(pkgJson.version, manifestJson.version, 'package.json and manifest.json version must match');
+    assert.ok(appJs.includes(`this.appVersion = 'v${pkgJson.version}'`), 'app.js appVersion must match package.json');
+    const swCacheMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]ethio-lyrics-cache-(v\d+)['"]/);
+    assert.ok(swCacheMatch && appJs.includes(`this.cacheVersion = '${swCacheMatch[1]}'`), 'app.js cacheVersion must match sw.js CACHE_NAME');
+    const staticAssetsBlock = swSrc.match(/const STATIC_ASSETS = \[([\s\S]*?)\];/);
+    assert.ok(staticAssetsBlock, 'sw.js must define STATIC_ASSETS');
+    for (const m of staticAssetsBlock[1].matchAll(/['"]([^'"]+)['"]/g)) {
+      if (m[1] === './') continue;
+      const rel = m[1].replace(/^\.\//, '');
+      assert.ok(fs.existsSync(path.join(ROOT, rel)), `Missing STATIC_ASSETS file on disk: ${m[1]}`);
+    }
   } finally {
     globalThis.Audio = origAudio;
     globalThis.requestAnimationFrame = origRaf;
@@ -327,6 +386,75 @@ async function run() {
   assert.equal(abinetAlbums[0].tracks[1].title, 'Weleta');
   const teddyAlbums = catalogIdx.getAlbumsByArtist(teddyId);
   assert.equal(teddyAlbums.length, 2);
+  console.log('   OK');
+
+  console.log('11. Testing Bilingual & LRC full-text search...');
+  const searchPool = [
+    {
+      id: 'q1',
+      title: 'ውለታ',
+      titleEn: 'Weleta',
+      artist: 'አቢነት አጎናፍር',
+      artistEn: 'Abinet Agonafir',
+      album: 'Weleta',
+      lyrics: '[00:12.00]ልቤ ሆይ ተረጋጋ\n[00:24.50]አዲስ ቀን ይመጣል'
+    },
+    {
+      id: 'q2',
+      title: 'Tizita',
+      titleEn: 'Tizita',
+      artist: 'Aster Aweke',
+      artistEn: 'Aster Aweke',
+      album: 'Hagere',
+      lyrics: '[00:08.00]Memories flow through the night'
+    }
+  ];
+  const enSearch = searchCatalog(searchPool, 'weleta');
+  assert.equal(enSearch.results.length, 1);
+  assert.equal(enSearch.results[0].track.id, 'q1');
+  const artistEnSearch = searchCatalog(searchPool, 'agonafir');
+  assert.equal(artistEnSearch.results[0].track.id, 'q1');
+  assert.equal(artistEnSearch.artists.length, 1);
+  const lrcSearch = searchCatalog(searchPool, 'Memories flow');
+  assert.equal(lrcSearch.results.length, 1);
+  assert.equal(lrcSearch.results[0].matchType, 'lyrics');
+  assert.equal(lrcSearch.results[0].matchedLyric.time, 8);
+  const amSearch = searchCatalog(searchPool, 'ተረጋጋ');
+  assert.equal(amSearch.results[0].track.id, 'q1');
+  assert.equal(amSearch.results[0].matchedLyric.time, 12);
+  console.log('   OK');
+
+  console.log('12. Testing Storage resume, queue persistence & playlist reordering...');
+  const origLocalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const lsMem = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (k) => (lsMem.has(k) ? lsMem.get(k) : null),
+      setItem: (k, v) => lsMem.set(k, String(v)),
+      removeItem: (k) => lsMem.delete(k)
+    }
+  });
+  try {
+    const { Storage } = await import('../js/storage.js');
+    Storage.setLastPositionSec(94.6);
+    assert.equal(Storage.getLastPositionSec(), 94);
+    Storage.setLastQueueIds(['q1', 'q2']);
+    assert.deepEqual(Storage.getLastQueueIds(), ['q1', 'q2']);
+    const pl = Storage.createPlaylist({ title: 'Ordered', trackIds: ['t1', 't2', 't3'] });
+    assert.equal(Storage.reorderPlaylistTracks(pl.id, 2, 0), true);
+    assert.deepEqual(Storage.getPlaylist(pl.id).trackIds, ['t3', 't1', 't2']);
+  } finally {
+    if (origLocalStorage) Object.defineProperty(globalThis, 'localStorage', origLocalStorage);
+  }
+  console.log('   OK');
+
+  console.log('13. Testing PaletteExtractor contrast clamp & AudioEQ presets...');
+  const clampedDark = PaletteExtractor._clampAccentRgb({ r: 5, g: 5, b: 8 }, { minL: 0.44, maxL: 0.66, minS: 0.42 });
+  assert.ok(Math.max(clampedDark.r, clampedDark.g, clampedDark.b) >= 120, 'Dark accent should be boosted above dark glass threshold');
+  const clampedBright = PaletteExtractor._clampAccentRgb({ r: 254, g: 254, b: 254 }, { minL: 0.44, maxL: 0.66, minS: 0.42 });
+  assert.ok(Math.max(clampedBright.r, clampedBright.g, clampedBright.b) <= 185, 'Bright accent should be clamped so white typography keeps contrast');
+  assert.ok(EQ_PRESETS.flat && EQ_PRESETS.tizita && EQ_PRESETS.tizita.gains.length === 5);
   console.log('   OK');
 
   console.log('\nALL TESTS PASSED!');

@@ -11,6 +11,10 @@ import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
 import { CatalogSchema, makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
+import { AppDialog } from './components/app-dialog.js';
+import { TrackActionMenu } from './components/track-menu.js';
+import { LyricShareCard } from './components/lyric-share-card.js';
+import { searchCatalog } from './utils/search.js';
 import './components/elm-logo.js';
 
 let _qrCodeModulePromise = null;
@@ -120,6 +124,8 @@ class LyricsApp {
 
     this.initDOMElements();
 
+    LocalSyncService.onError = (msg) => this.showToast(msg, 3400);
+
     // LRC Editor - instantiated early so it is immediately accessible to settings & buttons
     this.lrcEditor = new LrcEditor(this.player, async (lrcString) => {
       if (this._lrcEditorReviewTarget) {
@@ -139,7 +145,7 @@ class LyricsApp {
       this.player.seek(0);
       this.syncLyrics(0);
       this.player.play();
-    });
+    }, (msg) => this.showToast(msg, 3200));
 
     this.initThemeSystem();
     this.initLyricsViewPreferences();
@@ -153,8 +159,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.8.0';
-    this.cacheVersion = 'v45';
+    this.appVersion = 'v2.9.0';
+    this.cacheVersion = 'v47';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -194,12 +200,29 @@ class LyricsApp {
       this.tracks = await Storage.getAllTracks();
     }
 
-    // 2. Fetch Global Cloud Catalog from Firestore & Cloudflare R2
+    // Initialize playback mode UI early and render instant Home skeletons while catalog loads
+    this.initPlaybackModeUI();
+    if (this.tracks.length > 0) {
+      const lastIdEarly = Storage.getLastTrackId();
+      const earlyTrack = (lastIdEarly && this.tracks.find(t => t.id === lastIdEarly)) || this.tracks[0];
+      if (earlyTrack) {
+        this.setQueue(this.tracks, this.tracks.indexOf(earlyTrack));
+        await this.loadTrack(earlyTrack, false);
+      }
+      this.renderHomePage();
+    } else {
+      this.renderHomeSkeletons();
+    }
+    this.dismissSplashScreen();
+
+    // 2. Fetch Global Cloud Catalog from Firestore & Cloudflare R2 (non-blocking for splash)
     await this.loadPublicCatalog();
 
-    // 3. Determine initial song to spotlight
+    // 3. Determine initial song to spotlight once cloud catalog arrives
     const allAvailable = [...this.publicTracks, ...this.tracks];
     const lastId = Storage.getLastTrackId();
+    const savedQueueIds = Storage.getLastQueueIds();
+    const savedPosSec = Storage.getLastPositionSec();
     let initialTrack = null;
 
     if (allAvailable.length > 0) {
@@ -211,14 +234,31 @@ class LyricsApp {
     }
 
     if (initialTrack) {
-      this.setQueue(allAvailable, allAvailable.indexOf(initialTrack));
-      await this.loadTrack(initialTrack, false); // load metadata without autoplaying
+      const restoredQueue = savedQueueIds.length > 0
+        ? savedQueueIds.map((id) => allAvailable.find((t) => t.id === id)).filter(Boolean)
+        : [];
+      const queuePool = restoredQueue.some((t) => t.id === initialTrack.id) ? restoredQueue : allAvailable;
+      const startIdx = Math.max(0, queuePool.findIndex((t) => t.id === initialTrack.id));
+      const userAlreadyStarted = this.player.isPlaying || (this.currentTrack && lastId && this.currentTrack.id === lastId);
+      if (!userAlreadyStarted) {
+        this.setQueue(queuePool, startIdx);
+        await this.loadTrack(initialTrack, false); // load metadata without autoplaying
+        if (lastId && initialTrack.id === lastId && savedPosSec > 1) {
+          const maxDur = this.getTrackDuration(initialTrack);
+          const resumeSec = maxDur > 0 ? Math.min(savedPosSec, Math.max(0, maxDur - 2)) : savedPosSec;
+          if (resumeSec > 1) {
+            this.player.seek(resumeSec);
+            this.updateTimeline(resumeSec, maxDur);
+            this.syncLyrics(resumeSec, true);
+          }
+        }
+      } else if (this.queue.length <= this.tracks.length) {
+        const idx = queuePool.findIndex(t => t.id === this.currentTrack.id);
+        this.setQueue(queuePool, idx >= 0 ? idx : 0);
+      }
     } else {
       this.renderEmptyLibraryState();
     }
-
-    // Initialize playback mode UI
-    this.initPlaybackModeUI();
 
     // 4. Render Home Music Suggestion & Discovery View
     this.renderHomePage();
@@ -245,8 +285,6 @@ class LyricsApp {
       }
     } catch (e) {
       console.warn('URL room check error:', e);
-    } finally {
-      this.dismissSplashScreen();
     }
   }
 
@@ -449,6 +487,16 @@ class LyricsApp {
     this.selectCatalogSort = document.getElementById('selectCatalogSort');
     this.catalogCounterSubtitle = document.getElementById('catalogCounterSubtitle');
     this.catalogSortOption = 'newest';
+    this.btnOpenGlobalSearch = document.getElementById('btnOpenGlobalSearch');
+    this.globalSearchModal = document.getElementById('globalSearchModal');
+    this.inputCommandSearch = document.getElementById('inputCommandSearch');
+    this.btnClearCommandSearch = document.getElementById('btnClearCommandSearch');
+    this.commandSearchResults = document.getElementById('commandSearchResults');
+    this.sectionHomeSearchResults = document.getElementById('sectionHomeSearchResults');
+    this.homeSearchTitleText = document.getElementById('homeSearchTitleText');
+    this.homeSearchSubtitleText = document.getElementById('homeSearchSubtitleText');
+    this.homeSearchEntityRow = document.getElementById('homeSearchEntityRow');
+    this.gridHomeSearchResults = document.getElementById('gridHomeSearchResults');
 
     // Lyrics Stage & Header Elements
     this.artistAmharic = document.getElementById('artistAmharic');
@@ -458,6 +506,19 @@ class LyricsApp {
     this.albumYear = document.getElementById('albumYear');
     this.discArtwork = document.getElementById('discArtwork');
     this.vinylDisc = document.getElementById('vinylDisc');
+    this.kineticSleeveArt = document.getElementById('kineticSleeveArt');
+    this.stageMobileCoverImg = document.getElementById('stageMobileCoverImg');
+    this.lyricsStageQuickBar = document.getElementById('lyricsStageQuickBar');
+    this.btnStageModeToggle = document.getElementById('btnStageModeToggle');
+    this.stageModeLabel = document.getElementById('stageModeLabel');
+    this.btnStageFontCycle = document.getElementById('btnStageFontCycle');
+    this.btnStageShareLyric = document.getElementById('btnStageShareLyric');
+    this.btnStageLrcStudio = document.getElementById('btnStageLrcStudio');
+    this.btnStageTrackMore = document.getElementById('btnStageTrackMore');
+    this.btnLyricsResumeSync = document.getElementById('btnLyricsResumeSync');
+    this.lyricsInstrumentalCue = document.getElementById('lyricsInstrumentalCue');
+    this.lyricsCueLabel = document.getElementById('lyricsCueLabel');
+    this.miniPlayerProgressFill = document.getElementById('miniPlayerProgressFill');
 
     // Mini Player Info & Dock
     this.playerBarDock = document.getElementById('playerBarDock');
@@ -596,6 +657,17 @@ class LyricsApp {
     this.addToPlaylistArtist = document.getElementById('addToPlaylistArtist');
     this.queueDrawerModal = document.getElementById('queueDrawerModal');
     this.btnClearQueue = document.getElementById('btnClearQueue');
+    this.btnSaveQueueAsPlaylist = document.getElementById('btnSaveQueueAsPlaylist');
+    this.btnAlbumDownloadAll = document.getElementById('btnAlbumDownloadAll');
+    this.btnPlaylistDownloadAll = document.getElementById('btnPlaylistDownloadAll');
+    this.selectEqPreset = document.getElementById('selectEqPreset');
+    this.storageDownloadedCount = document.getElementById('storageDownloadedCount');
+    this.storageCustomCount = document.getElementById('storageCustomCount');
+    this.storageQuotaLabel = document.getElementById('storageQuotaLabel');
+    this.btnOpenOfflineTabFromSettings = document.getElementById('btnOpenOfflineTabFromSettings');
+    this.btnClearOfflineDownloads = document.getElementById('btnClearOfflineDownloads');
+    this.btnOpenShortcutsHelp = document.getElementById('btnOpenShortcutsHelp');
+    this.shortcutsHelpModal = document.getElementById('shortcutsHelpModal');
     this.queueNowPlayingArt = document.getElementById('queueNowPlayingArt');
     this.queueNowPlayingTitle = document.getElementById('queueNowPlayingTitle');
     this.queueNowPlayingArtist = document.getElementById('queueNowPlayingArtist');
@@ -695,18 +767,6 @@ class LyricsApp {
     this.r2UploadProgressBar = document.getElementById('r2UploadProgressBar');
     this.r2UploadProgressFill = document.getElementById('r2UploadProgressFill');
     this.formPublicPendingBadge = document.getElementById('formPublicPendingBadge');
-
-    // Submission Confirmation Modal
-    this.submissionConfirmModal = document.getElementById('submissionConfirmModal');
-    this.confirmSubArtwork = document.getElementById('confirmSubArtwork');
-    this.confirmSubTitle = document.getElementById('confirmSubTitle');
-    this.confirmSubArtist = document.getElementById('confirmSubArtist');
-    this.confirmSubMeta = document.getElementById('confirmSubMeta');
-    this.confirmSubAudioUrl = document.getElementById('confirmSubAudioUrl');
-    this.confirmSubErrorMsg = document.getElementById('confirmSubErrorMsg');
-    this.btnCancelSubModal = document.getElementById('btnCancelSubModal');
-    this.btnExecutePublicSubmit = document.getElementById('btnExecutePublicSubmit');
-    this.btnExecutePublicSubmitLabel = document.getElementById('btnExecutePublicSubmitLabel');
 
     // Admin Modal Elements
     this.adminModal = document.getElementById('adminModal');
@@ -891,6 +951,10 @@ class LyricsApp {
   switchTab(tabId) {
     if (tabId === 'stage') tabId = 'lyrics';
     this.currentView = tabId;
+    if (this.appEl) {
+      this.appEl.setAttribute('data-active-tab', tabId);
+      this.appEl.classList.toggle('tab-lyrics-active', tabId === 'lyrics');
+    }
 
     // Toggle active class on navigation tabs (desktop and mobile)
     document.querySelectorAll('.desktop-nav-tabs .nav-tab-btn, .mobile-bottom-nav .bottom-nav-item').forEach(btn => {
@@ -929,10 +993,11 @@ class LyricsApp {
       }
     } else if (tabId === 'library') {
       this.renderLibraryView();
-    } else if (tabId === 'lyrics') {
+    }
+
+    if (tabId === 'lyrics') {
       if (this.playerBarDock) {
         this.playerBarDock.classList.remove('is-collapsed');
-        this.resetPlayerAutoCollapseTimer();
       }
       requestAnimationFrame(() => {
         if (this.lyricsViewport) {
@@ -945,8 +1010,13 @@ class LyricsApp {
         this._measureLyricPositions();
         this.syncLyrics(this.player.currentTime, true);
       });
-    } else if (tabId === 'settings') {
-      this.renderSettingsView();
+    } else {
+      if (this.playerBarDock) {
+        this.playerBarDock.classList.toggle('is-collapsed', Boolean(this._compactDockEnabled));
+      }
+      if (tabId === 'settings') {
+        this.renderSettingsView();
+      }
     }
 
     if (this.ambientParticles) {
@@ -1012,6 +1082,38 @@ class LyricsApp {
     if (appVersionBadge) appVersionBadge.textContent = this.appVersion;
     const swCacheStatusLabel = document.getElementById('swCacheStatusLabel');
     if (swCacheStatusLabel) swCacheStatusLabel.textContent = `Cache ${this.cacheVersion} (Active)`;
+    if (this.selectEqPreset && this.player?.equalizer) {
+      this.selectEqPreset.value = this.player.equalizer.preset || 'flat';
+    }
+    this._refreshOfflineStorageManager();
+  }
+
+  async _refreshOfflineStorageManager() {
+    const localList = Array.isArray(this.tracks) ? this.tracks : [];
+    const downloadedCount = localList.filter((t) => t && t.isDownloaded).length;
+    const customCount = localList.filter((t) => t && !t.isDownloaded).length;
+    if (this.storageDownloadedCount) {
+      this.storageDownloadedCount.textContent = `${downloadedCount} download${downloadedCount === 1 ? '' : 's'}`;
+    }
+    if (this.storageCustomCount) {
+      this.storageCustomCount.textContent = `${customCount} upload${customCount === 1 ? '' : 's'}`;
+    }
+    if (this.storageQuotaLabel) {
+      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate) {
+        try {
+          const est = await navigator.storage.estimate();
+          const usedMb = ((est.usage || 0) / (1024 * 1024)).toFixed(1);
+          const quotaMb = est.quota ? Math.round(est.quota / (1024 * 1024)) : 0;
+          this.storageQuotaLabel.textContent = quotaMb > 0
+            ? `Using ${usedMb} MB of ${quotaMb >= 1024 ? `${(quotaMb / 1024).toFixed(1)} GB` : `${quotaMb} MB`} browser storage`
+            : `Using ${usedMb} MB local offline storage`;
+        } catch {
+          this.storageQuotaLabel.textContent = `${localList.length} total offline tracks stored on device`;
+        }
+      } else {
+        this.storageQuotaLabel.textContent = `${localList.length} total offline tracks stored on device`;
+      }
+    }
   }
 
   openAdminModal() {
@@ -1042,6 +1144,10 @@ class LyricsApp {
       this.playerMiniArtWrap.addEventListener('click', (e) => {
         if (this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed')) {
           return;
+        }
+        const isMobileMiniBar = typeof window !== 'undefined' && window.innerWidth <= 820 && !this.appEl?.classList.contains('tab-lyrics-active');
+        if (isMobileMiniBar) {
+          return; // Let tap bubble to dockTrackInfo so tapping anywhere on mobile Mini-Player opens Lyrics Stage
         }
         if (this.currentTrack) {
           e.stopPropagation();
@@ -1120,7 +1226,10 @@ class LyricsApp {
             this.handleUserAuthenticated(user, FirebaseService.isAdmin(user));
           }
         } catch (err) {
-          alert('Google Sign-In: ' + (err.message || 'Please check your internet connection'));
+          AppDialog.alert({
+            title: 'Google Sign-In',
+            message: err.message || 'Please check your internet connection and try again.'
+          });
         }
       });
     }
@@ -1161,7 +1270,7 @@ class LyricsApp {
               }
             }
           }
-          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.5.0'})!`);
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.0'})!`);
         } catch (err) {
           console.warn('Update check failed:', err);
           this.showToast('Unable to check for updates right now.');
@@ -1222,7 +1331,7 @@ class LyricsApp {
     if (this.inputHomeSearch) {
       let homeSearchTimer = null;
       this.inputHomeSearch.addEventListener('input', (e) => {
-        const nextQuery = e.target.value.trim().toLowerCase();
+        const nextQuery = e.target.value.trim();
         if (this.btnClearHomeSearch) {
           this.btnClearHomeSearch.style.display = nextQuery ? 'inline-flex' : 'none';
         }
@@ -1230,7 +1339,7 @@ class LyricsApp {
         homeSearchTimer = setTimeout(() => {
           this.searchQuery = nextQuery;
           this.renderHomePage();
-        }, 150);
+        }, 140);
       });
     }
 
@@ -1306,7 +1415,6 @@ class LyricsApp {
     // Homepage Shelf "View All" / "Show Less" toggles
     const shelfToggles = [
       [this.btnViewMoreJumpBackIn, this.gridJumpBackIn],
-      [this.btnViewMoreGlobalCatalog, this.gridGlobalCatalog],
       [this.btnViewMoreSuggestions, this.gridSuggestions],
       [this.btnViewMoreBecause, this.gridBecauseYouListened],
       [this.btnViewMoreLyricsShowcase, this.gridLyricsShowcase]
@@ -1318,6 +1426,102 @@ class LyricsApp {
         btn.textContent = expanded ? 'Show Less' : 'View All';
       });
     }
+
+    if (this.btnViewMoreGlobalCatalog) {
+      this.btnViewMoreGlobalCatalog.addEventListener('click', () => {
+        this.switchTab('library');
+        this.switchLibraryTab('global');
+      });
+    }
+
+    // Command Search Modal Triggers
+    if (this.btnOpenGlobalSearch) {
+      this.btnOpenGlobalSearch.addEventListener('click', () => this.openGlobalSearchModal());
+    }
+    if (this.inputCommandSearch) {
+      let cmdSearchTimer = null;
+      this.inputCommandSearch.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (this.btnClearCommandSearch) {
+          this.btnClearCommandSearch.style.display = val.trim() ? 'inline-flex' : 'none';
+        }
+        if (cmdSearchTimer) clearTimeout(cmdSearchTimer);
+        cmdSearchTimer = setTimeout(() => {
+          this.renderCommandSearch(val);
+        }, 110);
+      });
+    }
+    if (this.btnClearCommandSearch) {
+      this.btnClearCommandSearch.addEventListener('click', () => {
+        if (this.inputCommandSearch) {
+          this.inputCommandSearch.value = '';
+          this.inputCommandSearch.focus();
+        }
+        this.btnClearCommandSearch.style.display = 'none';
+        this.renderCommandSearch('');
+      });
+    }
+
+    // Lyrics Stage Floating Quick-Bar & Manual Browse Controls
+    if (this.btnStageModeToggle) {
+      this.btnStageModeToggle.addEventListener('click', () => {
+        const nextMode = this.appEl?.classList.contains('lyrics-mode-sheet') ? 'synced' : 'sheet';
+        this.setLyricsViewMode(nextMode, true);
+      });
+    }
+    if (this.btnStageFontCycle) {
+      const order = ['compact', 'standard', 'large', 'xlarge'];
+      this.btnStageFontCycle.addEventListener('click', () => {
+        const current = order.find((k) => this.appEl?.classList.contains(`lyrics-size-${k}`)) || 'standard';
+        const next = order[(order.indexOf(current) + 1) % order.length];
+        this.setLyricsFontSize(next, true);
+        this.showToast(`Lyrics size: ${next}`, 1400);
+      });
+    }
+    if (this.btnStageShareLyric) {
+      this.btnStageShareLyric.addEventListener('click', () => {
+        if (!this.currentTrack) {
+          this.showToast('Load a song first to create a lyric card');
+          return;
+        }
+        LyricShareCard.open({
+          track: this.currentTrack,
+          parsedLyrics: this.parsedLyrics,
+          initialIndex: this.activeLyricIndex,
+          palette: this._currentPalette || PaletteExtractor.getDefaultPalette(),
+          onToast: (msg) => this.showToast(msg)
+        });
+      });
+    }
+    if (this.btnStageLrcStudio) {
+      this.btnStageLrcStudio.addEventListener('click', () => {
+        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
+      });
+    }
+    if (this.btnStageTrackMore) {
+      this.btnStageTrackMore.addEventListener('click', (e) => {
+        if (this.currentTrack) {
+          this.openTrackMenu(this.currentTrack, this.btnStageTrackMore, e);
+        }
+      });
+    }
+    if (this.btnLyricsResumeSync) {
+      this.btnLyricsResumeSync.addEventListener('click', () => {
+        this._resumeLyricsAutoSync();
+      });
+    }
+    if (this.lyricsInstrumentalCue) {
+      this.lyricsInstrumentalCue.addEventListener('click', () => {
+        if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+        const targetIdx = this.activeLyricIndex < 0 ? 0 : Math.min(this.parsedLyrics.length - 1, this.activeLyricIndex + 1);
+        const line = this.parsedLyrics[targetIdx];
+        if (line && Number.isFinite(line.time)) {
+          this.player.seek(line.time);
+          this._resumeLyricsAutoSync();
+        }
+      });
+    }
+    this._bindLyricsManualBrowse();
 
     // Catalog Sort Select
     if (this.selectCatalogSort) {
@@ -1404,6 +1608,72 @@ class LyricsApp {
     }
     if (this.btnClearQueue) {
       this.btnClearQueue.addEventListener('click', () => this.clearQueue());
+    }
+    if (this.btnSaveQueueAsPlaylist) {
+      this.btnSaveQueueAsPlaylist.addEventListener('click', () => this.saveQueueAsPlaylist());
+    }
+    if (this.btnAlbumDownloadAll) {
+      this.btnAlbumDownloadAll.addEventListener('click', () => {
+        this._downloadTracksBatch(
+          this._activeDetailTracks || [],
+          this.btnAlbumDownloadAll,
+          this.albumBannerTitle ? this.albumBannerTitle.textContent : 'Album'
+        );
+      });
+    }
+    if (this.btnPlaylistDownloadAll) {
+      this.btnPlaylistDownloadAll.addEventListener('click', () => {
+        this._downloadTracksBatch(
+          this._activePlaylistTracks || [],
+          this.btnPlaylistDownloadAll,
+          this.activePlaylist ? this.activePlaylist.title : 'Playlist'
+        );
+      });
+    }
+    if (this.selectEqPreset) {
+      this.selectEqPreset.value = this.player?.equalizer?.preset || 'flat';
+      this.selectEqPreset.addEventListener('change', (e) => {
+        const applied = this.player.setEqPreset(e.target.value);
+        const isCors = this.player.isCorsSafeStream();
+        if (!isCors && applied !== 'flat') {
+          this.showToast('EQ preset saved — applies to offline downloads & CORS-enabled streams', 2800);
+        } else {
+          this.showToast(`EQ Preset: ${e.target.options[e.target.selectedIndex]?.text || applied}`, 1600);
+        }
+      });
+    }
+    if (this.btnOpenOfflineTabFromSettings) {
+      this.btnOpenOfflineTabFromSettings.addEventListener('click', () => {
+        this.switchTab('library');
+        this.switchLibraryTab('offline');
+      });
+    }
+    if (this.btnClearOfflineDownloads) {
+      this.btnClearOfflineDownloads.addEventListener('click', async () => {
+        const dlCount = (this.tracks || []).filter((t) => t && t.isDownloaded).length;
+        if (dlCount === 0) {
+          this.showToast('No downloaded cache tracks to clear');
+          return;
+        }
+        const ok = await AppDialog.confirm({
+          title: 'Clear Downloaded Cache',
+          message: `Remove ${dlCount} downloaded song${dlCount === 1 ? '' : 's'} from offline cache? Your custom uploaded songs will be kept.`,
+          confirmText: 'Clear Downloads',
+          danger: true
+        });
+        if (!ok) return;
+        const removed = await Storage.clearDownloadedCache();
+        this.tracks = await Storage.getAllTracks();
+        this._homeDirty = true;
+        this._refreshOfflineStorageManager();
+        if (this.currentView === 'library') this.renderLibraryView();
+        this.showToast(`Cleared ${removed} downloaded track${removed === 1 ? '' : 's'}`);
+      });
+    }
+    if (this.btnOpenShortcutsHelp && this.shortcutsHelpModal) {
+      this.btnOpenShortcutsHelp.addEventListener('click', () => {
+        this.shortcutsHelpModal.classList.add('active');
+      });
     }
 
     // Sleep timer option clicks
@@ -1537,10 +1807,16 @@ class LyricsApp {
           isPlaying
         });
       }
-      if (this.appEl) {
-        this.appEl.classList.toggle('is-playing', isPlaying);
-      }
       if (isPlaying) {
+        if (this.currentTrack && this.currentTrack.id && this._lastRecordedPlayId !== this.currentTrack.id) {
+          this._lastRecordedPlayId = this.currentTrack.id;
+          Storage.addRecentlyPlayed(this.currentTrack.id);
+          this.recentlyPlayed = Storage.getRecentlyPlayed();
+          this._homeDirty = true;
+          if (this.currentUser) {
+            this.pushCloudSyncDebounced();
+          }
+        }
         if (this.playIcon) this.playIcon.style.display = 'none';
         if (this.pauseIcon) this.pauseIcon.style.display = 'block';
         if (this.dockMiniPlayIcon) this.dockMiniPlayIcon.style.display = 'none';
@@ -1562,6 +1838,15 @@ class LyricsApp {
       if (state === 'paused' && this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
         this.hostBroadcaster?.notify('pause');
       }
+      if (!isPlaying && this.currentTrack) {
+        Storage.setLastPositionSec(this.player.currentTime);
+      }
+    };
+
+    this.player.onBufferingChange = (isBuffering) => {
+      if (this.btnPlayPause) this.btnPlayPause.classList.toggle('is-buffering', isBuffering);
+      if (this.btnDockMiniPlay) this.btnDockMiniPlay.classList.toggle('is-buffering', isBuffering);
+      if (this.appEl) this.appEl.classList.toggle('is-buffering', isBuffering);
     };
 
     this.player.onTimeUpdate = (currentTime, duration) => {
@@ -1570,6 +1855,20 @@ class LyricsApp {
       }
       if (this.currentView === 'stage' || this.currentView === 'lyrics') {
         this.syncLyrics(currentTime);
+      }
+      if (this.currentTrack && this.player.isPlaying) {
+        this.player.updateMediaSessionPosition(currentTime, duration, this.player.getEffectivePlaybackRate());
+        const nowMs = performance.now();
+        if (!this._lastSavedPosMs || (nowMs - this._lastSavedPosMs) > 2500) {
+          this._lastSavedPosMs = nowMs;
+          Storage.setLastPositionSec(currentTime);
+        }
+        if (this.appEl && !this.appEl.classList.contains('perf-lite') && this.currentView === 'lyrics') {
+          const energy = this.player.getEqEnergy();
+          if (energy > 0) {
+            this.appEl.style.setProperty('--audio-energy', energy.toFixed(3));
+          }
+        }
       }
     };
 
@@ -1859,8 +2158,51 @@ class LyricsApp {
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-      if (e.code === 'Space') {
+      const active = document.activeElement;
+      const isEditing = active && (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName) ||
+        active.isContentEditable
+      );
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        this.openGlobalSearchModal();
+        return;
+      }
+
+      if (e.key === 'Escape' && this.globalSearchModal && this.globalSearchModal.classList.contains('active')) {
+        e.preventDefault();
+        this.globalSearchModal.classList.remove('active');
+        return;
+      }
+      if (e.key === 'Escape' && this.shortcutsHelpModal && this.shortcutsHelpModal.classList.contains('active')) {
+        e.preventDefault();
+        this.shortcutsHelpModal.classList.remove('active');
+        return;
+      }
+
+      if (isEditing) return;
+
+      if (e.key === '?') {
+        e.preventDefault();
+        if (this.shortcutsHelpModal) this.shortcutsHelpModal.classList.toggle('active');
+      } else if (e.key === '/') {
+        e.preventDefault();
+        this.openGlobalSearchModal();
+      } else if (e.code === 'KeyQ') {
+        e.preventDefault();
+        this.openQueueDrawer();
+      } else if (e.code === 'KeyM') {
+        e.preventDefault();
+        if (this.btnTrayMute) this.btnTrayMute.click();
+        else if (this.btnMute) this.btnMute.click();
+      } else if (e.code === 'KeyS') {
+        e.preventDefault();
+        if (this.btnShuffle) this.btnShuffle.click();
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        if (this.btnRepeat) this.btnRepeat.click();
+      } else if (e.code === 'Space') {
         e.preventDefault();
         if (this.isGuestLocked('playback')) return;
         this.player.togglePlay();
@@ -1903,7 +2245,6 @@ class LyricsApp {
     // Modal Backdrop Close
     [
       this.adminModal,
-      this.submissionConfirmModal,
       this.listenTogetherModal,
       this.songDetailsModal,
       this.editSongReviewModal,
@@ -1912,6 +2253,8 @@ class LyricsApp {
       this.queueDrawerModal,
       this.sleepTimerModal,
       this.addTracksToPlaylistPickerModal,
+      this.globalSearchModal,
+      this.shortcutsHelpModal,
       this.p2pCameraModal,
       this.p2pPairingModal
     ].forEach(modal => {
@@ -2106,15 +2449,22 @@ class LyricsApp {
       });
     }
     if (this.btnEditParticipantName) {
-      this.btnEditParticipantName.addEventListener('click', () => {
+      this.btnEditParticipantName.addEventListener('click', async () => {
         const cur = this.myParticipant ? this.myParticipant.name : 'Music Lover';
-        const entered = prompt('Enter your display name:', cur);
+        const entered = await AppDialog.prompt({
+          title: 'Display Name',
+          message: 'Choose how your name appears to friends in Listen Together rooms:',
+          defaultValue: cur,
+          placeholder: 'e.g. Abebe',
+          confirmText: 'Update Name'
+        });
         if (entered && entered.trim()) {
           Storage.setParticipantName(entered.trim());
           this.myParticipant.name = entered.trim();
           if (this.currentParticipantNameLabel) {
             this.currentParticipantNameLabel.textContent = entered.trim();
           }
+          this.showToast(`Name updated to "${entered.trim()}"`);
         }
       });
     }
@@ -2311,6 +2661,9 @@ class LyricsApp {
     });
 
     window.addEventListener('beforeunload', () => {
+      if (this.currentTrack && this.player) {
+        Storage.setLastPositionSec(this.player.currentTime);
+      }
       if (this.activeRoom && this.myParticipant) {
         this.getSyncService().leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
       }
@@ -2423,18 +2776,6 @@ class LyricsApp {
             this.startBackgroundR2AudioUpload(audioSource);
           }
         }
-      });
-    }
-
-    if (this.btnCancelSubModal) {
-      this.btnCancelSubModal.addEventListener('click', () => {
-        if (this.submissionConfirmModal) this.submissionConfirmModal.classList.remove('active');
-      });
-    }
-
-    if (this.btnExecutePublicSubmit) {
-      this.btnExecutePublicSubmit.addEventListener('click', async () => {
-        if (this.submissionConfirmModal) this.submissionConfirmModal.classList.remove('active');
       });
     }
 
@@ -2670,6 +3011,215 @@ class LyricsApp {
     }
   }
 
+  renderHomeSkeletons() {
+    const buildCards = (count) => Array.from({ length: count }, () => `
+      <div class="music-card elm-skeleton-card" aria-hidden="true">
+        <div class="card-art-wrap elm-skeleton-block"></div>
+        <div class="card-meta" style="gap:0.45rem;">
+          <div class="elm-skeleton-line" style="width:76%; height:14px;"></div>
+          <div class="elm-skeleton-line" style="width:52%; height:11px;"></div>
+          <div class="elm-skeleton-line" style="width:40%; height:10px;"></div>
+        </div>
+      </div>
+    `).join('');
+
+    if (this.gridGlobalCatalog) this.gridGlobalCatalog.innerHTML = buildCards(4);
+    if (this.gridSuggestions) this.gridSuggestions.innerHTML = buildCards(4);
+    if (this.gridLyricsShowcase) this.gridLyricsShowcase.innerHTML = buildCards(4);
+  }
+
+  _getUniqueTrackPool() {
+    const allTracks = [...this.publicTracks, ...this.tracks];
+    const uniquePool = [];
+    const seenIds = new Set();
+    for (const t of allTracks) {
+      if (t && t.id && !seenIds.has(t.id)) {
+        seenIds.add(t.id);
+        uniquePool.push(t);
+      }
+    }
+    return uniquePool;
+  }
+
+  openGlobalSearchModal() {
+    if (!this.globalSearchModal) return;
+    this.globalSearchModal.classList.add('active');
+    const seed = this.searchQuery || (this.inputCommandSearch ? this.inputCommandSearch.value : '');
+    if (this.inputCommandSearch) {
+      this.inputCommandSearch.value = seed;
+      if (this.btnClearCommandSearch) {
+        this.btnClearCommandSearch.style.display = seed.trim() ? 'inline-flex' : 'none';
+      }
+      requestAnimationFrame(() => {
+        this.inputCommandSearch.focus();
+        this.inputCommandSearch.select();
+      });
+    }
+    this.renderCommandSearch(seed);
+  }
+
+  renderCommandSearch(rawQuery) {
+    if (!this.commandSearchResults) return;
+    const query = String(rawQuery || '').trim();
+    if (!query) {
+      this.commandSearchResults.innerHTML = `
+        <div class="command-search-empty">
+          Type to search titles (Amharic or English), artists, albums, or synced lyric lines. Press <kbd>Esc</kbd> to close.
+        </div>
+      `;
+      return;
+    }
+
+    const pool = this._getUniqueTrackPool();
+    const { results, artists, albums } = searchCatalog(pool, query, { limit: 28 });
+
+    if (results.length === 0 && artists.length === 0 && albums.length === 0) {
+      this.commandSearchResults.innerHTML = `
+        <div class="command-search-empty">
+          No songs, artists, or lyrics matched "${escapeHtml(query)}".
+        </div>
+      `;
+      return;
+    }
+
+    const parts = [];
+    if (artists.length > 0 || albums.length > 0) {
+      parts.push('<div class="command-search-entities">');
+      artists.forEach((a) => {
+        const sub = a.subtitle ? ` (${a.subtitle})` : '';
+        parts.push(`<button type="button" class="command-entity-chip" data-entity-type="artist" data-entity-name="${escapeHtml(a.name)}">Artist: ${escapeHtml(a.name)}${escapeHtml(sub)}</button>`);
+      });
+      albums.forEach((al) => {
+        parts.push(`<button type="button" class="command-entity-chip" data-entity-type="album" data-entity-name="${escapeHtml(al.name)}">Album: ${escapeHtml(al.name)}</button>`);
+      });
+      parts.push('</div>');
+    }
+
+    const trackList = results.map((r) => r.track);
+    parts.push('<div class="command-search-list">');
+    results.forEach((entry, idx) => {
+      const t = entry.track;
+      const cover = sanitizeUrl(t.cover, 'brand/elm-default-cover.svg');
+      const enTitle = t.titleEn && t.titleEn !== t.title ? ` (${t.titleEn})` : '';
+      const enArtist = t.artistEn && t.artistEn !== t.artist ? ` (${t.artistEn})` : '';
+      const lyricHitHtml = entry.matchedLyric
+        ? `<span class="command-lyric-hit" data-jump-sec="${entry.matchedLyric.time}">♪ ${escapeHtml(LyricsParser.formatTime(entry.matchedLyric.time))} "${escapeHtml(entry.matchedLyric.text)}"</span>`
+        : '';
+
+      parts.push(`
+        <div class="command-search-row" data-result-idx="${idx}">
+          <img class="command-search-thumb" src="${escapeHtml(cover)}" alt="" onerror="this.src='brand/elm-default-cover.svg'">
+          <div class="command-search-info">
+            <div class="command-search-title">${escapeHtml(t.title || 'Untitled')}${escapeHtml(enTitle)}</div>
+            <div class="command-search-sub">${escapeHtml(t.artist || 'Unknown Artist')}${escapeHtml(enArtist)}${t.album ? ` • ${escapeHtml(t.album)}` : ''}</div>
+            ${lyricHitHtml}
+          </div>
+          <span class="command-search-badge">${escapeHtml(entry.matchType.toUpperCase())}</span>
+        </div>
+      `);
+    });
+    parts.push('</div>');
+
+    this.commandSearchResults.innerHTML = parts.join('');
+
+    this.commandSearchResults.querySelectorAll('.command-entity-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const type = chip.dataset.entityType;
+        const name = chip.dataset.entityName || '';
+        if (this.globalSearchModal) this.globalSearchModal.classList.remove('active');
+        this.switchTab('library');
+        if (type === 'artist') {
+          this.switchLibraryTab('artists');
+          this.openArtistDetail(makeArtistId(name, name));
+        } else {
+          this.switchLibraryTab('albums');
+          this.renderAlbumsDirectory(name.toLowerCase());
+        }
+      });
+    });
+
+    this.commandSearchResults.querySelectorAll('.command-search-row').forEach((row) => {
+      row.addEventListener('click', async (e) => {
+        const idx = parseInt(row.dataset.resultIdx, 10);
+        const entry = results[idx];
+        if (!entry) return;
+        const jumpEl = e.target.closest('.command-lyric-hit');
+        const jumpTime = jumpEl ? parseFloat(jumpEl.dataset.jumpSec) : null;
+        if (this.globalSearchModal) this.globalSearchModal.classList.remove('active');
+        this.setQueue(trackList, idx);
+        await this.loadTrack(entry.track, true);
+        if (Number.isFinite(jumpTime) && jumpTime >= 0) {
+          this.player.seek(jumpTime);
+          this.syncLyrics(jumpTime, true);
+          this.switchTab('lyrics');
+        }
+      });
+    });
+  }
+
+  renderHomeSearchSection(uniquePool) {
+    if (!this.sectionHomeSearchResults || !this.gridHomeSearchResults) return;
+    const query = (this.searchQuery || '').trim();
+    if (!query) {
+      this.sectionHomeSearchResults.style.display = 'none';
+      if (this.homeSearchEntityRow) this.homeSearchEntityRow.style.display = 'none';
+      return;
+    }
+
+    const { results, artists, albums } = searchCatalog(uniquePool, query, { limit: 40 });
+    this.sectionHomeSearchResults.style.display = 'block';
+    if (this.homeSearchTitleText) {
+      this.homeSearchTitleText.textContent = `Search Results for "${query}"`;
+    }
+    if (this.homeSearchSubtitleText) {
+      this.homeSearchSubtitleText.textContent = `${results.length} matching song${results.length === 1 ? '' : 's'} across titles, artists, albums & lyrics`;
+    }
+
+    if (this.homeSearchEntityRow) {
+      const entityBtns = [];
+      artists.forEach((a) => {
+        entityBtns.push(`<button type="button" class="command-entity-chip" data-entity-type="artist" data-entity-name="${escapeHtml(a.name)}">Artist: ${escapeHtml(a.name)} (${a.count})</button>`);
+      });
+      albums.forEach((al) => {
+        entityBtns.push(`<button type="button" class="command-entity-chip" data-entity-type="album" data-entity-name="${escapeHtml(al.name)}">Album: ${escapeHtml(al.name)} (${al.count})</button>`);
+      });
+      if (entityBtns.length > 0) {
+        this.homeSearchEntityRow.style.display = 'flex';
+        this.homeSearchEntityRow.innerHTML = entityBtns.join('');
+        this.homeSearchEntityRow.querySelectorAll('.command-entity-chip').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            const type = chip.dataset.entityType;
+            const name = chip.dataset.entityName || '';
+            this.switchTab('library');
+            if (type === 'artist') {
+              this.switchLibraryTab('artists');
+              this.openArtistDetail(makeArtistId(name, name));
+            } else {
+              this.switchLibraryTab('albums');
+              this.renderAlbumsDirectory(name.toLowerCase());
+            }
+          });
+        });
+      } else {
+        this.homeSearchEntityRow.style.display = 'none';
+      }
+    }
+
+    const snippetById = new Map();
+    results.forEach((r) => {
+      if (r.matchedLyric && r.track && r.track.id) {
+        snippetById.set(r.track.id, r.matchedLyric);
+      }
+    });
+    this._homeSearchLyricMatches = snippetById;
+    this.renderMusicGrid(
+      this.gridHomeSearchResults,
+      results.map((r) => r.track),
+      `No songs or lyrics matched "${query}".`
+    );
+    this._homeSearchLyricMatches = null;
+  }
+
   renderHomePage() {
     if (!this.homeExploreView) return;
     this._homeDirty = false;
@@ -2687,16 +3237,7 @@ class LyricsApp {
       this.greetingSubtext.textContent = greetingData.moodSubtitle;
     }
 
-    const allTracks = [...this.publicTracks, ...this.tracks];
-    // Deduplicate by ID
-    const uniquePool = [];
-    const seenIds = new Set();
-    for (const t of allTracks) {
-      if (t && t.id && !seenIds.has(t.id)) {
-        seenIds.add(t.id);
-        uniquePool.push(t);
-      }
-    }
+    const uniquePool = this._getUniqueTrackPool();
 
     const dnaStats = RecommendationEngine.getListeningStats(uniquePool, {
       favoriteIds: this.favorites || [],
@@ -2705,6 +3246,9 @@ class LyricsApp {
     if (this.dnaStatTotal) this.dnaStatTotal.textContent = dnaStats.totalTracks;
     if (this.dnaStatLrc) this.dnaStatLrc.textContent = dnaStats.syncedLyricsCount;
     if (this.dnaStatFavs) this.dnaStatFavs.textContent = dnaStats.favoriteCount;
+
+    // 1b. Instant Search Results Section
+    this.renderHomeSearchSection(uniquePool);
 
     // 2. Update Featured Spotlight
     this.updateHeroState();
@@ -2750,17 +3294,11 @@ class LyricsApp {
     // Dynamic Filter Chips strictly matching existing catalog songs
     this.renderHomeFilterChips(uniquePool);
 
-    // 8. Global Cloud Catalog Shelf (with search, dynamic category filter, and chronological sorting)
+    // 8. New Drops Shelf (curated preview on Home; full catalog lives in Library -> Songs)
     let catalogTracks = this.activeFilter === 'offline' ? [...this.tracks] : [...this.publicTracks];
 
-    // Filter by Search Query
     if (this.searchQuery) {
-      const q = this.searchQuery;
-      catalogTracks = catalogTracks.filter(t =>
-        (t.title && t.title.toLowerCase().includes(q)) ||
-        (t.artist && t.artist.toLowerCase().includes(q)) ||
-        (t.album && t.album.toLowerCase().includes(q))
-      );
+      catalogTracks = searchCatalog(catalogTracks, this.searchQuery).results.map((r) => r.track);
     }
 
     // Filter by Active Filter Chip
@@ -2807,11 +3345,19 @@ class LyricsApp {
       catalogTracks.sort((a, b) => this._getTrackTimestamp(b) - this._getTrackTimestamp(a));
     }
 
+    const homePreviewTracks = (this.activeFilter === 'all' && !this.searchQuery)
+      ? catalogTracks.slice(0, 8)
+      : catalogTracks;
+
     if (this.catalogCounterSubtitle) {
-      this.catalogCounterSubtitle.textContent = `${catalogTracks.length} track${catalogTracks.length === 1 ? '' : 's'} sorted ${sortMode === 'oldest' ? 'chronologically (oldest first)' : sortMode === 'newest' ? 'chronologically (newest first)' : `by ${sortMode}`}`;
+      if (this.activeFilter === 'all' && !this.searchQuery && catalogTracks.length > homePreviewTracks.length) {
+        this.catalogCounterSubtitle.textContent = `Showing ${homePreviewTracks.length} of ${catalogTracks.length} songs • Tap Browse All for the full catalog`;
+      } else {
+        this.catalogCounterSubtitle.textContent = `${homePreviewTracks.length} track${homePreviewTracks.length === 1 ? '' : 's'} sorted ${sortMode === 'oldest' ? 'chronologically (oldest first)' : sortMode === 'newest' ? 'chronologically (newest first)' : `by ${sortMode}`}`;
+      }
     }
 
-    this.renderMusicGrid(this.gridGlobalCatalog, catalogTracks, 'No tracks found matching your criteria.');
+    this.renderMusicGrid(this.gridGlobalCatalog, homePreviewTracks, 'No tracks found matching your criteria.');
   }
 
   _getTrackTimestamp(track) {
@@ -2980,6 +3526,80 @@ class LyricsApp {
     });
   }
 
+  async openTrackMenu(track, anchorEl = null, contextEvent = null) {
+    if (!track) return;
+    const isOfflineSaved = Boolean(track.audioBlob || this.tracks.some((t) => t.id === track.id));
+    const isPublic = this.publicTracks.some((t) => t.id === track.id);
+    const canSaveOffline = Boolean(track.audioUrl && !track.audioBlob);
+    const canDelete = (isPublic && this.isAdmin) || isOfflineSaved;
+
+    TrackActionMenu.open({
+      track,
+      anchorEl,
+      clientX: contextEvent ? contextEvent.clientX : null,
+      clientY: contextEvent ? contextEvent.clientY : null,
+      isFavorite: Storage.isFavorite(track.id),
+      isOfflineSaved,
+      canSaveOffline: canSaveOffline || isOfflineSaved,
+      canDelete,
+      canEdit: true,
+      onAction: async (actionId, targetTrack) => {
+        if (actionId === 'play-next') {
+          this.addToQueue(targetTrack, true);
+        } else if (actionId === 'add-queue') {
+          this.addToQueue(targetTrack, false);
+        } else if (actionId === 'add-playlist') {
+          this.openAddToPlaylistModal(targetTrack);
+        } else if (actionId === 'toggle-favorite') {
+          const added = this.toggleTrackFavorite(targetTrack.id);
+          this.showToast(added ? `Added "${targetTrack.title}" to Favorites` : `Removed "${targetTrack.title}" from Favorites`);
+        } else if (actionId === 'toggle-offline') {
+          if (isOfflineSaved) {
+            await this.deleteTrack(targetTrack.id);
+          } else {
+            this.showToast(`Saving "${targetTrack.title}" for offline playback...`);
+            try {
+              await Storage.downloadTrackForOffline(targetTrack);
+              this.tracks = await Storage.getAllTracks();
+              this._homeDirty = true;
+              this.showToast(`Saved "${targetTrack.title}" offline.`);
+              if (this.currentView === 'library') this.renderLibraryView();
+            } catch (err) {
+              this.showToast('Offline download failed: ' + (err.message || 'Check connection'));
+            }
+          }
+        } else if (actionId === 'open-lyrics') {
+          if (!this.currentTrack || this.currentTrack.id !== targetTrack.id) {
+            await this.loadTrack(targetTrack, true);
+          }
+          this.switchTab('lyrics');
+        } else if (actionId === 'song-details') {
+          this.openSongDetails(targetTrack);
+        } else if (actionId === 'edit-song') {
+          this.openEditSongReviewModal(targetTrack);
+        } else if (actionId === 'delete-track') {
+          if (isPublic && this.isAdmin && !isOfflineSaved) {
+            const confirmed = await AppDialog.confirm({
+              title: 'Delete From Global Catalog',
+              message: `Remove "${targetTrack.title}" from Global Cloud Catalog?`,
+              confirmText: 'Delete Permanently',
+              danger: true
+            });
+            if (confirmed) {
+              await FirebaseService.deletePublicTrack(targetTrack);
+              await this.loadPublicCatalog();
+              this.renderHomePage();
+              if (this.currentView === 'library') this.renderLibraryView();
+              this.showToast(`Deleted "${targetTrack.title}"`);
+            }
+          } else {
+            await this.deleteTrack(targetTrack.id);
+          }
+        }
+      }
+    });
+  }
+
   renderMusicGrid(container, tracks, emptyMessage) {
     if (!container) return;
     container.innerHTML = '';
@@ -2993,12 +3613,11 @@ class LyricsApp {
       return;
     }
 
-    const favSet = new Set(this.favorites || []);
+    const snippetMap = this._homeSearchLyricMatches instanceof Map ? this._homeSearchLyricMatches : null;
     const frag = document.createDocumentFragment();
-    tracks.forEach(track => {
+    tracks.forEach((track, trackIdx) => {
       const isCurrent = this.currentTrack && this.currentTrack.id === track.id;
       const isPlaying = isCurrent && this.player.isPlaying;
-      const isFav = favSet.has(track.id);
       const dur = this.getTrackDuration(track);
       const durFormatted = dur > 0 ? LyricsParser.formatTime(dur) : '';
       const safeId = escapeHtml(track.id || '');
@@ -3006,6 +3625,12 @@ class LyricsApp {
       const safeArtist = escapeHtml(track.artist || 'Unknown Artist');
       const safeCover = sanitizeUrl(track.cover);
       const safeYear = escapeHtml(track.year || '');
+      const lyricMatch = snippetMap ? snippetMap.get(track.id) : null;
+
+      const metaBits = [];
+      if (track.lrc) metaBits.push('LRC');
+      if (durFormatted) metaBits.push(durFormatted);
+      else if (safeYear) metaBits.push(safeYear);
 
       const card = document.createElement('div');
       card.className = `music-card ${isCurrent ? 'playing' : ''}`;
@@ -3013,115 +3638,55 @@ class LyricsApp {
       card.innerHTML = `
         <div class="card-art-wrap">
           <img src="${safeCover}" alt="${safeTitle}" class="card-art-img" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+          ${track.lrc ? '<span class="card-lrc-corner" title="Synced Lyrics Available">LRC</span>' : ''}
           <div class="card-play-overlay">
             <div class="card-play-icon" data-play-track-id="${safeId}">${isPlaying ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}</div>
           </div>
         </div>
         <div class="card-meta">
-          <div class="card-title" title="${safeTitle}">${safeTitle}</div>
-          <div class="card-artist" title="${safeArtist}">${safeArtist}</div>
-          <div class="card-badges-row">
-            <span class="card-badge ${track.lrc ? 'card-badge-lrc' : ''}">${track.lrc ? 'Synced LRC' : 'Audio'}</span>
-            ${durFormatted ? `<span class="card-badge">${durFormatted}</span>` : ''}
-            ${safeYear ? `<span class="card-badge">${safeYear}</span>` : ''}
-          </div>
-          <div class="card-tag-row">
-            <div class="card-actions-row">
-              <button class="card-btn-action btn-card-queue" title="Add to Queue" type="button">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              </button>
-              <button class="card-btn-action btn-card-playlist" title="Add to Playlist" type="button">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h7M3 6h.01M3 12h.01M3 18h.01M18 15v6m-3-3h6"/></svg>
-              </button>
-              <button class="card-btn-action btn-card-info" title="Preview Song Details" type="button">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              </button>
-              <button class="card-btn-action btn-card-fav ${isFav ? 'is-favorite' : ''}" title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}" type="button">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="${isFav ? '#ffffff' : 'none'}" stroke="#ffffff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              </button>
-              <button class="card-btn-action btn-card-download" title="Save for Offline" type="button">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </button>
+          <div class="card-meta-header">
+            <div class="card-meta-text">
+              <div class="card-title" title="${safeTitle}">${safeTitle}</div>
+              <div class="card-artist" title="${safeArtist}">${safeArtist}</div>
             </div>
+            <button class="card-btn-more" title="More actions" aria-label="More actions for ${safeTitle}" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+            </button>
           </div>
+          ${lyricMatch
+            ? `<div class="card-lyric-match" title="Matched lyric line">♪ "${escapeHtml(lyricMatch.text)}"</div>`
+            : `<div class="card-subtle-meta">${escapeHtml(metaBits.join(' • ') || 'Audio')}</div>`}
         </div>
       `;
 
-      // Play on card artwork click
-      const artWrap = card.querySelector('.card-art-wrap');
-      if (artWrap) {
-        artWrap.addEventListener('click', async (e) => {
+      const moreBtn = card.querySelector('.card-btn-more');
+      if (moreBtn) {
+        moreBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const activeNow = this.currentTrack && this.currentTrack.id === track.id;
-          if (activeNow) {
-            this.player.togglePlay();
-          } else {
-            this.setQueue(tracks, tracks.indexOf(track));
-            await this.loadTrack(track, true);
+          this.openTrackMenu(track, moreBtn);
+        });
+      }
+
+      card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.openTrackMenu(track, null, e);
+      });
+
+      card.addEventListener('click', async (e) => {
+        if (e.target.closest('.card-btn-more')) return;
+        const activeNow = this.currentTrack && this.currentTrack.id === track.id;
+        if (activeNow) {
+          this.player.togglePlay();
+        } else {
+          this.setQueue(tracks, trackIdx);
+          await this.loadTrack(track, true);
+          if (lyricMatch && Number.isFinite(lyricMatch.time)) {
+            this.player.seek(lyricMatch.time);
+            this.syncLyrics(lyricMatch.time, true);
           }
-          this.syncDynamicPlayButtons();
-        });
-      }
-
-      // Add to queue button
-      const btnQueue = card.querySelector('.btn-card-queue');
-      if (btnQueue) {
-        btnQueue.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.addToQueue(track, false);
-        });
-      }
-
-      // Add to playlist button
-      const btnPlaylist = card.querySelector('.btn-card-playlist');
-      if (btnPlaylist) {
-        btnPlaylist.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.openAddToPlaylistModal(track);
-        });
-      }
-
-      // Info button
-      const infoBtn = card.querySelector('.btn-card-info');
-      if (infoBtn) {
-        infoBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.openSongDetails(track);
-        });
-      }
-
-      // Favorite button
-      const favBtn = card.querySelector('.btn-card-fav');
-      if (favBtn) {
-        favBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.toggleTrackFavorite(track.id);
-        });
-      }
-
-      // Download button
-      const dlBtn = card.querySelector('.btn-card-download');
-      if (dlBtn) {
-        dlBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
-          try {
-            await Storage.downloadTrackForOffline(track);
-            dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
-            dlBtn.title = 'Saved Offline';
-            this.tracks = await Storage.getAllTracks();
-            this._homeDirty = true;
-          } catch (err) {
-            dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-            setTimeout(() => { dlBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'; }, 2000);
-          }
-        });
-      }
-
-      // Open details on clicking the card
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.card-btn-action') || e.target.closest('.card-play-overlay')) return;
-        this.openSongDetails(track);
+        }
+        this.syncDynamicPlayButtons();
       });
 
       frag.appendChild(card);
@@ -3164,8 +3729,13 @@ class LyricsApp {
 
     // Update Images & Mini Player Dock
     const coverUrl = sanitizeUrl(resolvedTrack.cover);
-    const discUrl = sanitizeUrl(resolvedTrack.discCenter || coverUrl);
     this._setArtworkFallback(this.vinylDisc, this.discArtwork, resolvedTrack.discCenter || resolvedTrack.cover);
+    if (this.kineticSleeveArt) {
+      this.kineticSleeveArt.src = this._hasCustomArtwork(resolvedTrack.cover) ? coverUrl : 'brand/elm-default-cover.svg';
+    }
+    if (this.stageMobileCoverImg) {
+      this.stageMobileCoverImg.src = this._hasCustomArtwork(resolvedTrack.cover) ? coverUrl : 'brand/elm-default-cover.svg';
+    }
     this._setArtworkFallback(this.playerMiniArtWrap, this.playerMiniArt, resolvedTrack.cover);
     if (this.playerMiniTitle) this.playerMiniTitle.textContent = resolvedTrack.title;
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = resolvedTrack.artist;
@@ -3178,13 +3748,29 @@ class LyricsApp {
       onPlay: () => { if (!this.isGuestLocked('playback')) this.player.play(); },
       onPause: () => { if (!this.isGuestLocked('playback')) this.player.pause(); },
       onPrevioustrack: () => { if (!this.isGuestLocked('tracks')) this.playPrevTrack(); },
-      onNexttrack: () => { if (!this.isGuestLocked('tracks')) this.playNextTrack(); }
+      onNexttrack: () => { if (!this.isGuestLocked('tracks')) this.playNextTrack(); },
+      onSeekTo: (seekTime) => {
+        if (this.isGuestLocked('seeking')) return;
+        this.player.seek(seekTime);
+        Storage.setLastPositionSec(seekTime);
+      },
+      onSeekBackward: (offset) => {
+        if (this.isGuestLocked('seeking')) return;
+        this.player.seek(this.player.currentTime - (offset || 10));
+      },
+      onSeekForward: (offset) => {
+        if (this.isGuestLocked('seeking')) return;
+        this.player.seek(this.player.currentTime + (offset || 10));
+      }
     });
+    const estDur = this.getTrackDuration(resolvedTrack);
+    this.player.updateMediaSessionPosition(0, estDur, this.player.getEffectivePlaybackRate(), true);
 
     // Dynamic color extraction with race guard so fast skipping never applies stale colors
     const targetTrackId = resolvedTrack.id;
     PaletteExtractor.extractFromImage(coverUrl).then(palette => {
       if (this.currentTrack && this.currentTrack.id === targetTrackId) {
+        this._currentPalette = palette;
         PaletteExtractor.applyToElement(this.appEl, palette);
       }
     });
@@ -3200,14 +3786,7 @@ class LyricsApp {
       this.player.play();
     }
 
-    // Record into recently played & mark Home dirty for next visit
-    Storage.addRecentlyPlayed(track.id);
-    this.recentlyPlayed = Storage.getRecentlyPlayed();
-    this._homeDirty = true;
     this.updateFavoriteButtonsState();
-    if (this.currentUser) {
-      this.pushCloudSyncDebounced();
-    }
 
     // Broadcast track change if Host
     if (this.activeRoom && this.isRoomHost && !this._isApplyingRemoteSync) {
@@ -3247,6 +3826,8 @@ class LyricsApp {
 
     this._setArtworkFallback(this.heroArtworkBox, this.heroArtworkImg, '');
     this._setArtworkFallback(this.vinylDisc, this.discArtwork, '');
+    if (this.kineticSleeveArt) this.kineticSleeveArt.src = 'brand/elm-default-cover.svg';
+    if (this.stageMobileCoverImg) this.stageMobileCoverImg.src = 'brand/elm-default-cover.svg';
     this._setArtworkFallback(this.playerMiniArtWrap, this.playerMiniArt, '');
     if (this.playerMiniTitle) this.playerMiniTitle.textContent = 'No Track Loaded';
     if (this.playerMiniArtist) this.playerMiniArtist.textContent = 'Select a track to begin';
@@ -3277,10 +3858,123 @@ class LyricsApp {
     }
   }
 
+  _bindLyricsManualBrowse() {
+    if (!this.lyricsViewport || !this.lyricsScrollWrap) return;
+    let touchStartY = 0;
+
+    const enterManualBrowse = () => {
+      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+      this._manualScrollActive = true;
+      this.lyricsScrollWrap.classList.add('is-manual-browse');
+      if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'inline-flex';
+      if (this._manualScrollAutoResumeTimer) clearTimeout(this._manualScrollAutoResumeTimer);
+      this._manualScrollAutoResumeTimer = setTimeout(() => {
+        this._resumeLyricsAutoSync();
+      }, 8000);
+    };
+
+    const applyDelta = (deltaY) => {
+      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
+      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+      enterManualBrowse();
+      const wrapHeight = this._lyricsViewportHeight || this.lyricsViewport.offsetHeight || 420;
+      const contentH = this.lyricsScrollWrap.scrollHeight || 420;
+      const minY = Math.min(0, wrapHeight - contentH - 80);
+      const maxY = wrapHeight * 0.45;
+      if (!Number.isFinite(this._manualOffsetPx)) {
+        this._manualOffsetPx = this._lastSyncedScrollPx || 0;
+      }
+      this._manualOffsetPx = Math.max(minY, Math.min(maxY, this._manualOffsetPx - deltaY));
+      this.lyricsScrollWrap.style.transform = `translate3d(0, ${this._manualOffsetPx}px, 0)`;
+    };
+
+    this.lyricsViewport.addEventListener('wheel', (e) => {
+      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
+      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+      e.preventDefault();
+      applyDelta(e.deltaY);
+    }, { passive: false });
+
+    this.lyricsViewport.addEventListener('touchstart', (e) => {
+      if (e.touches && e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    this.lyricsViewport.addEventListener('touchmove', (e) => {
+      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
+      if (!e.touches || e.touches.length !== 1 || !this.parsedLyrics || this.parsedLyrics.length === 0) return;
+      const dy = touchStartY - e.touches[0].clientY;
+      touchStartY = e.touches[0].clientY;
+      if (Math.abs(dy) > 2) {
+        applyDelta(dy);
+      }
+    }, { passive: true });
+
+    this.lyricsViewport.addEventListener('scroll', () => {
+      if (!this.appEl?.classList.contains('lyrics-mode-sheet')) return;
+      enterManualBrowse();
+    }, { passive: true });
+  }
+
+  _resumeLyricsAutoSync() {
+    this._manualScrollActive = false;
+    this._manualOffsetPx = null;
+    if (this._manualScrollAutoResumeTimer) {
+      clearTimeout(this._manualScrollAutoResumeTimer);
+      this._manualScrollAutoResumeTimer = null;
+    }
+    if (this.lyricsScrollWrap) this.lyricsScrollWrap.classList.remove('is-manual-browse');
+    if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'none';
+    if (this.lyricsViewport && this.appEl?.classList.contains('lyrics-mode-sheet')) {
+      const activeEl = this.lyricsScrollWrap?.querySelector('.lyric-line.active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+      this.syncLyrics(this.player ? this.player.currentTime : 0, true);
+    }
+  }
+
+  _updateInstrumentalCue(currentTime, newIndex) {
+    if (!this.lyricsInstrumentalCue || !this.parsedLyrics || this.parsedLyrics.length === 0) {
+      if (this.lyricsInstrumentalCue) this.lyricsInstrumentalCue.style.display = 'none';
+      return;
+    }
+    let cueText = '';
+    if (newIndex === -1 && this.parsedLyrics[0].time > 2.5) {
+      const rem = Math.max(0, Math.ceil(this.parsedLyrics[0].time - currentTime));
+      cueText = rem > 0 ? `Intro • Singing in ${rem}s` : 'Intro';
+    } else if (newIndex >= 0 && newIndex + 1 < this.parsedLyrics.length) {
+      const cur = this.parsedLyrics[newIndex];
+      const next = this.parsedLyrics[newIndex + 1];
+      const gap = (next.time || 0) - (cur.time || 0);
+      const elapsed = currentTime - (cur.time || 0);
+      const rem = (next.time || 0) - currentTime;
+      if (gap >= 8 && elapsed >= 2.5 && rem >= 1.5) {
+        cueText = `Instrumental • Next line in ${Math.ceil(rem)}s`;
+      }
+    }
+
+    if (cueText) {
+      if (this.lyricsCueLabel && this.lyricsCueLabel.textContent !== cueText) {
+        this.lyricsCueLabel.textContent = cueText;
+      }
+      this.lyricsInstrumentalCue.style.display = 'inline-flex';
+    } else {
+      this.lyricsInstrumentalCue.style.display = 'none';
+    }
+  }
+
   renderLyrics() {
     if (!this.lyricsScrollWrap) return;
     this.lyricsScrollWrap.innerHTML = '';
     this.activeLyricIndex = -1;
+    this._manualScrollActive = false;
+    this._manualOffsetPx = null;
+    this.lyricsScrollWrap.classList.remove('is-manual-browse');
+    if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'none';
+    if (this.lyricsInstrumentalCue) this.lyricsInstrumentalCue.style.display = 'none';
 
     if (!this.parsedLyrics || this.parsedLyrics.length === 0) {
       this.lyricsScrollWrap.innerHTML = `
@@ -3336,6 +4030,7 @@ class LyricsApp {
       lineEl.addEventListener('click', () => {
         this.player.seek(line.time);
         if (!this.player.isPlaying) this.player.play();
+        if (this._manualScrollActive) this._resumeLyricsAutoSync();
       });
 
       frag.appendChild(lineEl);
@@ -3367,9 +4062,13 @@ class LyricsApp {
   }
 
   syncLyrics(currentTime, force = false) {
-    if (!this.parsedLyrics || this.parsedLyrics.length === 0 || !this.lyricsScrollWrap) return;
+    if (!this.parsedLyrics || this.parsedLyrics.length === 0 || !this.lyricsScrollWrap) {
+      if (this.lyricsInstrumentalCue) this.lyricsInstrumentalCue.style.display = 'none';
+      return;
+    }
 
     const newIndex = LyricsParser.getActiveIndex(this.parsedLyrics, currentTime);
+    this._updateInstrumentalCue(currentTime, newIndex);
     if (!force && newIndex === this.activeLyricIndex && this.activeLyricIndex !== -1) return;
 
     const oldIndex = this.activeLyricIndex;
@@ -3433,7 +4132,10 @@ class LyricsApp {
       };
       const extraOffset = newIndex === -1 ? 65 : 0;
       const targetScroll = (wrapHeight / 2) - resolvedPos.top - (resolvedPos.height / 2) + extraOffset;
-      this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
+      this._lastSyncedScrollPx = targetScroll;
+      if (!this._manualScrollActive) {
+        this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
+      }
     });
   }
 
@@ -3482,13 +4184,16 @@ class LyricsApp {
       const ratio = Math.min(1, Math.max(0, currentTime / duration));
       if (Math.abs(ratio - this._lastTimelinePct) >= 0.0005 || ratio === 0 || ratio === 1) {
         this._lastTimelinePct = ratio;
-        this.scrubberFill.style.transform = `scaleX(${ratio.toFixed(4)})`;
+        const scaleVal = `scaleX(${ratio.toFixed(4)})`;
+        this.scrubberFill.style.transform = scaleVal;
+        if (this.miniPlayerProgressFill) this.miniPlayerProgressFill.style.transform = scaleVal;
         this._syncScrubberThumbPosition(ratio);
       }
     } else if (this._lastTimelinePct !== 0) {
       this._lastTimelinePct = 0;
       this._lastBufferPct = 0;
       this.scrubberFill.style.transform = 'scaleX(0)';
+      if (this.miniPlayerProgressFill) this.miniPlayerProgressFill.style.transform = 'scaleX(0)';
       this._syncScrubberThumbPosition(0);
       if (this.scrubberBuffered) this.scrubberBuffered.style.transform = 'scaleX(0)';
     }
@@ -3894,8 +4599,9 @@ class LyricsApp {
       `;
       const playHandler = () => {
         if (isCurrent) {
-          this.togglePlayPause();
+          this.player.togglePlay();
         } else {
+          this.setQueue(tracks, idx);
           this.loadTrack(song, true);
         }
       };
@@ -3918,12 +4624,7 @@ class LyricsApp {
 
     let tracksToDisplay = this.publicTracks;
     if (filterText) {
-      const q = filterText.toLowerCase();
-      tracksToDisplay = tracksToDisplay.filter(t =>
-        (t.title && t.title.toLowerCase().includes(q)) ||
-        (t.artist && t.artist.toLowerCase().includes(q)) ||
-        (t.album && t.album.toLowerCase().includes(q))
-      );
+      tracksToDisplay = searchCatalog(tracksToDisplay, filterText).results.map((r) => r.track);
     }
 
     if (!tracksToDisplay || tracksToDisplay.length === 0) {
@@ -3939,7 +4640,7 @@ class LyricsApp {
     if (this._catalogRenderToken !== currentToken) return;
 
     const frag = document.createDocumentFragment();
-    for (const song of tracksToDisplay) {
+    tracksToDisplay.forEach((song, songIdx) => {
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
       const isOfflineReady = offlineIds.has(song.id);
 
@@ -4015,9 +4716,16 @@ class LyricsApp {
         if (this.currentTrack && this.currentTrack.id === song.id) {
           this.player.togglePlay();
         } else {
+          this.setQueue(tracksToDisplay, songIdx);
           await this.loadTrack(song, true);
         }
         this.syncDynamicPlayButtons();
+      });
+
+      card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.openTrackMenu(song, null, e);
       });
 
       const dlBtn = card.querySelector('.btn-download-offline');
@@ -4049,7 +4757,13 @@ class LyricsApp {
         if (delBtn) {
           delBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (confirm(`Remove "${song.title}" from Global Cloud Catalog?\n\nThis will permanently delete the song from Firestore and delete its audio file from Cloudflare R2.`)) {
+            const confirmed = await AppDialog.confirm({
+              title: 'Delete From Global Catalog',
+              message: `Remove "${song.title}" from Global Cloud Catalog? This will permanently delete the song from Firestore and its audio file from Cloudflare R2.`,
+              confirmText: 'Delete Permanently',
+              danger: true
+            });
+            if (confirmed) {
               delBtn.disabled = true;
               delBtn.style.opacity = '0.5';
               try {
@@ -4069,7 +4783,10 @@ class LyricsApp {
                 }
               } catch (delErr) {
                 console.error('Delete public track error:', delErr);
-                alert('Could not delete track: ' + (delErr.message || 'Please check your connection'));
+                AppDialog.alert({
+                  title: 'Delete Failed',
+                  message: delErr.message || 'Please check your connection and try again.'
+                });
                 delBtn.disabled = false;
                 delBtn.style.opacity = '1';
               }
@@ -4083,7 +4800,7 @@ class LyricsApp {
       });
 
       frag.appendChild(card);
-    }
+    });
     this.globalCatalogList.appendChild(frag);
   }
 
@@ -4093,12 +4810,7 @@ class LyricsApp {
 
     let tracksToDisplay = this.tracks;
     if (filterText) {
-      const q = filterText.toLowerCase();
-      tracksToDisplay = tracksToDisplay.filter(t =>
-        (t.title && t.title.toLowerCase().includes(q)) ||
-        (t.artist && t.artist.toLowerCase().includes(q)) ||
-        (t.album && t.album.toLowerCase().includes(q))
-      );
+      tracksToDisplay = searchCatalog(tracksToDisplay, filterText).results.map((r) => r.track);
     }
 
     if (!tracksToDisplay || tracksToDisplay.length === 0) {
@@ -4122,7 +4834,7 @@ class LyricsApp {
     }
 
     const frag = document.createDocumentFragment();
-    tracksToDisplay.forEach(song => {
+    tracksToDisplay.forEach((song, songIdx) => {
       const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
       const isSongPlaying = isCurrent && this.player.isPlaying;
       const safeId = escapeHtml(song.id);
@@ -4196,9 +4908,16 @@ class LyricsApp {
         if (this.currentTrack && this.currentTrack.id === song.id) {
           this.player.togglePlay();
         } else {
+          this.setQueue(tracksToDisplay, songIdx);
           await this.loadTrack(song, true);
         }
         this.syncDynamicPlayButtons();
+      });
+
+      card.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.openTrackMenu(song, null, e);
       });
 
       card.querySelector('.btn-edit-custom').addEventListener('click', (e) => {
@@ -5049,11 +5768,28 @@ class LyricsApp {
     }
   }
 
-  async deleteTrack(trackId) {
+  async deleteTrack(trackId, { skipConfirm = false } = {}) {
+    const existing = this.tracks.find((t) => t.id === trackId);
+    if (!existing) return;
+
+    if (!skipConfirm) {
+      const isCachedCloud = Boolean(existing.isDownloaded);
+      const confirmed = await AppDialog.confirm({
+        title: isCachedCloud ? 'Remove Offline Download' : 'Delete Custom Song',
+        message: isCachedCloud
+          ? `Remove the offline cached copy of "${existing.title || 'this song'}"? You can re-download it anytime.`
+          : `Permanently delete custom upload "${existing.title || 'this song'}" from device storage?`,
+        confirmText: isCachedCloud ? 'Remove Download' : 'Delete Song',
+        danger: !isCachedCloud
+      });
+      if (!confirmed) return;
+    }
+
     await Storage.deleteTrack(trackId);
     this.tracks = await Storage.getAllTracks();
     this.populateTracksModal();
     this.renderHomePage();
+    this.showToast(existing.isDownloaded ? `Removed offline copy of "${existing.title}"` : `Deleted "${existing.title}"`);
 
     if (this.currentTrack && this.currentTrack.id === trackId) {
       const allAvailable = [...this.publicTracks, ...this.tracks];
@@ -5169,7 +5905,11 @@ class LyricsApp {
         });
 
         item.querySelector('.btn-sub-preview-lyrics').addEventListener('click', () => {
-          alert(sub.lrc ? sub.lrc : 'No synchronized LRC lyrics attached to this submission.');
+          AppDialog.alert({
+            title: `${sub.title || 'Submission'} — Lyrics Preview`,
+            message: sub.lrc ? 'Submitted synchronized LRC lyrics:' : 'No synchronized LRC lyrics attached to this submission.',
+            preText: sub.lrc || ''
+          });
         });
 
         item.querySelector('.btn-approve-submission').addEventListener('click', async () => {
@@ -5185,23 +5925,38 @@ class LyricsApp {
             this.checkPendingSubmissionsCount();
             this.renderHomePage();
             this.populateTracksModal();
-            alert(isMetadataEdit 
-              ? `Applied community edits and lyrics to "${sub.title}" successfully!` 
-              : `Approved "${sub.title}" and published to Global Cloud Catalog!`);
+            this.showToast(
+              isMetadataEdit
+                ? `Applied edits & lyrics to "${sub.title}"!`
+                : `Published "${sub.title}" to Global Catalog!`,
+              3400
+            );
           } catch (err) {
-            alert('Approve error: ' + err.message);
+            AppDialog.alert({
+              title: 'Approval Failed',
+              message: err.message || 'Unable to approve submission.'
+            });
           }
         });
 
         item.querySelector('.btn-reject-submission').addEventListener('click', async () => {
-          if (confirm(`Reject and delete submission for "${sub.title}"?\n\nThis will remove the submission and delete its uploaded audio from Cloudflare R2.`)) {
+          const confirmed = await AppDialog.confirm({
+            title: 'Reject Submission',
+            message: `Reject and delete submission for "${sub.title}"? This will also delete any uploaded audio from Cloudflare R2.`,
+            confirmText: 'Reject & Delete',
+            danger: true
+          });
+          if (confirmed) {
             try {
               await FirebaseService.rejectSubmission(sub);
               item.remove();
               this.checkPendingSubmissionsCount();
               this.showToast(`Rejected submission "${sub.title}" and cleaned up R2.`, 3000);
             } catch (err) {
-              alert('Reject error: ' + (err.message || 'Check connection'));
+              AppDialog.alert({
+                title: 'Rejection Failed',
+                message: err.message || 'Check your internet connection.'
+              });
             }
           }
         });
@@ -5294,6 +6049,9 @@ class LyricsApp {
     if (this.selectLyricsViewMode && this.selectLyricsViewMode.value !== valid) {
       this.selectLyricsViewMode.value = valid;
     }
+    if (this.stageModeLabel) {
+      this.stageModeLabel.textContent = valid === 'sheet' ? 'Sheet' : 'Synced';
+    }
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
       if (this.currentUser) this.pushCloudSyncDebounced();
@@ -5344,11 +6102,12 @@ class LyricsApp {
   }
 
   initPlayerAutoCollapse() {
-    let enabled = true;
+    let enabled = false;
     try {
-      const saved = localStorage.getItem('ethio_player_auto_collapse');
+      const saved = localStorage.getItem('ethio_player_compact_dock');
       if (saved !== null) enabled = saved === '1';
     } catch (e) {}
+    this._compactDockEnabled = enabled;
     this._autoCollapseEnabled = enabled;
 
     if (this.toggleAutoCollapsePlayer) {
@@ -5359,29 +6118,22 @@ class LyricsApp {
     }
 
     if (this.playerBarDock) {
-      const resetEvents = ['pointerdown', 'touchstart', 'input', 'click', 'keydown', 'mouseenter', 'mousemove'];
-      resetEvents.forEach(evtName => {
-        this.playerBarDock.addEventListener(evtName, () => this.resetPlayerAutoCollapseTimer(), { passive: true });
-      });
+      this.playerBarDock.classList.toggle('is-collapsed', Boolean(enabled && this.currentView !== 'lyrics'));
     }
-
-    this.resetPlayerAutoCollapseTimer();
   }
 
   applyPlayerAutoCollapseSetting(enabled, persist = true) {
-    this._autoCollapseEnabled = !!enabled;
+    this._compactDockEnabled = !!enabled;
+    this._autoCollapseEnabled = this._compactDockEnabled;
     if (this.toggleAutoCollapsePlayer) {
-      this.toggleAutoCollapsePlayer.checked = this._autoCollapseEnabled;
+      this.toggleAutoCollapsePlayer.checked = this._compactDockEnabled;
     }
     if (persist) {
-      try { localStorage.setItem('ethio_player_auto_collapse', this._autoCollapseEnabled ? '1' : '0'); } catch (err) {}
+      try { localStorage.setItem('ethio_player_compact_dock', this._compactDockEnabled ? '1' : '0'); } catch (err) {}
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
-    if (!this._autoCollapseEnabled && this._autoCollapseTimer) {
-      clearTimeout(this._autoCollapseTimer);
-      this._autoCollapseTimer = null;
-    } else if (this._autoCollapseEnabled) {
-      this.resetPlayerAutoCollapseTimer();
+    if (this.playerBarDock) {
+      this.playerBarDock.classList.toggle('is-collapsed', Boolean(this._compactDockEnabled && this.currentView !== 'lyrics'));
     }
   }
 
@@ -5390,14 +6142,6 @@ class LyricsApp {
       clearTimeout(this._autoCollapseTimer);
       this._autoCollapseTimer = null;
     }
-    if (!this._autoCollapseEnabled || !this.playerBarDock) return;
-
-    this._autoCollapseTimer = setTimeout(() => {
-      if (!this._autoCollapseEnabled || !this.playerBarDock) return;
-      if (!this.playerBarDock.classList.contains('is-collapsed')) {
-        this.playerBarDock.classList.add('is-collapsed');
-      }
-    }, 10000);
   }
 
   initThemeSystem() {
@@ -5796,7 +6540,10 @@ class LyricsApp {
 
   async triggerManualSync() {
     if (!this.currentUser) {
-      alert('Please sign in with Google to sync your favorites and music across devices.');
+      AppDialog.alert({
+        title: 'Sign In Required',
+        message: 'Sign in with Google to sync your favorites, playlists, and settings across devices.'
+      });
       return;
     }
     if (this.syncNowIcon) this.syncNowIcon.classList.add('sync-spinning');
@@ -6226,7 +6973,7 @@ class LyricsApp {
       await FirebaseService.submitForReview(payload);
       
       if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
-      alert(`Thank you! Your proposed corrections and lyrics for "${title}" have been submitted for admin review.`);
+      this.showToast(`Submitted edits for "${title}" to Admin Review!`, 3400);
       this.checkPendingSubmissionsCount();
     } catch (err) {
       if (this.editReviewErrorMsg) {
@@ -6299,7 +7046,10 @@ class LyricsApp {
 
   setSyncMode(mode) {
     if (this.activeRoom) {
-      alert('Please leave the current session before switching modes.');
+      AppDialog.alert({
+        title: 'Session Active',
+        message: 'Leave your current Listen Together session before switching sync modes.'
+      });
       return;
     }
     this.syncMode = mode;
@@ -6437,7 +7187,10 @@ class LyricsApp {
       this.showToast('Mobile P2P Hub Active! Tap "+ Pair Phone" to add listeners 📱');
       this.handleGenerateP2pInvite();
     } catch (err) {
-      alert('Failed to start P2P session: ' + err.message);
+      AppDialog.alert({
+        title: 'P2P Session Error',
+        message: 'Failed to start P2P session: ' + (err.message || 'Unknown error')
+      });
     }
   }
 
@@ -6461,7 +7214,10 @@ class LyricsApp {
         this.p2pPairingModal.classList.add('active');
       }
     } catch (err) {
-      alert('Cannot pair phone: ' + err.message);
+      AppDialog.alert({
+        title: 'Cannot Pair Phone',
+        message: err.message || 'Unable to generate pairing QR code.'
+      });
     }
   }
 
@@ -6482,7 +7238,10 @@ class LyricsApp {
       if (this.p2pPairingModal) this.p2pPairingModal.classList.remove('active');
       this.closeP2pCameraScanner();
     }).catch(err => {
-      alert('Pairing failed: ' + (err.message || 'Invalid code'));
+      AppDialog.alert({
+        title: 'Pairing Failed',
+        message: err.message || 'Invalid answer code.'
+      });
     }).finally(() => {
       setTimeout(() => { this._isSubmittingAnswer = false; }, 1500);
     });
@@ -6534,7 +7293,10 @@ class LyricsApp {
         this.initGuestSyncEngine();
         this.subscribeToRoom('P2P-PARTY');
       } catch (err) {
-        alert('Could not join P2P session: ' + err.message);
+        AppDialog.alert({
+          title: 'Could Not Join Session',
+          message: err.message || 'Unable to connect to host.'
+        });
       }
     };
 
@@ -6714,7 +7476,10 @@ class LyricsApp {
         this.btnCreateRoom.textContent = 'Start Session';
       }
     } catch (err) {
-      alert('Could not start live session: ' + err.message);
+      AppDialog.alert({
+        title: 'Live Session Error',
+        message: 'Could not start live session: ' + (err.message || 'Check connection and retry.')
+      });
       if (this.btnCreateRoom) {
         this.btnCreateRoom.disabled = false;
         this.btnCreateRoom.textContent = 'Start Session';
@@ -7218,6 +7983,38 @@ class LyricsApp {
   }
 
   async handleLeaveRoom(notifyCloud = true) {
+    const syncService = this.getSyncService();
+    let endSessionForAll = false;
+
+    if (this.activeRoom && notifyCloud && this.myParticipant && this.isRoomHost) {
+      const otherListeners = (this.presenceParticipants || []).filter((p) => p && p.id && p.id !== this.myParticipant.id);
+      if (this.syncMode === 'cloud' && otherListeners.length > 0) {
+        const decision = await AppDialog.choose({
+          title: 'Leave Listen Together',
+          message: `${otherListeners.length} listener${otherListeners.length === 1 ? ' is' : 's are'} still in the room.`,
+          choices: [
+            {
+              id: 'transfer',
+              label: 'Transfer Host & Leave',
+              sublabel: `Hand host controls to ${otherListeners[0].name || 'the next listener'} and keep playing`,
+              primary: true
+            },
+            {
+              id: 'end',
+              label: 'End Session for All',
+              sublabel: 'Stop the room immediately for every listener',
+              danger: true
+            }
+          ],
+          cancelText: 'Stay in Room'
+        });
+        if (!decision) return;
+        endSessionForAll = decision === 'end';
+      } else {
+        endSessionForAll = true;
+      }
+    }
+
     this.stopPresenceHeartbeat();
     if (this.player.setSyncRateMultiplier) {
       this.player.setSyncRateMultiplier(1.0);
@@ -7231,9 +8028,8 @@ class LyricsApp {
       this.hostBroadcaster = null;
     }
 
-    const syncService = this.getSyncService();
     if (this.activeRoom && notifyCloud && this.myParticipant) {
-      if (this.isRoomHost) {
+      if (this.isRoomHost && endSessionForAll) {
         await syncService.endListenRoom(this.activeRoom.roomCode);
       } else {
         await syncService.leaveListenRoom(this.activeRoom.roomCode, this.myParticipant.id);
@@ -7530,6 +8326,7 @@ class LyricsApp {
       this.queueIndex = 0;
     }
 
+    Storage.setLastQueueIds(this.queue.map((t) => t && t.id).filter(Boolean));
     this.updateQueueCountUI();
     if (this.queueDrawerModal && this.queueDrawerModal.classList.contains('active')) {
       this.renderQueueDrawer();
@@ -7546,10 +8343,22 @@ class LyricsApp {
       this.queue.push(track);
       this.showToast(`Added "${track.title}" to Up Next 📋`);
     }
+    Storage.setLastQueueIds(this.queue.map((t) => t && t.id).filter(Boolean));
     this.updateQueueCountUI();
     if (this.queueDrawerModal && this.queueDrawerModal.classList.contains('active')) {
       this.renderQueueDrawer();
     }
+  }
+
+  moveQueueItem(fromIndex, toIndex) {
+    const minAllowed = Math.max(0, this.queueIndex + 1);
+    if (fromIndex < minAllowed || toIndex < minAllowed || fromIndex >= this.queue.length || toIndex >= this.queue.length || fromIndex === toIndex) {
+      return;
+    }
+    const [moved] = this.queue.splice(fromIndex, 1);
+    this.queue.splice(toIndex, 0, moved);
+    Storage.setLastQueueIds(this.queue.map((t) => t && t.id).filter(Boolean));
+    this.renderQueueDrawer();
   }
 
   removeFromQueue(index) {
@@ -7558,6 +8367,7 @@ class LyricsApp {
     if (index < this.queueIndex) {
       this.queueIndex--;
     }
+    Storage.setLastQueueIds(this.queue.map((t) => t && t.id).filter(Boolean));
     this.updateQueueCountUI();
     this.renderQueueDrawer();
   }
@@ -7570,9 +8380,37 @@ class LyricsApp {
       this.queue = [];
       this.queueIndex = -1;
     }
+    Storage.setLastQueueIds(this.queue.map((t) => t && t.id).filter(Boolean));
     this.updateQueueCountUI();
     this.renderQueueDrawer();
     this.showToast('Up Next queue cleared');
+  }
+
+  async saveQueueAsPlaylist() {
+    const upcoming = this.queue.slice(Math.max(0, this.queueIndex));
+    const tracks = upcoming.filter((t) => t && t.id);
+    if (tracks.length === 0) {
+      this.showToast('Queue is empty — add songs before saving a playlist');
+      return;
+    }
+    const title = await AppDialog.prompt({
+      title: 'Save Queue as Playlist',
+      message: `Create a new playlist from ${tracks.length} queued song${tracks.length === 1 ? '' : 's'}.`,
+      placeholder: 'My Queue Mix',
+      defaultValue: tracks[0]?.title ? `${tracks[0].title} Mix` : 'Queue Mix',
+      confirmText: 'Save Playlist'
+    });
+    if (!title || !title.trim()) return;
+    const pl = Storage.createPlaylist({
+      title: title.trim(),
+      description: 'Saved from Up Next queue',
+      trackIds: tracks.map((t) => t.id)
+    });
+    this.playlists = Storage.getPlaylists();
+    this.showToast(`Saved playlist "${pl.title}" (${tracks.length} songs)`);
+    if (this.currentView === 'library' && this.currentLibraryTab === 'playlists') {
+      this.renderPlaylists();
+    }
   }
 
   updateQueueCountUI() {
@@ -7629,11 +8467,22 @@ class LyricsApp {
           <div style="font-weight:600; font-size:0.88rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeTitle}</div>
           <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${safeArtist}</div>
         </div>
-        <div style="display:flex; gap:0.4rem; align-items:center;">
+        <div style="display:flex; gap:0.3rem; align-items:center;">
+          <button class="btn-reorder-row btn-queue-up" title="Move Up" type="button" ${relIdx === 0 ? 'disabled' : ''}>&uarr;</button>
+          <button class="btn-reorder-row btn-queue-down" title="Move Down" type="button" ${relIdx === upcoming.length - 1 ? 'disabled' : ''}>&darr;</button>
           <button class="btn-pill btn-sm btn-queue-play" style="font-size:0.75rem; padding:0.3rem 0.65rem;" title="Play Now" type="button">Play</button>
           <button class="btn-remove-from-playlist btn-queue-remove" title="Remove from Queue" type="button">&times;</button>
         </div>
       `;
+
+      item.querySelector('.btn-queue-up')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.moveQueueItem(actualIdx, actualIdx - 1);
+      });
+      item.querySelector('.btn-queue-down')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.moveQueueItem(actualIdx, actualIdx + 1);
+      });
 
       item.querySelector('.btn-queue-play').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -7735,6 +8584,72 @@ class LyricsApp {
   // Playlists System: CRUD, Views, Smart Playlists
   // ==========================================================================
 
+  _buildPlaylistArtHtml(playlist, allTracks, fallbackIconHtml, imgClass = 'playlist-card-img') {
+    const safePlCover = playlist?.cover ? sanitizeUrl(playlist.cover, '') : '';
+    const safeTitle = escapeHtml(playlist?.title || 'Playlist');
+    if (safePlCover) {
+      return `<img src="${safePlCover}" class="${imgClass}" alt="${safeTitle}" crossorigin="anonymous" onerror="this.style.display='none'">`;
+    }
+    const covers = [];
+    const seen = new Set();
+    for (const id of (playlist?.trackIds || [])) {
+      const t = allTracks.find((x) => x && x.id === id);
+      const cov = t && this._hasCustomArtwork(t.cover) ? sanitizeUrl(t.cover, '') : '';
+      if (cov && !seen.has(cov)) {
+        seen.add(cov);
+        covers.push(cov);
+        if (covers.length === 4) break;
+      }
+    }
+    if (covers.length >= 2) {
+      while (covers.length < 4) covers.push(covers[covers.length % 2]);
+      return `<div class="playlist-cover-mosaic">${covers.map((c) => `<img src="${c}" alt="" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">`).join('')}</div>`;
+    }
+    if (covers.length === 1) {
+      return `<img src="${covers[0]}" class="${imgClass}" alt="${safeTitle}" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">`;
+    }
+    return fallbackIconHtml;
+  }
+
+  async _downloadTracksBatch(tracksList = [], triggerBtn = null, label = 'Collection') {
+    const list = (tracksList || []).filter((t) => t && t.audioUrl && !t.audioBlob);
+    if (list.length === 0) {
+      this.showToast('No remote tracks available to download here');
+      return;
+    }
+    const offlineIds = await Storage.getOfflineTrackIds();
+    const pending = list.filter((t) => !offlineIds.has(t.id));
+    if (pending.length === 0) {
+      this.showToast(`All songs in "${label}" are already saved offline`);
+      return;
+    }
+    const origHtml = triggerBtn ? triggerBtn.innerHTML : '';
+    if (triggerBtn) triggerBtn.disabled = true;
+    let saved = 0;
+    try {
+      for (let i = 0; i < pending.length; i++) {
+        if (triggerBtn) {
+          triggerBtn.textContent = `Saving ${i + 1}/${pending.length}...`;
+        }
+        try {
+          await Storage.downloadTrackForOffline(pending[i]);
+          saved += 1;
+        } catch (err) {
+          console.warn('Batch offline save skipped track:', pending[i]?.title, err);
+        }
+      }
+      this.tracks = await Storage.getAllTracks();
+      this._homeDirty = true;
+      this.showToast(`Saved ${saved}/${pending.length} songs from "${label}" for offline playback`);
+      if (this.currentView === 'library') this.renderLibraryView();
+    } finally {
+      if (triggerBtn) {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = origHtml;
+      }
+    }
+  }
+
   renderPlaylists() {
     this.playlists = Storage.getPlaylists();
 
@@ -7763,16 +8678,19 @@ class LyricsApp {
       return;
     }
 
+    const allMerged = this._getUniqueTrackPool();
+    const defaultSvg = `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.85;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+
     this.playlists.forEach(pl => {
       const songCount = (pl.trackIds || []).length;
       const safePlTitle = escapeHtml(pl.title || 'Playlist');
-      const safePlCover = pl.cover ? sanitizeUrl(pl.cover, '') : '';
       const safePlGrad = escapeHtml(pl.gradient || 'linear-gradient(135deg, #e5b95a, #d97706)');
+      const artInner = this._buildPlaylistArtHtml(pl, allMerged, defaultSvg, 'playlist-card-img');
       const card = document.createElement('div');
       card.className = 'playlist-card';
       card.innerHTML = `
         <div class="playlist-card-art" style="background: ${safePlGrad};">
-          ${safePlCover ? `<img src="${safePlCover}" class="playlist-card-img" alt="${safePlTitle}" crossorigin="anonymous" onerror="this.style.display='none'">` : `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity:0.85;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`}
+          ${artInner}
           <button class="playlist-card-hover-play" title="Play Playlist" type="button">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
           </button>
@@ -7800,8 +8718,7 @@ class LyricsApp {
 
   _getPlaylistPresetCovers() {
     const presets = [
-      'brand/elm-default-cover.svg',
-      'assets/weleta_cover.jpg'
+      'brand/elm-default-cover.svg'
     ];
     const seen = new Set(presets);
     for (const t of this.getAllTracksMerged()) {
@@ -7933,19 +8850,23 @@ class LyricsApp {
     if (this.playlistsContainer) this.playlistsContainer.style.display = 'none';
     this.singlePlaylistView.style.display = 'flex';
 
-    const all = [...this.publicTracks, ...this.tracks];
+    const all = this._getUniqueTrackPool();
     const playlistTracks = tracks || (playlist.trackIds || []).map(id => all.find(t => t.id === id)).filter(Boolean);
+    this._activePlaylistTracks = playlistTracks;
 
     // Banner Header
     if (this.playlistBannerTitle) this.playlistBannerTitle.textContent = playlist.title;
     if (this.playlistBannerDesc) this.playlistBannerDesc.textContent = playlist.description || 'Custom playlist on ELM';
     if (this.playlistBannerArt) {
       this.playlistBannerArt.style.background = playlist.gradient || 'linear-gradient(135deg, #e5b95a, #d97706)';
-      const safeBannerCover = playlist.cover ? sanitizeUrl(playlist.cover, '') : '';
-      if (safeBannerCover) {
-        this.playlistBannerArt.innerHTML = `<img src="${safeBannerCover}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;" alt="${escapeHtml(playlist.title)}">`;
+      const fallbackIcon = `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+      if (playlist.isSmart && !playlist.cover) {
+        const smartCoverTrack = playlistTracks.find((t) => this._hasCustomArtwork(t.cover));
+        this.playlistBannerArt.innerHTML = smartCoverTrack
+          ? `<img src="${sanitizeUrl(smartCoverTrack.cover)}" style="width:100%; height:100%; object-fit:cover; border-radius:16px;" alt="${escapeHtml(playlist.title)}">`
+          : fallbackIcon;
       } else {
-        this.playlistBannerArt.innerHTML = `<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`;
+        this.playlistBannerArt.innerHTML = this._buildPlaylistArtHtml(playlist, all, fallbackIcon, 'playlist-banner-img');
       }
     }
 
@@ -7996,9 +8917,25 @@ class LyricsApp {
           <div class="playlist-track-artist">${safeArtist}</div>
         </div>
         <span class="playlist-track-duration">${LyricsParser.formatTime(trackDur, '--:--')}</span>
+        ${!playlist.isSmart ? `<button class="btn-reorder-row btn-pl-up" title="Move Up" type="button" ${idx === 0 ? 'disabled' : ''}>&uarr;</button><button class="btn-reorder-row btn-pl-down" title="Move Down" type="button" ${idx === playlistTracks.length - 1 ? 'disabled' : ''}>&darr;</button>` : ''}
         <button class="btn-pill btn-sm btn-play-row" style="padding:0.3rem 0.65rem; font-size:0.75rem;" type="button">Play</button>
         ${!playlist.isSmart ? `<button class="btn-remove-from-playlist btn-remove-track-from-pl" title="Remove from playlist" type="button">&times;</button>` : ''}
       `;
+
+      row.querySelector('.btn-pl-up')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (Storage.reorderPlaylistTracks(playlist.id, idx, idx - 1)) {
+          this.activePlaylist = Storage.getPlaylist(playlist.id);
+          this.renderSinglePlaylistView(this.activePlaylist);
+        }
+      });
+      row.querySelector('.btn-pl-down')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (Storage.reorderPlaylistTracks(playlist.id, idx, idx + 1)) {
+          this.activePlaylist = Storage.getPlaylist(playlist.id);
+          this.renderSinglePlaylistView(this.activePlaylist);
+        }
+      });
 
       row.querySelector('.btn-play-row').addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -8046,9 +8983,15 @@ class LyricsApp {
     this.showToast(`Playing "${this.activePlaylist.title}" 🎶`);
   }
 
-  deleteCurrentPlaylist() {
+  async deleteCurrentPlaylist() {
     if (!this.activePlaylist || this.activePlaylist.isSmart) return;
-    if (confirm(`Are you sure you want to delete "${this.activePlaylist.title}"?`)) {
+    const confirmed = await AppDialog.confirm({
+      title: 'Delete Playlist',
+      message: `Are you sure you want to delete "${this.activePlaylist.title}"? Your songs will stay in the catalog.`,
+      confirmText: 'Delete Playlist',
+      danger: true
+    });
+    if (confirmed) {
       Storage.deletePlaylist(this.activePlaylist.id);
       this.playlists = Storage.getPlaylists();
       if (this.currentUser) this.pushCloudSyncDebounced();
@@ -8257,10 +9200,22 @@ class LyricsApp {
         }, 2200);
         return;
       } catch (e) {
-        prompt('Copy Room Invite Link:', url);
+        await AppDialog.prompt({
+          title: 'Room Invite Link',
+          message: 'Copy and send this invite link to friends:',
+          defaultValue: url,
+          readOnly: true,
+          confirmText: 'Done'
+        });
       }
     } else {
-      prompt('Copy Room Invite Link:', url);
+      await AppDialog.prompt({
+        title: 'Room Invite Link',
+        message: 'Copy and send this invite link to friends:',
+        defaultValue: url,
+        readOnly: true,
+        confirmText: 'Done'
+      });
     }
   }
 

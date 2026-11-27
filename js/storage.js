@@ -225,6 +225,49 @@ export const Storage = {
     } catch (e) {}
   },
 
+  getLastPositionSec() {
+    try {
+      const val = parseFloat(localStorage.getItem('ethio_lyrics_last_pos_sec') || '0');
+      return Number.isFinite(val) && val > 0 ? val : 0;
+    } catch {
+      return 0;
+    }
+  },
+
+  setLastPositionSec(sec) {
+    try {
+      const clean = Math.max(0, Math.floor(Number(sec) || 0));
+      localStorage.setItem('ethio_lyrics_last_pos_sec', String(clean));
+    } catch {}
+  },
+
+  getLastQueueIds() {
+    try {
+      const raw = localStorage.getItem('ethio_lyrics_last_queue_ids');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string' && id) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  setLastQueueIds(ids) {
+    try {
+      const clean = Array.isArray(ids) ? ids.filter((id) => typeof id === 'string' && id).slice(0, 120) : [];
+      localStorage.setItem('ethio_lyrics_last_queue_ids', JSON.stringify(clean));
+    } catch {}
+  },
+
+  async clearDownloadedCache() {
+    const all = await this.getAllTracks();
+    const downloaded = all.filter((t) => t && t.isDownloaded);
+    let deleted = 0;
+    for (const item of downloaded) {
+      if (await this.deleteTrack(item.id)) deleted += 1;
+    }
+    return deleted;
+  },
+
   // Favorites Storage
   getFavorites() {
     try {
@@ -313,7 +356,10 @@ export const Storage = {
     return all.find(p => p.id === playlistId) || null;
   },
 
-  createPlaylist(title, description = '', cover = null) {
+  createPlaylist(titleOrOpts, description = '', cover = null) {
+    const opts = (titleOrOpts && typeof titleOrOpts === 'object')
+      ? titleOrOpts
+      : { title: titleOrOpts, description, cover };
     const playlists = this.getPlaylists();
     const gradients = [
       'linear-gradient(135deg, #ec4899, #8b5cf6, #3b82f6)',
@@ -325,11 +371,11 @@ export const Storage = {
     const randomGrad = gradients[Math.floor(Math.random() * gradients.length)];
     const newPlaylist = {
       id: 'playlist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-      title: (title || 'New Playlist').trim(),
-      description: (description || '').trim(),
-      cover: cover || '',
+      title: String(opts.title || 'New Playlist').trim(),
+      description: String(opts.description || '').trim(),
+      cover: opts.cover || '',
       gradient: randomGrad,
-      trackIds: [],
+      trackIds: Array.isArray(opts.trackIds) ? [...opts.trackIds] : [],
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -388,6 +434,22 @@ export const Storage = {
     if (!playlistId || !trackId) return false;
     const playlist = this.getPlaylist(playlistId);
     return !!(playlist && playlist.trackIds && playlist.trackIds.includes(trackId));
+  },
+
+  reorderPlaylistTracks(playlistId, fromIndex, toIndex) {
+    if (!playlistId) return false;
+    const playlists = this.getPlaylists();
+    const playlist = playlists.find((p) => p.id === playlistId);
+    if (!playlist || !Array.isArray(playlist.trackIds)) return false;
+    const len = playlist.trackIds.length;
+    if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len || fromIndex === toIndex) {
+      return false;
+    }
+    const [moved] = playlist.trackIds.splice(fromIndex, 1);
+    playlist.trackIds.splice(toIndex, 0, moved);
+    playlist.updatedAt = Date.now();
+    this.setPlaylists(playlists);
+    return true;
   },
 
   // Playback Mode Persistence

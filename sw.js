@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v45';
+const CACHE_NAME = 'ethio-lyrics-cache-v47';
 
 const STATIC_ASSETS = [
   './',
@@ -7,9 +7,14 @@ const STATIC_ASSETS = [
   './css/style.css',
   './css/themes.css',
   './js/app.js',
+  './js/components/app-dialog.js',
+  './js/components/track-menu.js',
+  './js/components/lyric-share-card.js',
   './js/catalog-schema.js',
   './js/components/elm-logo.js',
   './js/utils/sanitize.js',
+  './js/utils/search.js',
+  './js/utils/audio-eq.js',
   './js/recommendation-engine.js',
   './js/party-sync.js',
   './js/local-sync-service.js',
@@ -26,7 +31,6 @@ const STATIC_ASSETS = [
   './js/lrc-editor.js',
   './js/theme-manager.js',
   './js/firebase-service.js',
-  './assets/weleta_cover.jpg',
   './brand/elm-icon.svg',
   './brand/elm-default-cover.svg',
   './brand/elm-logo-horizontal.svg',
