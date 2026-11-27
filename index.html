@@ -1218,7 +1218,7 @@
       <footer id="playerBarDock" class="player-bar-dock">
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
-          <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork">
+          <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork" title="View Song Details">
             <div class="elm-default-artwork elm-default-artwork--mini" aria-hidden="true">
               <elm-logo variant="icon" animated class="elm-default-artwork-logo"></elm-logo>
             </div>
@@ -2003,9 +2003,13 @@
             <div class="song-details-cover-wrap">
               <img id="detailModalCover" src="brand/elm-default-cover.svg" alt="Cover" class="song-details-cover"
                 crossorigin="anonymous">
-              <button id="btnDetailModalPlay" class="song-details-play-btn" title="Play Track">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="6 3 20 12 6 21 6 3" />
+              <button id="btnDetailModalPlay" class="song-details-play-btn" title="View Full Artwork" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 3 21 3 21 9" />
+                  <polyline points="9 21 3 21 3 15" />
+                  <line x1="21" y1="3" x2="14" y2="10" />
+                  <line x1="3" y1="21" x2="10" y2="14" />
                 </svg>
               </button>
             </div>
@@ -2108,6 +2112,15 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal: Full-Size Artwork Lightbox -->
+    <div id="artworkLightboxModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Album Artwork">
+      <div class="artwork-lightbox-content">
+        <button id="btnCloseArtworkLightbox" class="artwork-lightbox-close" type="button" aria-label="Close Artwork">&times;</button>
+        <img id="artworkLightboxImg" src="brand/elm-default-cover.svg" alt="Album Artwork" class="artwork-lightbox-img" crossorigin="anonymous">
+        <div id="artworkLightboxCaption" class="artwork-lightbox-caption"></div>
       </div>
     </div>
 

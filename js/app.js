@@ -683,6 +683,10 @@ class LyricsApp {
     this.detailModalOfflineChip = document.getElementById('detailModalOfflineChip');
     this.detailModalLyricsSnippet = document.getElementById('detailModalLyricsSnippet');
     this.btnDetailModalPlay = document.getElementById('btnDetailModalPlay');
+    this.artworkLightboxModal = document.getElementById('artworkLightboxModal');
+    this.artworkLightboxImg = document.getElementById('artworkLightboxImg');
+    this.artworkLightboxCaption = document.getElementById('artworkLightboxCaption');
+    this.btnCloseArtworkLightbox = document.getElementById('btnCloseArtworkLightbox');
     this.btnDetailPlayNow = document.getElementById('btnDetailPlayNow');
     this.detailPlayNowIcon = document.getElementById('detailPlayNowIcon');
     this.detailPlayNowLabel = document.getElementById('detailPlayNowLabel');
@@ -966,6 +970,19 @@ class LyricsApp {
         this.playerBarDock.classList.add('is-collapsed');
       }
     } catch (e) {}
+
+    // Clicking mini-player artwork opens Song Details (unless collapsed on mobile)
+    if (this.playerMiniArtWrap) {
+      this.playerMiniArtWrap.addEventListener('click', (e) => {
+        if (this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed')) {
+          return;
+        }
+        if (this.currentTrack) {
+          e.stopPropagation();
+          this.openSongDetails(this.currentTrack);
+        }
+      });
+    }
 
     // Clicking dock mini-player opens Lyrics Stage (or expands if collapsed on mobile)
     if (this.dockTrackInfo) {
@@ -1829,17 +1846,25 @@ class LyricsApp {
       }
     });
 
-    // Song Details Modal Action Bindings
+    // Song Details Modal Action Bindings — clicking cover opens full-size artwork lightbox
     if (this.btnDetailModalPlay) {
-      this.btnDetailModalPlay.addEventListener('click', async () => {
-        if (this._detailTrack) {
-          if (this.currentTrack && this.currentTrack.id === this._detailTrack.id) {
-            this.player.togglePlay();
-          } else {
-            await this.loadTrack(this._detailTrack, true);
-          }
-          if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
-          this.syncDynamicPlayButtons();
+      this.btnDetailModalPlay.addEventListener('click', () => {
+        const src = (this.detailModalCover && this.detailModalCover.src) || 'brand/elm-default-cover.svg';
+        const caption = this._detailTrack
+          ? `${this._detailTrack.title || 'Untitled'}${this._detailTrack.artist ? ' — ' + this._detailTrack.artist : ''}`
+          : '';
+        this.openArtworkLightbox(src, caption);
+      });
+    }
+    if (this.btnCloseArtworkLightbox) {
+      this.btnCloseArtworkLightbox.addEventListener('click', () => {
+        if (this.artworkLightboxModal) this.artworkLightboxModal.classList.remove('active');
+      });
+    }
+    if (this.artworkLightboxModal) {
+      this.artworkLightboxModal.addEventListener('click', (e) => {
+        if (e.target === this.artworkLightboxModal) {
+          this.artworkLightboxModal.classList.remove('active');
         }
       });
     }
@@ -5019,6 +5044,19 @@ class LyricsApp {
       this.btnDetailToggleFavorite.classList.toggle('is-favorite', isDetailFav);
       if (this.detailFavLabel) this.detailFavLabel.textContent = isDetailFav ? 'Favorited' : 'Favorite';
     }
+  }
+
+  // --------------------------------------------------------------------------
+  // Full-Size Artwork Lightbox
+  // --------------------------------------------------------------------------
+  openArtworkLightbox(src, caption = '') {
+    if (!this.artworkLightboxModal || !this.artworkLightboxImg) return;
+    this.artworkLightboxImg.src = src || 'brand/elm-default-cover.svg';
+    if (this.artworkLightboxCaption) {
+      this.artworkLightboxCaption.textContent = caption;
+      this.artworkLightboxCaption.style.display = caption ? 'block' : 'none';
+    }
+    this.artworkLightboxModal.classList.add('active');
   }
 
   // --------------------------------------------------------------------------
