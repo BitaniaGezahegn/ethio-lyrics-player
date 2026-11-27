@@ -8,6 +8,7 @@ import { escapeHtml, sanitizeUrl } from '../js/utils/sanitize.js';
 import { LyricsParser } from '../js/lyrics-parser.js';
 import { computeTarget, DriftController, GuestSyncEngine, HostBroadcaster } from '../js/party-sync.js';
 import { RecommendationEngine } from '../js/recommendation-engine.js';
+import { CatalogSchema, makeArtistId, makeAlbumId } from '../js/catalog-schema.js';
 import { onRequestPost as uploadPostHandler, onRequestDelete as uploadDeleteHandler } from '../functions/api/upload.js';
 
 const ROOT = process.cwd();
@@ -303,6 +304,29 @@ async function run() {
     env: { MEDIA_BUCKET: { delete: async () => {} } }
   });
   assert.equal(noAuthDel.status, 401);
+  console.log('   OK');
+
+  console.log('10. Testing CatalogSchema normalization & grouping...');
+  const abinetId = makeArtistId('አቢነት አጎናፍር', 'Abinet Agonafir');
+  const teddyId = makeArtistId('Teddy Afro');
+  assert.notEqual(abinetId, teddyId);
+  assert.ok(abinetId.startsWith('art_'));
+  assert.ok(makeAlbumId(abinetId, 'Weleta').startsWith(`alb_${abinetId}_`));
+
+  const catalogIdx = CatalogSchema.buildCatalogIndex([
+    { id: 's1', title: 'Weleta', artist: 'አቢነት አጎናፍር', artistEn: 'Abinet Agonafir', album: 'Weleta', year: '2006', trackNumber: 2, genre: 'Tizita' },
+    { id: 's2', title: 'Athijibegn', artist: 'አቢነት አጎናፍር', artistEn: 'Abinet Agonafir', album: 'Weleta', year: '2006', trackNumber: 1, genre: 'Tizita' },
+    { id: 's3', title: 'Tikur Sew', artist: 'Teddy Afro', album: 'Tikur Sew', year: '2012', genre: 'Reggae' },
+    { id: 's4', title: 'Freestyle', artist: 'Teddy Afro', album: 'Single', year: '2020' }
+  ]);
+  assert.equal(catalogIdx.artists.length, 2);
+  assert.equal(catalogIdx.albums.length, 3);
+  const abinetAlbums = catalogIdx.getAlbumsByArtist(abinetId);
+  assert.equal(abinetAlbums.length, 1);
+  assert.equal(abinetAlbums[0].tracks[0].title, 'Athijibegn');
+  assert.equal(abinetAlbums[0].tracks[1].title, 'Weleta');
+  const teddyAlbums = catalogIdx.getAlbumsByArtist(teddyId);
+  assert.equal(teddyAlbums.length, 2);
   console.log('   OK');
 
   console.log('\nALL TESTS PASSED!');

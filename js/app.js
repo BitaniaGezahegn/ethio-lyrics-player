@@ -9,6 +9,7 @@ import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service
 import { LocalSyncService } from './local-sync-service.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
+import { CatalogSchema, makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
 import './components/elm-logo.js';
 
@@ -151,8 +152,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.6.0';
-    this.cacheVersion = 'v34';
+    this.appVersion = 'v2.7.0';
+    this.cacheVersion = 'v35';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -607,8 +608,35 @@ class LyricsApp {
     this.audioRequiredBadge = document.getElementById('audioRequiredBadge');
 
     this.tabGlobalCatalog = document.getElementById('tabGlobalCatalog');
+    this.tabArtists = document.getElementById('tabArtists');
+    this.tabAlbums = document.getElementById('tabAlbums');
     this.tabOfflineLibrary = document.getElementById('tabOfflineLibrary');
     this.globalCatalogList = document.getElementById('globalCatalogList');
+    this.artistsContainer = document.getElementById('artistsContainer');
+    this.artistsGrid = document.getElementById('artistsGrid');
+    this.singleArtistView = document.getElementById('singleArtistView');
+    this.btnBackToArtistsList = document.getElementById('btnBackToArtistsList');
+    this.artistBannerArt = document.getElementById('artistBannerArt');
+    this.artistBannerTitle = document.getElementById('artistBannerTitle');
+    this.artistBannerSubtitle = document.getElementById('artistBannerSubtitle');
+    this.artistBannerMeta = document.getElementById('artistBannerMeta');
+    this.btnArtistPlayAll = document.getElementById('btnArtistPlayAll');
+    this.btnArtistShuffle = document.getElementById('btnArtistShuffle');
+    this.artistAlbumsSection = document.getElementById('artistAlbumsSection');
+    this.artistAlbumsGrid = document.getElementById('artistAlbumsGrid');
+    this.artistTracksList = document.getElementById('artistTracksList');
+    this.albumsContainer = document.getElementById('albumsContainer');
+    this.albumsGrid = document.getElementById('albumsGrid');
+    this.singleAlbumView = document.getElementById('singleAlbumView');
+    this.btnBackToAlbumsList = document.getElementById('btnBackToAlbumsList');
+    this.albumBannerArt = document.getElementById('albumBannerArt');
+    this.albumBannerType = document.getElementById('albumBannerType');
+    this.albumBannerTitle = document.getElementById('albumBannerTitle');
+    this.albumBannerArtist = document.getElementById('albumBannerArtist');
+    this.albumBannerMeta = document.getElementById('albumBannerMeta');
+    this.btnAlbumPlayAll = document.getElementById('btnAlbumPlayAll');
+    this.btnAlbumShuffle = document.getElementById('btnAlbumShuffle');
+    this.albumTracksList = document.getElementById('albumTracksList');
     this.localTracksList = document.getElementById('localTracksList');
     this.inputCatalogSearch = document.getElementById('inputCatalogSearch');
 
@@ -625,10 +653,17 @@ class LyricsApp {
     this.audioDropzoneLabel = document.getElementById('audioDropzoneLabel');
     this.btnUploadLrc = document.getElementById('btnUploadLrc');
     this.lrcFileInput = document.getElementById('lrcFileInput');
+    this.selectCustomArtist = document.getElementById('selectCustomArtist');
+    this.newArtistFieldsWrap = document.getElementById('newArtistFieldsWrap');
     this.inputCustomArtist = document.getElementById('inputCustomArtist');
+    this.inputCustomArtistEn = document.getElementById('inputCustomArtistEn');
     this.inputCustomTitle = document.getElementById('inputCustomTitle');
+    this.selectCustomAlbum = document.getElementById('selectCustomAlbum');
+    this.newAlbumFieldsWrap = document.getElementById('newAlbumFieldsWrap');
     this.inputCustomAlbum = document.getElementById('inputCustomAlbum');
+    this.selectCustomGenre = document.getElementById('selectCustomGenre');
     this.inputCustomYear = document.getElementById('inputCustomYear');
+    this.inputCustomTrackNumber = document.getElementById('inputCustomTrackNumber');
     this.inputCustomLrc = document.getElementById('inputCustomLrc');
     this.btnApplyCustomTrack = document.getElementById('btnApplyCustomTrack');
 
@@ -914,11 +949,18 @@ class LyricsApp {
 
   renderLibraryView() {
     this.showTrackList();
+    this.rebuildCatalogIndex();
     const query = this.inputCatalogSearch ? this.inputCatalogSearch.value.trim().toLowerCase() : '';
-    if (this.currentLibraryTab === 'global') {
-      this.renderPublicCatalog(query);
-    } else {
+    if (this.currentLibraryTab === 'artists') {
+      this.renderArtistsDirectory(query);
+    } else if (this.currentLibraryTab === 'albums') {
+      this.renderAlbumsDirectory(query);
+    } else if (this.currentLibraryTab === 'playlists') {
+      this.renderPlaylists();
+    } else if (this.currentLibraryTab === 'offline') {
       this.renderOfflineLibrary(query);
+    } else {
+      this.renderPublicCatalog(query);
     }
   }
 
@@ -2238,11 +2280,60 @@ class LyricsApp {
     if (this.tabGlobalCatalog) {
       this.tabGlobalCatalog.addEventListener('click', () => this.switchLibraryTab('global'));
     }
+    if (this.tabArtists) {
+      this.tabArtists.addEventListener('click', () => this.switchLibraryTab('artists'));
+    }
+    if (this.tabAlbums) {
+      this.tabAlbums.addEventListener('click', () => this.switchLibraryTab('albums'));
+    }
     if (this.tabPlaylists) {
       this.tabPlaylists.addEventListener('click', () => this.switchLibraryTab('playlists'));
     }
     if (this.tabOfflineLibrary) {
       this.tabOfflineLibrary.addEventListener('click', () => this.switchLibraryTab('offline'));
+    }
+
+    if (this.btnBackToArtistsList) {
+      this.btnBackToArtistsList.addEventListener('click', () => this.switchLibraryTab('artists'));
+    }
+    if (this.btnBackToAlbumsList) {
+      this.btnBackToAlbumsList.addEventListener('click', () => this.switchLibraryTab('albums'));
+    }
+    if (this.btnArtistPlayAll) {
+      this.btnArtistPlayAll.addEventListener('click', () => {
+        if (this._activeDetailTracks && this._activeDetailTracks.length > 0) {
+          this.playTrackList(this._activeDetailTracks, false);
+        }
+      });
+    }
+    if (this.btnArtistShuffle) {
+      this.btnArtistShuffle.addEventListener('click', () => {
+        if (this._activeDetailTracks && this._activeDetailTracks.length > 0) {
+          this.playTrackList(this._activeDetailTracks, true);
+        }
+      });
+    }
+    if (this.btnAlbumPlayAll) {
+      this.btnAlbumPlayAll.addEventListener('click', () => {
+        if (this._activeDetailTracks && this._activeDetailTracks.length > 0) {
+          this.playTrackList(this._activeDetailTracks, false);
+        }
+      });
+    }
+    if (this.btnAlbumShuffle) {
+      this.btnAlbumShuffle.addEventListener('click', () => {
+        if (this._activeDetailTracks && this._activeDetailTracks.length > 0) {
+          this.playTrackList(this._activeDetailTracks, true);
+        }
+      });
+    }
+    if (this.albumBannerArtist) {
+      this.albumBannerArtist.addEventListener('click', () => {
+        if (this._activeAlbumArtistId) {
+          this.switchLibraryTab('artists');
+          this.openArtistDetail(this._activeAlbumArtistId);
+        }
+      });
     }
 
     if (this.inputCatalogSearch) {
@@ -2253,11 +2344,23 @@ class LyricsApp {
         catalogSearchTimer = setTimeout(() => {
           if (this.currentLibraryTab === 'global') {
             this.renderPublicCatalog(query);
-          } else {
+          } else if (this.currentLibraryTab === 'artists') {
+            this.renderArtistsDirectory(query);
+          } else if (this.currentLibraryTab === 'albums') {
+            this.renderAlbumsDirectory(query);
+          } else if (this.currentLibraryTab === 'offline') {
             this.renderOfflineLibrary(query);
           }
         }, 150);
       });
+    }
+
+    // Upload Form Artist & Album Picker Events
+    if (this.selectCustomArtist) {
+      this.selectCustomArtist.addEventListener('change', () => this.onArtistPickerChange());
+    }
+    if (this.selectCustomAlbum) {
+      this.selectCustomAlbum.addEventListener('change', () => this.onAlbumPickerChange());
     }
 
     // Upload Form View Switchers
@@ -2774,16 +2877,10 @@ class LyricsApp {
       `;
 
       card.addEventListener('click', () => {
-        // Quick filter catalog by clicking artist avatar
-        if (this.inputHomeSearch) {
-          this.inputHomeSearch.value = artist.name;
-          this.searchQuery = artist.name.toLowerCase();
-          if (this.btnClearHomeSearch) this.btnClearHomeSearch.style.display = 'block';
-          this.renderHomePage();
-          if (this.sectionGlobalCatalog) {
-            this.sectionGlobalCatalog.scrollIntoView({ behavior: this.isPerfLite ? 'auto' : 'smooth' });
-          }
-        }
+        const artistId = makeArtistId(artist.name);
+        this.switchTab('library');
+        this.switchLibraryTab('artists');
+        this.openArtistDetail(artistId);
       });
 
       frag.appendChild(card);
@@ -3422,14 +3519,34 @@ class LyricsApp {
     }
   }
 
+  rebuildCatalogIndex() {
+    const allTracks = this.getAllTracksMerged();
+    this.catalogIndex = CatalogSchema.buildCatalogIndex(
+      allTracks,
+      this.firestoreArtists || [],
+      this.firestoreAlbums || []
+    );
+    return this.catalogIndex;
+  }
+
   async loadPublicCatalog() {
     try {
-      const tracks = await FirebaseService.getPublicTracks();
-      this.publicTracks = tracks;
+      const [tracksRes, artistsRes, albumsRes] = await Promise.allSettled([
+        FirebaseService.getPublicTracks(),
+        FirebaseService.getArtists(),
+        FirebaseService.getAlbums()
+      ]);
+      this.publicTracks = tracksRes.status === 'fulfilled' ? (tracksRes.value || []) : [];
+      this.firestoreArtists = artistsRes.status === 'fulfilled' ? (artistsRes.value || []) : [];
+      this.firestoreAlbums = albumsRes.status === 'fulfilled' ? (albumsRes.value || []) : [];
       await this.reconcileLocalWithPublicCatalog();
+      this.rebuildCatalogIndex();
     } catch (e) {
       console.warn('Could not fetch public catalog from Firestore (offline):', e);
       this.publicTracks = [];
+      this.firestoreArtists = [];
+      this.firestoreAlbums = [];
+      this.rebuildCatalogIndex();
     }
   }
 
@@ -3437,22 +3554,252 @@ class LyricsApp {
     this.currentLibraryTab = tab;
 
     if (this.tabGlobalCatalog) this.tabGlobalCatalog.classList.toggle('active', tab === 'global');
+    if (this.tabArtists) this.tabArtists.classList.toggle('active', tab === 'artists');
+    if (this.tabAlbums) this.tabAlbums.classList.toggle('active', tab === 'albums');
     if (this.tabPlaylists) this.tabPlaylists.classList.toggle('active', tab === 'playlists');
     if (this.tabOfflineLibrary) this.tabOfflineLibrary.classList.toggle('active', tab === 'offline');
 
     if (this.globalCatalogList) this.globalCatalogList.style.display = tab === 'global' ? 'flex' : 'none';
+    if (this.artistsContainer) this.artistsContainer.style.display = tab === 'artists' ? 'flex' : 'none';
+    if (this.singleArtistView) this.singleArtistView.style.display = 'none';
+    if (this.albumsContainer) this.albumsContainer.style.display = tab === 'albums' ? 'flex' : 'none';
+    if (this.singleAlbumView) this.singleAlbumView.style.display = 'none';
     if (this.playlistsContainer) this.playlistsContainer.style.display = tab === 'playlists' ? 'flex' : 'none';
     if (this.singlePlaylistView) this.singlePlaylistView.style.display = 'none';
     if (this.localTracksList) this.localTracksList.style.display = tab === 'offline' ? 'flex' : 'none';
     if (this.catalogSearchWrap) this.catalogSearchWrap.style.display = tab === 'playlists' ? 'none' : 'block';
 
+    const query = this.inputCatalogSearch ? this.inputCatalogSearch.value.trim().toLowerCase() : '';
     if (tab === 'global') {
-      this.renderPublicCatalog(this.inputCatalogSearch ? this.inputCatalogSearch.value : '');
+      this.renderPublicCatalog(query);
+    } else if (tab === 'artists') {
+      this.renderArtistsDirectory(query);
+    } else if (tab === 'albums') {
+      this.renderAlbumsDirectory(query);
     } else if (tab === 'playlists') {
       this.renderPlaylists();
     } else {
-      this.renderOfflineLibrary(this.inputCatalogSearch ? this.inputCatalogSearch.value : '');
+      this.renderOfflineLibrary(query);
     }
+  }
+
+  playTrackList(tracks, shuffle = false) {
+    if (!tracks || tracks.length === 0) return;
+    const list = shuffle ? [...tracks].sort(() => Math.random() - 0.5) : [...tracks];
+    this.queue = list.slice(1);
+    this.loadTrack(list[0], true);
+    this.renderQueueView();
+  }
+
+  renderArtistsDirectory(filterText = '') {
+    if (!this.artistsGrid) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    let artists = index.artists || [];
+    if (filterText) {
+      const q = filterText.toLowerCase();
+      artists = artists.filter(a =>
+        (a.name && a.name.toLowerCase().includes(q)) ||
+        (a.nameEn && a.nameEn.toLowerCase().includes(q))
+      );
+    }
+
+    this.artistsGrid.innerHTML = '';
+    if (artists.length === 0) {
+      this.artistsGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:2.5rem; color:var(--color-text-dim); font-size:0.88rem;">No artists found.</div>`;
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const artist of artists) {
+      const card = document.createElement('div');
+      card.className = 'catalog-entity-card';
+      const safeName = escapeHtml(artist.name);
+      const safeCover = sanitizeUrl(artist.cover);
+      const albLabel = artist.albumCount === 1 ? '1 album' : `${artist.albumCount} albums`;
+      const songLabel = artist.trackCount === 1 ? '1 song' : `${artist.trackCount} songs`;
+      const genreBadge = artist.genres && artist.genres.length > 0
+        ? `<span class="entity-card-badge">${escapeHtml(artist.genres[0])}</span>`
+        : '';
+
+      card.innerHTML = `
+        <div class="entity-card-art-wrap is-artist">
+          <img src="${safeCover}" alt="${safeName}" class="entity-card-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+        </div>
+        <div class="entity-card-title" title="${safeName}">${safeName}</div>
+        <div class="entity-card-sub">${albLabel} • ${songLabel}</div>
+        ${genreBadge}
+      `;
+      card.addEventListener('click', () => this.openArtistDetail(artist.id));
+      frag.appendChild(card);
+    }
+    this.artistsGrid.appendChild(frag);
+  }
+
+  openArtistDetail(artistId) {
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const artist = index.getArtist(artistId);
+    if (!artist || !this.singleArtistView) return;
+
+    if (this.artistsContainer) this.artistsContainer.style.display = 'none';
+    if (this.catalogSearchWrap) this.catalogSearchWrap.style.display = 'none';
+    this.singleArtistView.style.display = 'flex';
+
+    if (this.artistBannerArt) this.artistBannerArt.src = sanitizeUrl(artist.cover);
+    if (this.artistBannerTitle) this.artistBannerTitle.textContent = artist.name;
+    if (this.artistBannerSubtitle) {
+      this.artistBannerSubtitle.textContent = (artist.nameEn && artist.nameEn !== artist.name)
+        ? artist.nameEn
+        : (artist.genres?.join(' • ') || 'Ethiopian Music Artist');
+    }
+    if (this.artistBannerMeta) {
+      this.artistBannerMeta.textContent = `${artist.albumCount} albums • ${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}`;
+    }
+
+    this._activeDetailTracks = artist.tracks || [];
+
+    if (this.artistAlbumsGrid && this.artistAlbumsSection) {
+      const nonSingleAlbums = (artist.albums || []).filter(a => !a.isSingle);
+      if (nonSingleAlbums.length === 0) {
+        this.artistAlbumsSection.style.display = 'none';
+      } else {
+        this.artistAlbumsSection.style.display = 'flex';
+        this.artistAlbumsGrid.innerHTML = '';
+        for (const alb of nonSingleAlbums) {
+          const card = document.createElement('div');
+          card.className = 'catalog-entity-card';
+          card.innerHTML = `
+            <div class="entity-card-art-wrap">
+              <img src="${sanitizeUrl(alb.cover)}" alt="${escapeHtml(alb.title)}" class="entity-card-art" loading="lazy" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+            </div>
+            <div class="entity-card-title">${escapeHtml(alb.title)}</div>
+            <div class="entity-card-sub">${escapeHtml(alb.year || 'Album')} • ${alb.trackCount} ${alb.trackCount === 1 ? 'song' : 'songs'}</div>
+          `;
+          card.addEventListener('click', () => {
+            this.switchLibraryTab('albums');
+            this.openAlbumDetail(alb.id);
+          });
+          this.artistAlbumsGrid.appendChild(card);
+        }
+      }
+    }
+
+    if (this.artistTracksList) {
+      this._renderEntityTrackList(this.artistTracksList, artist.tracks || []);
+    }
+  }
+
+  renderAlbumsDirectory(filterText = '') {
+    if (!this.albumsGrid) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    let albums = index.albums || [];
+    if (filterText) {
+      const q = filterText.toLowerCase();
+      albums = albums.filter(a =>
+        (a.title && a.title.toLowerCase().includes(q)) ||
+        (a.artistName && a.artistName.toLowerCase().includes(q)) ||
+        (a.genre && a.genre.toLowerCase().includes(q))
+      );
+    }
+
+    this.albumsGrid.innerHTML = '';
+    if (albums.length === 0) {
+      this.albumsGrid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:2.5rem; color:var(--color-text-dim); font-size:0.88rem;">No albums found.</div>`;
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const alb of albums) {
+      const card = document.createElement('div');
+      card.className = 'catalog-entity-card';
+      const safeTitle = escapeHtml(alb.title);
+      const safeArtist = escapeHtml(alb.artistName);
+      const safeCover = sanitizeUrl(alb.cover);
+      const yearStr = alb.year ? ` • ${escapeHtml(alb.year)}` : '';
+      const countLabel = alb.trackCount === 1 ? '1 song' : `${alb.trackCount} songs`;
+
+      card.innerHTML = `
+        <div class="entity-card-art-wrap">
+          <img src="${safeCover}" alt="${safeTitle}" class="entity-card-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+        </div>
+        <div class="entity-card-title" title="${safeTitle}">${safeTitle}</div>
+        <div class="entity-card-sub" title="${safeArtist}">${safeArtist}${yearStr}</div>
+        <span class="entity-card-badge">${alb.isSingle ? 'Singles' : countLabel}</span>
+      `;
+      card.addEventListener('click', () => this.openAlbumDetail(alb.id));
+      frag.appendChild(card);
+    }
+    this.albumsGrid.appendChild(frag);
+  }
+
+  openAlbumDetail(albumId) {
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const album = index.getAlbum(albumId);
+    if (!album || !this.singleAlbumView) return;
+
+    if (this.albumsContainer) this.albumsContainer.style.display = 'none';
+    if (this.catalogSearchWrap) this.catalogSearchWrap.style.display = 'none';
+    this.singleAlbumView.style.display = 'flex';
+
+    this._activeAlbumArtistId = album.artistId;
+    this._activeDetailTracks = album.tracks || [];
+
+    if (this.albumBannerArt) this.albumBannerArt.src = sanitizeUrl(album.cover);
+    if (this.albumBannerType) this.albumBannerType.textContent = album.isSingle ? 'SINGLES COLLECTION' : 'ALBUM';
+    if (this.albumBannerTitle) this.albumBannerTitle.textContent = album.title;
+    if (this.albumBannerArtist) this.albumBannerArtist.textContent = album.artistName;
+    if (this.albumBannerMeta) {
+      const parts = [];
+      if (album.year) parts.push(album.year);
+      if (album.genre) parts.push(album.genre);
+      parts.push(`${album.trackCount} ${album.trackCount === 1 ? 'song' : 'songs'}`);
+      this.albumBannerMeta.textContent = parts.join(' • ');
+    }
+
+    if (this.albumTracksList) {
+      this._renderEntityTrackList(this.albumTracksList, album.tracks || [], true);
+    }
+  }
+
+  _renderEntityTrackList(container, tracks, showTrackNumber = false) {
+    container.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    tracks.forEach((song, idx) => {
+      const isCurrent = this.currentTrack && this.currentTrack.id === song.id;
+      const numPrefix = showTrackNumber ? `${song.trackNumber || (idx + 1)}. ` : '';
+      const row = document.createElement('div');
+      row.className = `theme-card-option ${isCurrent ? 'active' : ''}`;
+      row.style.padding = '0.7rem 0.95rem';
+      row.innerHTML = `
+        <div class="track-info-clickable" style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:0; cursor:pointer;">
+          <img src="${sanitizeUrl(song.cover)}" class="track-thumb-img" alt="${escapeHtml(song.title)}" loading="lazy" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+          <div style="overflow:hidden;">
+            <div style="font-weight:600; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${escapeHtml(numPrefix)}${escapeHtml(song.title)}
+            </div>
+            <div style="font-size:0.75rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${escapeHtml(song.artist)} • ${escapeHtml(song.album || 'Single')}${song.genre ? ` • ${escapeHtml(song.genre)}` : ''}
+            </div>
+          </div>
+        </div>
+        <button class="btn-track-icon btn-play-track" title="Play" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        </button>
+      `;
+      const playHandler = () => {
+        if (isCurrent) {
+          this.togglePlayPause();
+        } else {
+          this.loadTrack(song, true);
+        }
+      };
+      row.querySelector('.track-info-clickable').addEventListener('click', playHandler);
+      row.querySelector('.btn-play-track').addEventListener('click', (e) => {
+        e.stopPropagation();
+        playHandler();
+      });
+      frag.appendChild(row);
+    });
+    container.appendChild(frag);
   }
 
   async renderPublicCatalog(filterText = '') {
@@ -3867,6 +4214,8 @@ class LyricsApp {
     this.isUploadingToR2 = false;
     this._r2UploadPromise = null;
 
+    this.rebuildCatalogIndex();
+
     if (trackToEdit) {
       this.editingTrackId = trackToEdit.id;
       if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Edit Song Metadata & Artwork';
@@ -3875,10 +4224,15 @@ class LyricsApp {
         this.audioRequiredBadge.className = 'optional-badge';
       }
 
-      this.inputCustomArtist.value = trackToEdit.artist || '';
+      const editArtistId = trackToEdit.artistId || makeArtistId(trackToEdit.artist, trackToEdit.artistEn);
+      this.populateArtistPicker(editArtistId, trackToEdit.artist || '', trackToEdit.artistEn || '');
+      const editAlbumVal = isSingleAlbumName(trackToEdit.album) ? 'Single' : (trackToEdit.albumId || trackToEdit.album);
+      this.populateAlbumPickerForArtist(editArtistId, editAlbumVal, trackToEdit.album || '');
+
       this.inputCustomTitle.value = trackToEdit.title || '';
-      this.inputCustomAlbum.value = trackToEdit.album || '';
+      if (this.selectCustomGenre) this.selectCustomGenre.value = trackToEdit.genre || '';
       this.inputCustomYear.value = trackToEdit.year || '';
+      if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = trackToEdit.trackNumber || '';
       this.inputCustomLrc.value = trackToEdit.lrc || '';
 
       this.selectedAudioFile = null;
@@ -3908,10 +4262,12 @@ class LyricsApp {
         this.audioRequiredBadge.className = 'required-badge';
       }
 
-      this.inputCustomArtist.value = '';
+      this.populateArtistPicker('');
+      this.populateAlbumPickerForArtist('', 'Single');
       this.inputCustomTitle.value = '';
-      this.inputCustomAlbum.value = '';
+      if (this.selectCustomGenre) this.selectCustomGenre.value = '';
       this.inputCustomYear.value = '';
+      if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = '';
       this.inputCustomLrc.value = '';
 
       this.selectedAudioFile = null;
@@ -3990,13 +4346,141 @@ class LyricsApp {
     }
   }
 
+  populateArtistPicker(selectedArtistId = '', fallbackName = '', fallbackNameEn = '') {
+    if (!this.selectCustomArtist) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const artists = index.artists || [];
+
+    this.selectCustomArtist.innerHTML = '<option value="">-- Select Existing Artist --</option>';
+    let matched = false;
+    for (const art of artists) {
+      if (!art.id || art.id === 'art_unknown') continue;
+      const opt = document.createElement('option');
+      opt.value = art.id;
+      opt.textContent = `${art.name}${art.nameEn && art.nameEn !== art.name ? ` (${art.nameEn})` : ''} — ${art.trackCount} ${art.trackCount === 1 ? 'song' : 'songs'}`;
+      if (selectedArtistId && art.id === selectedArtistId) {
+        opt.selected = true;
+        matched = true;
+      }
+      this.selectCustomArtist.appendChild(opt);
+    }
+
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Add New Artist...';
+    this.selectCustomArtist.appendChild(newOpt);
+
+    if (!matched && fallbackName) {
+      newOpt.selected = true;
+      if (this.newArtistFieldsWrap) this.newArtistFieldsWrap.style.display = 'flex';
+      if (this.inputCustomArtist) this.inputCustomArtist.value = fallbackName;
+      if (this.inputCustomArtistEn) this.inputCustomArtistEn.value = fallbackNameEn || '';
+    } else {
+      if (this.newArtistFieldsWrap) this.newArtistFieldsWrap.style.display = 'none';
+      if (this.inputCustomArtist) this.inputCustomArtist.value = '';
+      if (this.inputCustomArtistEn) this.inputCustomArtistEn.value = '';
+    }
+  }
+
+  onArtistPickerChange() {
+    if (!this.selectCustomArtist) return;
+    const val = this.selectCustomArtist.value;
+    const isNew = val === '__new__';
+    if (this.newArtistFieldsWrap) {
+      this.newArtistFieldsWrap.style.display = isNew ? 'flex' : 'none';
+    }
+    if (isNew && this.inputCustomArtist) {
+      this.inputCustomArtist.focus();
+    }
+    this.populateAlbumPickerForArtist(isNew ? '' : val, 'Single');
+  }
+
+  populateAlbumPickerForArtist(artistId = '', selectedValue = 'Single', fallbackAlbumName = '') {
+    if (!this.selectCustomAlbum) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const albums = artistId ? index.getAlbumsByArtist(artistId).filter(a => !a.isSingle) : [];
+
+    this.selectCustomAlbum.innerHTML = '<option value="Single">Single (No Album)</option>';
+    let matched = selectedValue === 'Single' || !selectedValue;
+    for (const alb of albums) {
+      const opt = document.createElement('option');
+      opt.value = alb.id;
+      opt.textContent = `${alb.title}${alb.year ? ` (${alb.year})` : ''} — ${alb.trackCount} ${alb.trackCount === 1 ? 'song' : 'songs'}`;
+      if (selectedValue && (alb.id === selectedValue || alb.title === selectedValue)) {
+        opt.selected = true;
+        matched = true;
+      }
+      this.selectCustomAlbum.appendChild(opt);
+    }
+
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Add New Album...';
+    this.selectCustomAlbum.appendChild(newOpt);
+
+    if (!matched && fallbackAlbumName && !isSingleAlbumName(fallbackAlbumName)) {
+      newOpt.selected = true;
+      if (this.newAlbumFieldsWrap) this.newAlbumFieldsWrap.style.display = 'block';
+      if (this.inputCustomAlbum) this.inputCustomAlbum.value = fallbackAlbumName;
+    } else {
+      if (this.newAlbumFieldsWrap) this.newAlbumFieldsWrap.style.display = 'none';
+      if (this.inputCustomAlbum) this.inputCustomAlbum.value = '';
+    }
+  }
+
+  onAlbumPickerChange() {
+    if (!this.selectCustomAlbum) return;
+    const val = this.selectCustomAlbum.value;
+    const isNew = val === '__new__';
+    if (this.newAlbumFieldsWrap) {
+      this.newAlbumFieldsWrap.style.display = isNew ? 'block' : 'none';
+    }
+    if (isNew && this.inputCustomAlbum) {
+      this.inputCustomAlbum.focus();
+      return;
+    }
+    if (val && val !== 'Single') {
+      const index = this.catalogIndex || this.rebuildCatalogIndex();
+      const alb = index.getAlbum(val);
+      if (alb) {
+        if (this.inputCustomYear && !this.inputCustomYear.value.trim() && alb.year) {
+          this.inputCustomYear.value = alb.year;
+        }
+        if (this.selectCustomGenre && !this.selectCustomGenre.value && alb.genre) {
+          this.selectCustomGenre.value = alb.genre;
+        }
+      }
+    }
+  }
+
+  resetTrackFormFields() {
+    this.populateArtistPicker('');
+    this.populateAlbumPickerForArtist('', 'Single');
+    if (this.inputCustomArtist) this.inputCustomArtist.value = '';
+    if (this.inputCustomArtistEn) this.inputCustomArtistEn.value = '';
+    if (this.inputCustomTitle) this.inputCustomTitle.value = '';
+    if (this.inputCustomAlbum) this.inputCustomAlbum.value = '';
+    if (this.selectCustomGenre) this.selectCustomGenre.value = '';
+    if (this.inputCustomYear) this.inputCustomYear.value = '';
+    if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = '';
+    if (this.inputCustomLrc) this.inputCustomLrc.value = '';
+    this.selectedAudioFile = null;
+    this.selectedCoverDataUrl = null;
+    this.selectedCoverFile = null;
+    this.uploadedR2AudioUrl = null;
+    this.uploadedR2CoverUrl = null;
+    if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+  }
+
   clearFormErrors() {
     if (this.trackFormError) {
       this.trackFormError.textContent = '';
       this.trackFormError.style.display = 'none';
     }
+    if (this.selectCustomArtist) this.selectCustomArtist.style.borderColor = '';
     if (this.inputCustomArtist) this.inputCustomArtist.style.borderColor = '';
     if (this.inputCustomTitle) this.inputCustomTitle.style.borderColor = '';
+    if (this.inputCustomAlbum) this.inputCustomAlbum.style.borderColor = '';
   }
 
   async _resolvePublicCoverUrl(fallbackCover = 'brand/elm-default-cover.svg') {
@@ -4022,19 +4506,64 @@ class LyricsApp {
     return candidate;
   }
 
+  _resolveFormArtistAndAlbum() {
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const artistVal = this.selectCustomArtist ? this.selectCustomArtist.value : '__new__';
+    let artist = '';
+    let artistEn = '';
+    let artistId = '';
+
+    if (artistVal === '__new__' || !artistVal) {
+      artist = this.inputCustomArtist ? this.inputCustomArtist.value.trim() : '';
+      artistEn = (this.inputCustomArtistEn ? this.inputCustomArtistEn.value.trim() : '') || artist;
+      artistId = artist ? makeArtistId(artist, artistEn) : '';
+    } else {
+      const existingArtist = index.getArtist(artistVal);
+      if (existingArtist) {
+        artist = existingArtist.name;
+        artistEn = existingArtist.nameEn || existingArtist.name;
+        artistId = existingArtist.id;
+      }
+    }
+
+    const albumVal = this.selectCustomAlbum ? this.selectCustomAlbum.value : 'Single';
+    let album = 'Single';
+    let albumId = '';
+    if (albumVal === '__new__') {
+      album = (this.inputCustomAlbum ? this.inputCustomAlbum.value.trim() : '') || 'Single';
+      albumId = artistId ? makeAlbumId(artistId, album) : '';
+    } else if (albumVal && albumVal !== 'Single') {
+      const existingAlbum = index.getAlbum(albumVal);
+      album = existingAlbum ? existingAlbum.title : 'Single';
+      albumId = existingAlbum ? existingAlbum.id : (artistId ? makeAlbumId(artistId, album) : '');
+    } else {
+      album = 'Single';
+      albumId = artistId ? makeAlbumId(artistId, 'Single') : '';
+    }
+
+    const genre = this.selectCustomGenre ? this.selectCustomGenre.value.trim() : '';
+    const trackNumberRaw = this.inputCustomTrackNumber ? parseInt(this.inputCustomTrackNumber.value, 10) : NaN;
+    const trackNumber = Number.isFinite(trackNumberRaw) && trackNumberRaw > 0 ? trackNumberRaw : null;
+
+    return { artist, artistEn, artistId, album, albumId, genre, trackNumber };
+  }
+
   async applyCustomTrack() {
     this.clearFormErrors();
 
-    const artist = this.inputCustomArtist.value.trim();
+    const { artist, artistEn, artistId, album, albumId, genre, trackNumber } = this._resolveFormArtistAndAlbum();
     const title = this.inputCustomTitle.value.trim();
-    const album = this.inputCustomAlbum.value.trim() || 'Single';
     const year = this.inputCustomYear.value.trim() || new Date().getFullYear().toString();
     const lrc = this.inputCustomLrc.value.trim() || '';
     const submitToPublic = this.checkSubmitToPublic ? this.checkSubmitToPublic.checked : false;
 
     let hasError = false;
     if (!artist) {
-      this.inputCustomArtist.style.borderColor = '#ef4444';
+      if (this.selectCustomArtist && this.selectCustomArtist.value !== '__new__') {
+        this.selectCustomArtist.style.borderColor = '#ef4444';
+      } else if (this.inputCustomArtist) {
+        this.inputCustomArtist.style.borderColor = '#ef4444';
+      }
       hasError = true;
     }
     if (!title) {
@@ -4043,9 +4572,16 @@ class LyricsApp {
     }
 
     if (hasError) {
-      this.showFormError('Artist Name and Song Title are required.');
-      if (!artist) this.inputCustomArtist.focus();
-      else if (!title) this.inputCustomTitle.focus();
+      this.showFormError('Artist and Song Title are required.');
+      if (!artist) {
+        if (this.selectCustomArtist && this.selectCustomArtist.value === '__new__' && this.inputCustomArtist) {
+          this.inputCustomArtist.focus();
+        } else if (this.selectCustomArtist) {
+          this.selectCustomArtist.focus();
+        }
+      } else if (!title) {
+        this.inputCustomTitle.focus();
+      }
       return;
     }
 
@@ -4091,7 +4627,12 @@ class LyricsApp {
           const published = await FirebaseService.publishTrack({
             title,
             artist,
+            artistEn,
+            artistId,
             album,
+            albumId,
+            genre,
+            trackNumber,
             year,
             cover: publicCoverUrl,
             lrc,
@@ -4110,17 +4651,7 @@ class LyricsApp {
           await this.loadPublicCatalog();
           const globalTrack = this.publicTracks.find(t => t.id === published.id) || published;
 
-          this.inputCustomArtist.value = '';
-          this.inputCustomTitle.value = '';
-          this.inputCustomAlbum.value = '';
-          this.inputCustomYear.value = '';
-          this.inputCustomLrc.value = '';
-          this.selectedAudioFile = null;
-          this.selectedCoverDataUrl = null;
-          this.selectedCoverFile = null;
-          this.uploadedR2AudioUrl = null;
-          this.uploadedR2CoverUrl = null;
-          if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+          this.resetTrackFormFields();
 
           await this.loadTrack(globalTrack, true);
           this.showTrackList();
@@ -4138,8 +4669,12 @@ class LyricsApp {
           title,
           titleEn: title,
           artist,
-          artistEn: artist,
+          artistEn,
+          artistId,
           album,
+          albumId,
+          genre,
+          trackNumber,
           year,
           lrc,
           cover: this.selectedCoverDataUrl || existingTrack.cover || 'brand/elm-default-cover.svg',
@@ -4152,8 +4687,12 @@ class LyricsApp {
           title,
           titleEn: title,
           artist,
-          artistEn: artist,
+          artistEn,
+          artistId,
           album,
+          albumId,
+          genre,
+          trackNumber,
           year,
           cover: this.selectedCoverDataUrl || 'brand/elm-default-cover.svg',
           discCenter: this.selectedCoverDataUrl || 'brand/elm-default-cover.svg',
@@ -4170,7 +4709,12 @@ class LyricsApp {
         await FirebaseService.submitForReview({
           title,
           artist,
+          artistEn,
+          artistId,
           album,
+          albumId,
+          genre,
+          trackNumber,
           year,
           cover: publicCoverUrl,
           lrc,
@@ -4179,17 +4723,7 @@ class LyricsApp {
           localSourceTrackId: localTrackId
         });
 
-        this.inputCustomArtist.value = '';
-        this.inputCustomTitle.value = '';
-        this.inputCustomAlbum.value = '';
-        this.inputCustomYear.value = '';
-        this.inputCustomLrc.value = '';
-        this.selectedAudioFile = null;
-        this.selectedCoverDataUrl = null;
-        this.selectedCoverFile = null;
-        this.uploadedR2AudioUrl = null;
-        this.uploadedR2CoverUrl = null;
-        if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+        this.resetTrackFormFields();
 
         await this.loadTrack(localTrackObj, true);
         this.showTrackList();
@@ -4221,8 +4755,12 @@ class LyricsApp {
       existingTrack.title = title;
       existingTrack.titleEn = title;
       existingTrack.artist = artist;
-      existingTrack.artistEn = artist;
+      existingTrack.artistEn = artistEn;
+      existingTrack.artistId = artistId;
       existingTrack.album = album;
+      existingTrack.albumId = albumId;
+      existingTrack.genre = genre;
+      existingTrack.trackNumber = trackNumber;
       existingTrack.year = year;
       existingTrack.lrc = lrc;
 
@@ -4237,6 +4775,7 @@ class LyricsApp {
 
       await Storage.saveTrack(existingTrack);
       this.tracks = await Storage.getAllTracks();
+      this.rebuildCatalogIndex();
 
       if (this.currentTrack && this.currentTrack.id === existingTrack.id) {
         await this.loadTrack(existingTrack, this.player.isPlaying);
@@ -4253,8 +4792,12 @@ class LyricsApp {
       title: title,
       titleEn: title,
       artist: artist,
-      artistEn: artist,
+      artistEn: artistEn,
+      artistId: artistId,
       album: album,
+      albumId: albumId,
+      genre: genre,
+      trackNumber: trackNumber,
       year: year,
       cover: coverArt || 'brand/elm-default-cover.svg',
       discCenter: discArt || 'brand/elm-default-cover.svg',
@@ -4267,19 +4810,10 @@ class LyricsApp {
 
     await Storage.saveTrack(newTrack);
     this.tracks = await Storage.getAllTracks();
+    this.rebuildCatalogIndex();
 
     // Reset inputs
-    this.inputCustomArtist.value = '';
-    this.inputCustomTitle.value = '';
-    this.inputCustomAlbum.value = '';
-    this.inputCustomYear.value = '';
-    this.inputCustomLrc.value = '';
-    this.selectedAudioFile = null;
-    this.selectedCoverDataUrl = null;
-    this.selectedCoverFile = null;
-    this.uploadedR2AudioUrl = null;
-    this.uploadedR2CoverUrl = null;
-    if (this.checkSubmitToPublic) this.checkSubmitToPublic.checked = false;
+    this.resetTrackFormFields();
 
     // Load and play
     await this.loadTrack(newTrack, true);

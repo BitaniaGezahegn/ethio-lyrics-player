@@ -3,6 +3,7 @@
  * Configured for Ethio Lyrics Player with Cloudflare R2 integration
  */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
+import { makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
 import { 
   getAuth, 
   signInWithPopup, 
@@ -209,6 +210,84 @@ export const FirebaseService = {
   },
 
   // -------------------------------------------------------------
+  // Normalized Artists & Albums Collections
+  // -------------------------------------------------------------
+  async getArtists() {
+    if (!db) return [];
+    try {
+      const snapshot = await getDocs(collection(db, 'artists'));
+      const list = [];
+      snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+      return list;
+    } catch (e) {
+      console.warn('Could not fetch artists collection:', e);
+      return [];
+    }
+  },
+
+  async saveArtist(artistData) {
+    if (!db || !artistData) return null;
+    const name = (artistData.name || 'Unknown Artist').trim();
+    const nameEn = (artistData.nameEn || name).trim();
+    const id = artistData.id || makeArtistId(name, nameEn);
+    try {
+      const payload = {
+        name,
+        nameEn,
+        cover: artistData.cover || 'brand/elm-default-cover.svg',
+        updatedAt: serverTimestamp()
+      };
+      if (Array.isArray(artistData.genres) && artistData.genres.length > 0) {
+        payload.genres = artistData.genres;
+      }
+      await setDoc(doc(db, 'artists', id), payload, { merge: true });
+      return { id, ...payload };
+    } catch (e) {
+      console.warn('saveArtist skipped (offline or rules):', e?.message || e);
+      return null;
+    }
+  },
+
+  async getAlbums() {
+    if (!db) return [];
+    try {
+      const snapshot = await getDocs(collection(db, 'albums'));
+      const list = [];
+      snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+      return list;
+    } catch (e) {
+      console.warn('Could not fetch albums collection:', e);
+      return [];
+    }
+  },
+
+  async saveAlbum(albumData) {
+    if (!db || !albumData) return null;
+    const title = (albumData.title || 'Single').trim();
+    if (isSingleAlbumName(title)) return null;
+    const artistName = (albumData.artistName || albumData.artist || 'Unknown Artist').trim();
+    const artistId = albumData.artistId || makeArtistId(artistName, albumData.artistEn);
+    const id = albumData.id || makeAlbumId(artistId, title);
+    try {
+      const payload = {
+        title,
+        artistId,
+        artistName,
+        year: albumData.year ? String(albumData.year).trim() : '',
+        cover: albumData.cover || 'brand/elm-default-cover.svg',
+        genre: albumData.genre || '',
+        isSingle: false,
+        updatedAt: serverTimestamp()
+      };
+      await setDoc(doc(db, 'albums', id), payload, { merge: true });
+      return { id, ...payload };
+    } catch (e) {
+      console.warn('saveAlbum skipped (offline or rules):', e?.message || e);
+      return null;
+    }
+  },
+
+  // -------------------------------------------------------------
   // Public Tracks (Global Catalog)
   // -------------------------------------------------------------
   async getPublicTracks() {
@@ -248,12 +327,22 @@ export const FirebaseService = {
     const trackId = trackData.id || `pub_${Date.now()}`;
     const docRef = doc(db, 'public_tracks', trackId);
 
+    const artist = trackData.artist || 'Unknown Artist';
+    const artistEn = trackData.artistEn || artist;
+    const album = trackData.album || 'Single';
+    const artistId = trackData.artistId || makeArtistId(artist, artistEn);
+    const albumId = trackData.albumId || makeAlbumId(artistId, album);
+
     const payload = {
       title: trackData.title || 'Untitled',
       titleEn: trackData.titleEn || trackData.title || 'Untitled',
-      artist: trackData.artist || 'Unknown Artist',
-      artistEn: trackData.artistEn || trackData.artist || 'Unknown Artist',
-      album: trackData.album || 'Single',
+      artist,
+      artistEn,
+      artistId,
+      album,
+      albumId,
+      genre: trackData.genre || '',
+      trackNumber: trackData.trackNumber ? Number(trackData.trackNumber) : null,
       year: trackData.year || new Date().getFullYear().toString(),
       cover: trackData.cover || 'brand/elm-default-cover.svg',
       discCenter: trackData.discCenter || trackData.cover || 'brand/elm-default-cover.svg',
@@ -267,6 +356,11 @@ export const FirebaseService = {
     };
 
     await setDoc(docRef, payload, { merge: true });
+    // Best-effort normalized entity sync
+    this.saveArtist({ id: artistId, name: artist, nameEn: artistEn, cover: payload.cover, genres: payload.genre ? [payload.genre] : [] });
+    if (!isSingleAlbumName(album)) {
+      this.saveAlbum({ id: albumId, title: album, artistId, artistName: artist, year: payload.year, cover: payload.cover, genre: payload.genre });
+    }
     return { id: trackId, ...payload };
   },
 
@@ -320,6 +414,12 @@ export const FirebaseService = {
     const colRef = collection(db, 'submissions');
     const user = this.getCurrentUser();
 
+    const artist = submission.artist || 'Unknown Artist';
+    const artistEn = submission.artistEn || artist;
+    const album = submission.album || 'Single';
+    const artistId = submission.artistId || makeArtistId(artist, artistEn);
+    const albumId = submission.albumId || makeAlbumId(artistId, album);
+
     const payload = {
       type: submission.type || (submission.targetTrackId ? 'metadata_edit' : 'new_song'),
       targetTrackId: submission.targetTrackId || submission.originalTrackId || null,
@@ -327,9 +427,13 @@ export const FirebaseService = {
       originalArtist: submission.originalArtist || null,
       title: submission.title || 'Untitled',
       titleEn: submission.titleEn || submission.title || 'Untitled',
-      artist: submission.artist || 'Unknown Artist',
-      artistEn: submission.artistEn || submission.artist || 'Unknown Artist',
-      album: submission.album || 'Single',
+      artist,
+      artistEn,
+      artistId,
+      album,
+      albumId,
+      genre: submission.genre || '',
+      trackNumber: submission.trackNumber ? Number(submission.trackNumber) : null,
       year: submission.year || new Date().getFullYear().toString(),
       cover: submission.cover || 'brand/elm-default-cover.svg',
       lrc: submission.lrc || '',
@@ -403,7 +507,11 @@ export const FirebaseService = {
       titleEn: submission.titleEn || submission.title,
       artist: submission.artist,
       artistEn: submission.artistEn || submission.artist,
+      artistId: submission.artistId || '',
       album: submission.album || 'Single',
+      albumId: submission.albumId || '',
+      genre: submission.genre || '',
+      trackNumber: submission.trackNumber || null,
       year: submission.year || '2024',
       cover: submission.cover || 'brand/elm-default-cover.svg',
       discCenter: submission.discCenter || submission.cover || 'brand/elm-default-cover.svg',

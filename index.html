@@ -441,7 +441,25 @@
                   <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                   <path d="M2 12h20" />
                 </svg>
-                <span>Global Catalog</span>
+                <span>Songs</span>
+              </button>
+              <button id="tabArtists" class="library-tab">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>Artists</span>
+              </button>
+              <button id="tabAlbums" class="library-tab">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>Albums</span>
               </button>
               <button id="tabPlaylists" class="library-tab">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -482,6 +500,93 @@
                 style="text-align:center; padding:3rem; color:var(--color-text-dim);">
                 <div>Loading catalog...</div>
               </div>
+            </div>
+
+            <!-- Artists Directory Container -->
+            <div id="artistsContainer" style="display:none; flex-direction:column; gap:1.25rem;">
+              <div id="artistsGrid" class="catalog-entity-grid"></div>
+            </div>
+
+            <!-- Single Artist Detail View -->
+            <div id="singleArtistView" style="display:none; flex-direction:column; gap:1.35rem;">
+              <button id="btnBackToArtistsList" class="btn-pill"
+                style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
+                &larr; Back to Artists
+              </button>
+              <div class="entity-banner-header">
+                <img id="artistBannerArt" src="brand/elm-default-cover.svg" alt="Artist" class="entity-banner-avatar"
+                  crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+                <div class="playlist-banner-info">
+                  <div class="playlist-banner-type">ARTIST</div>
+                  <h2 id="artistBannerTitle" class="playlist-banner-title">Artist Name</h2>
+                  <p id="artistBannerSubtitle" class="playlist-banner-desc"></p>
+                  <div class="playlist-banner-meta" id="artistBannerMeta">0 albums • 0 songs</div>
+                </div>
+              </div>
+              <div class="playlist-actions-bar">
+                <button id="btnArtistPlayAll" class="btn-primary"
+                  style="padding:0.6rem 1.4rem; font-size:0.88rem; gap:0.55rem;" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3" />
+                  </svg>
+                  <span>Play All</span>
+                </button>
+                <button id="btnArtistShuffle" class="btn-pill"
+                  style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                  </svg>
+                  <span>Shuffle</span>
+                </button>
+              </div>
+              <div id="artistAlbumsSection" style="display:flex; flex-direction:column; gap:0.75rem;">
+                <h3 class="entity-sub-heading">Albums &amp; Releases</h3>
+                <div id="artistAlbumsGrid" class="catalog-entity-grid"></div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:0.65rem;">
+                <h3 class="entity-sub-heading">All Songs</h3>
+                <div id="artistTracksList" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
+              </div>
+            </div>
+
+            <!-- Albums Directory Container -->
+            <div id="albumsContainer" style="display:none; flex-direction:column; gap:1.25rem;">
+              <div id="albumsGrid" class="catalog-entity-grid"></div>
+            </div>
+
+            <!-- Single Album Detail View -->
+            <div id="singleAlbumView" style="display:none; flex-direction:column; gap:1.35rem;">
+              <button id="btnBackToAlbumsList" class="btn-pill"
+                style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
+                &larr; Back to Albums
+              </button>
+              <div class="entity-banner-header">
+                <img id="albumBannerArt" src="brand/elm-default-cover.svg" alt="Album" class="entity-banner-cover"
+                  crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
+                <div class="playlist-banner-info">
+                  <div class="playlist-banner-type" id="albumBannerType">ALBUM</div>
+                  <h2 id="albumBannerTitle" class="playlist-banner-title">Album Title</h2>
+                  <p id="albumBannerArtist" class="playlist-banner-desc entity-clickable-artist" title="View Artist"></p>
+                  <div class="playlist-banner-meta" id="albumBannerMeta">0 songs</div>
+                </div>
+              </div>
+              <div class="playlist-actions-bar">
+                <button id="btnAlbumPlayAll" class="btn-primary"
+                  style="padding:0.6rem 1.4rem; font-size:0.88rem; gap:0.55rem;" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3" />
+                  </svg>
+                  <span>Play Album</span>
+                </button>
+                <button id="btnAlbumShuffle" class="btn-pill"
+                  style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                  </svg>
+                  <span>Shuffle</span>
+                </button>
+              </div>
+              <div id="albumTracksList" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
             </div>
 
             <!-- Playlists Section Container -->
@@ -677,12 +782,18 @@
               </div>
             </div>
 
-            <!-- Mandatory Fields: Artist Name & Song Title -->
+            <!-- Mandatory Fields: Artist Selector & Song Title -->
             <div class="form-grid-2col">
               <div class="form-group">
-                <label for="inputCustomArtist">Artist Name <span class="required-badge">* Required</span></label>
-                <input type="text" id="inputCustomArtist" class="form-input" placeholder="e.g. አቢነት አጎናፍር / Abinet"
-                  required>
+                <label for="selectCustomArtist">Artist <span class="required-badge">* Required</span></label>
+                <select id="selectCustomArtist" class="form-input form-select">
+                  <option value="">-- Select Existing Artist --</option>
+                  <option value="__new__">+ Add New Artist...</option>
+                </select>
+                <div id="newArtistFieldsWrap" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.55rem;">
+                  <input type="text" id="inputCustomArtist" class="form-input" placeholder="New Artist Name (e.g. አቢነት አጎናፍር / Abinet)">
+                  <input type="text" id="inputCustomArtistEn" class="form-input" placeholder="English / Latin Name (Optional, e.g. Abinet Agonafir)">
+                </div>
               </div>
               <div class="form-group">
                 <label for="inputCustomTitle">Song Title <span class="required-badge">* Required</span></label>
@@ -691,15 +802,46 @@
               </div>
             </div>
 
-            <!-- Optional Fields: Album Name & Year -->
+            <!-- Album Selector (Filtered by Artist) & Classification -->
             <div class="form-grid-2col">
               <div class="form-group">
-                <label for="inputCustomAlbum">Album Name <span class="optional-badge">(Optional)</span></label>
-                <input type="text" id="inputCustomAlbum" class="form-input" placeholder="e.g. ውለታ / Weleta">
+                <label for="selectCustomAlbum">Album <span class="optional-badge">(For Selected Artist)</span></label>
+                <select id="selectCustomAlbum" class="form-input form-select">
+                  <option value="Single">Single (No Album)</option>
+                  <option value="__new__">+ Add New Album...</option>
+                </select>
+                <div id="newAlbumFieldsWrap" style="display:none; margin-top:0.55rem;">
+                  <input type="text" id="inputCustomAlbum" class="form-input" placeholder="New Album Name (e.g. ውለታ / Weleta)">
+                </div>
               </div>
               <div class="form-group">
-                <label for="inputCustomYear">Year <span class="optional-badge">(Optional)</span></label>
+                <label for="selectCustomGenre">Genre / Style <span class="optional-badge">(Classification)</span></label>
+                <select id="selectCustomGenre" class="form-input form-select">
+                  <option value="">Auto-detect / Unspecified</option>
+                  <option value="Tizita">Tizita</option>
+                  <option value="Ethio-Pop">Ethio-Pop</option>
+                  <option value="Bati">Bati</option>
+                  <option value="Ambassel">Ambassel</option>
+                  <option value="Anchihoye">Anchihoye</option>
+                  <option value="Eskista">Eskista</option>
+                  <option value="Ethio-Jazz">Ethio-Jazz</option>
+                  <option value="Reggae">Reggae</option>
+                  <option value="Spiritual / Gospel">Spiritual / Gospel</option>
+                  <option value="Traditional">Traditional</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Year & Track Number -->
+            <div class="form-grid-2col">
+              <div class="form-group">
+                <label for="inputCustomYear">Release Year <span class="optional-badge">(Optional)</span></label>
                 <input type="text" id="inputCustomYear" class="form-input" placeholder="e.g. 2024">
+              </div>
+              <div class="form-group">
+                <label for="inputCustomTrackNumber">Track # in Album <span class="optional-badge">(Optional)</span></label>
+                <input type="number" id="inputCustomTrackNumber" class="form-input" min="1" max="99" placeholder="e.g. 1">
               </div>
             </div>
 

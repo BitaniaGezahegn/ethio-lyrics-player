@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v34';
+const CACHE_NAME = 'ethio-lyrics-cache-v35';
 
 const STATIC_ASSETS = [
   './',
@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   './css/style.css',
   './css/themes.css',
   './js/app.js',
+  './js/catalog-schema.js',
   './js/components/elm-logo.js',
   './js/utils/sanitize.js',
   './js/recommendation-engine.js',
