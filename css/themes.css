@@ -705,3 +705,60 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   Full Sheet Mode Override (must appear after all theme rules)
+   ========================================================================== */
+#app.lyrics-mode-sheet .visualizer-container {
+  display: none !important;
+}
+
+#app.lyrics-mode-sheet .stage-split {
+  grid-template-columns: 1fr !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-container {
+  overflow-y: auto !important;
+  max-height: 64vh !important;
+  height: auto !important;
+  max-width: 780px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  display: block !important;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-container .lyrics-scroll-wrap {
+  transform: none !important;
+  position: static !important;
+  padding: 1rem 0.5rem 3.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.45rem !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-container .lyric-line,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.distant,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.past,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.prev,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.next,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.near,
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.upcoming {
+  opacity: 0.85 !important;
+  filter: none !important;
+  visibility: visible !important;
+  display: block !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  position: static !important;
+  margin: 0.15rem 0 !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-container .lyric-line.active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  color: var(--color-gold, #e5b95a) !important;
+  transform: none !important;
+}

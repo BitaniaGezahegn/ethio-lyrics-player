@@ -153,8 +153,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.6';
-    this.cacheVersion = 'v41';
+    this.appVersion = 'v2.7.7';
+    this.cacheVersion = 'v42';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -3409,6 +3409,13 @@ class LyricsApp {
     if (this._scrollRafId) cancelAnimationFrame(this._scrollRafId);
     this._scrollRafId = requestAnimationFrame(() => {
       if (!this.lyricsViewport) return;
+      if (this.appEl && this.appEl.classList.contains('lyrics-mode-sheet')) {
+        this.lyricsScrollWrap.style.transform = 'none';
+        if (newIndex >= 0 && lines[newIndex]) {
+          lines[newIndex].scrollIntoView({ block: 'nearest', behavior: this.isPerfLite ? 'auto' : 'smooth' });
+        }
+        return;
+      }
       if (!this._lyricPositions || this._lyricPositions.length !== lines.length) {
         this._measureLyricPositions();
       }
@@ -5294,7 +5301,9 @@ class LyricsApp {
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
     }
-    if (valid !== 'sheet') {
+    if (valid === 'sheet') {
+      if (this.lyricsScrollWrap) this.lyricsScrollWrap.style.transform = 'none';
+    } else {
       requestAnimationFrame(() => this._measureLyricPositions());
     }
   }
