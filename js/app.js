@@ -152,8 +152,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.3';
-    this.cacheVersion = 'v38';
+    this.appVersion = 'v2.7.4';
+    this.cacheVersion = 'v39';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -565,14 +565,23 @@ class LyricsApp {
     this.btnPlaylistPlayAll = document.getElementById('btnPlaylistPlayAll');
     this.btnPlaylistShuffle = document.getElementById('btnPlaylistShuffle');
     this.btnPlaylistAddTracks = document.getElementById('btnPlaylistAddTracks');
+    this.btnPlaylistEdit = document.getElementById('btnPlaylistEdit');
     this.btnPlaylistDelete = document.getElementById('btnPlaylistDelete');
     this.playlistTracksList = document.getElementById('playlistTracksList');
 
     // Modals
     this.createPlaylistModal = document.getElementById('createPlaylistModal');
+    this.createPlaylistModalTitle = document.getElementById('createPlaylistModalTitle');
     this.formCreatePlaylist = document.getElementById('formCreatePlaylist');
     this.inputPlaylistTitle = document.getElementById('inputPlaylistTitle');
     this.inputPlaylistDesc = document.getElementById('inputPlaylistDesc');
+    this.btnSubmitCreatePlaylist = document.getElementById('btnSubmitCreatePlaylist');
+    this.playlistCoverPreviewBox = document.getElementById('playlistCoverPreviewBox');
+    this.playlistCoverPreviewImg = document.getElementById('playlistCoverPreviewImg');
+    this.btnUploadPlaylistCover = document.getElementById('btnUploadPlaylistCover');
+    this.btnResetPlaylistCover = document.getElementById('btnResetPlaylistCover');
+    this.inputPlaylistCoverFile = document.getElementById('inputPlaylistCoverFile');
+    this.playlistPresetGallery = document.getElementById('playlistPresetGallery');
     this.addToPlaylistModal = document.getElementById('addToPlaylistModal');
     this.btnQuickCreatePlaylist = document.getElementById('btnQuickCreatePlaylist');
     this.addToPlaylistChoicesList = document.getElementById('addToPlaylistChoicesList');
@@ -696,21 +705,9 @@ class LyricsApp {
     // Admin Modal Elements
     this.adminModal = document.getElementById('adminModal');
     this.adminTabSubmissions = document.getElementById('adminTabSubmissions');
-    this.adminTabDirectPublish = document.getElementById('adminTabDirectPublish');
     this.adminSubmissionsSection = document.getElementById('adminSubmissionsSection');
-    this.adminDirectPublishSection = document.getElementById('adminDirectPublishSection');
     this.adminSubmissionsList = document.getElementById('adminSubmissionsList');
     this.adminSubmissionsBadge = document.getElementById('adminSubmissionsBadge');
-
-    this.adminNewArtist = document.getElementById('adminNewArtist');
-    this.adminNewTitle = document.getElementById('adminNewTitle');
-    this.adminNewAlbum = document.getElementById('adminNewAlbum');
-    this.adminNewYear = document.getElementById('adminNewYear');
-    this.adminNewAudioUrl = document.getElementById('adminNewAudioUrl');
-    this.adminNewCoverUrl = document.getElementById('adminNewCoverUrl');
-    this.adminNewLrc = document.getElementById('adminNewLrc');
-    this.btnAdminAppendR2 = document.getElementById('btnAdminAppendR2');
-    this.btnAdminPublishDirect = document.getElementById('btnAdminPublishDirect');
 
     // Song Details Modal Elements
     this.songDetailsModal = document.getElementById('songDetailsModal');
@@ -719,6 +716,7 @@ class LyricsApp {
     this.detailModalArtist = document.getElementById('detailModalArtist');
     this.detailModalArtistEn = document.getElementById('detailModalArtistEn');
     this.detailModalAlbum = document.getElementById('detailModalAlbum');
+    this.detailModalGenreChip = document.getElementById('detailModalGenreChip');
     this.detailModalLrcChip = document.getElementById('detailModalLrcChip');
     this.detailModalOfflineChip = document.getElementById('detailModalOfflineChip');
     this.detailModalLyricsSnippet = document.getElementById('detailModalLyricsSnippet');
@@ -744,10 +742,16 @@ class LyricsApp {
     this.formEditSongReview = document.getElementById('formEditSongReview');
     this.inputEditReviewTitle = document.getElementById('inputEditReviewTitle');
     this.inputEditReviewTitleEn = document.getElementById('inputEditReviewTitleEn');
+    this.selectEditReviewArtist = document.getElementById('selectEditReviewArtist');
+    this.editReviewNewArtistWrap = document.getElementById('editReviewNewArtistWrap');
     this.inputEditReviewArtist = document.getElementById('inputEditReviewArtist');
     this.inputEditReviewArtistEn = document.getElementById('inputEditReviewArtistEn');
+    this.selectEditReviewAlbum = document.getElementById('selectEditReviewAlbum');
+    this.editReviewNewAlbumWrap = document.getElementById('editReviewNewAlbumWrap');
     this.inputEditReviewAlbum = document.getElementById('inputEditReviewAlbum');
+    this.selectEditReviewGenre = document.getElementById('selectEditReviewGenre');
     this.inputEditReviewYear = document.getElementById('inputEditReviewYear');
+    this.inputEditReviewTrackNumber = document.getElementById('inputEditReviewTrackNumber');
     this.inputEditReviewCover = document.getElementById('inputEditReviewCover');
     this.inputEditReviewLrc = document.getElementById('inputEditReviewLrc');
     this.inputEditReviewLrcFile = document.getElementById('inputEditReviewLrcFile');
@@ -993,6 +997,11 @@ class LyricsApp {
     }
 
     this.initThemeSystem();
+
+    const appVersionBadge = document.getElementById('appVersionBadge');
+    if (appVersionBadge) appVersionBadge.textContent = this.appVersion;
+    const swCacheStatusLabel = document.getElementById('swCacheStatusLabel');
+    if (swCacheStatusLabel) swCacheStatusLabel.textContent = `Cache ${this.cacheVersion} (Active)`;
   }
 
   openAdminModal() {
@@ -2546,32 +2555,75 @@ class LyricsApp {
     if (this.adminTabSubmissions) {
       this.adminTabSubmissions.addEventListener('click', () => {
         this.adminTabSubmissions.classList.add('active');
-        this.adminTabDirectPublish.classList.remove('active');
-        this.adminSubmissionsSection.style.display = 'block';
-        this.adminDirectPublishSection.style.display = 'none';
+        if (this.adminSubmissionsSection) this.adminSubmissionsSection.style.display = 'block';
         this.loadAdminSubmissions();
       });
     }
 
-    if (this.adminTabDirectPublish) {
-      this.adminTabDirectPublish.addEventListener('click', () => {
-        this.adminTabDirectPublish.classList.add('active');
-        this.adminTabSubmissions.classList.remove('active');
-        this.adminDirectPublishSection.style.display = 'flex';
-        this.adminSubmissionsSection.style.display = 'none';
+    // Song Details clickable Artist & Album navigation
+    if (this.detailModalArtist) {
+      this.detailModalArtist.addEventListener('click', () => {
+        if (!this._detailTrack) return;
+        const artistId = this._detailTrack.artistId || makeArtistId(this._detailTrack.artist, this._detailTrack.artistEn);
+        if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+        this.switchTab('library');
+        this.switchLibraryTab('artists');
+        this.openArtistDetail(artistId);
+      });
+    }
+    if (this.detailModalAlbum) {
+      this.detailModalAlbum.addEventListener('click', () => {
+        if (!this._detailTrack) return;
+        const artistId = this._detailTrack.artistId || makeArtistId(this._detailTrack.artist, this._detailTrack.artistEn);
+        const albumId = this._detailTrack.albumId || makeAlbumId(artistId, this._detailTrack.album || 'Single');
+        if (this.songDetailsModal) this.songDetailsModal.classList.remove('active');
+        this.switchTab('library');
+        this.switchLibraryTab('albums');
+        this.openAlbumDetail(albumId);
       });
     }
 
-    if (this.btnAdminAppendR2) {
-      this.btnAdminAppendR2.addEventListener('click', () => {
-        this.adminNewAudioUrl.value = `${R2_PUBLIC_BASE}/`;
-        this.adminNewAudioUrl.focus();
-      });
+    // Suggest Changes Artist & Album picker events
+    if (this.selectEditReviewArtist) {
+      this.selectEditReviewArtist.addEventListener('change', () => this.onEditReviewArtistChange());
+    }
+    if (this.selectEditReviewAlbum) {
+      this.selectEditReviewAlbum.addEventListener('change', () => this.onEditReviewAlbumChange());
     }
 
-    if (this.btnAdminPublishDirect) {
-      this.btnAdminPublishDirect.addEventListener('click', async () => {
-        await this.handleAdminDirectPublish();
+    // Playlist Edit & Cover Upload events
+    if (this.btnPlaylistEdit) {
+      this.btnPlaylistEdit.addEventListener('click', () => {
+        if (this.activePlaylist && !this.activePlaylist.isSmart) {
+          this.openCreatePlaylistModal(this.activePlaylist);
+        }
+      });
+    }
+    if (this.btnUploadPlaylistCover && this.inputPlaylistCoverFile) {
+      this.btnUploadPlaylistCover.addEventListener('click', () => this.inputPlaylistCoverFile.click());
+    }
+    if (this.playlistCoverPreviewBox && this.inputPlaylistCoverFile) {
+      this.playlistCoverPreviewBox.addEventListener('click', () => this.inputPlaylistCoverFile.click());
+    }
+    if (this.inputPlaylistCoverFile) {
+      this.inputPlaylistCoverFile.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          this._selectedPlaylistCover = reader.result;
+          if (this.playlistCoverPreviewImg) this.playlistCoverPreviewImg.src = reader.result;
+          this._highlightSelectedPlaylistPreset('');
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    if (this.btnResetPlaylistCover) {
+      this.btnResetPlaylistCover.addEventListener('click', () => {
+        this._selectedPlaylistCover = '';
+        if (this.playlistCoverPreviewImg) this.playlistCoverPreviewImg.src = 'brand/elm-default-cover.svg';
+        if (this.inputPlaylistCoverFile) this.inputPlaylistCoverFile.value = '';
+        this._highlightSelectedPlaylistPreset('');
       });
     }
 
@@ -5148,58 +5200,6 @@ class LyricsApp {
     }
   }
 
-  async handleAdminDirectPublish() {
-    const artist = this.adminNewArtist.value.trim();
-    const title = this.adminNewTitle.value.trim();
-    const audioUrl = this.adminNewAudioUrl.value.trim();
-    const album = this.adminNewAlbum.value.trim() || 'Single';
-    const year = this.adminNewYear.value.trim() || '2024';
-    const coverUrl = this.adminNewCoverUrl.value.trim() || 'brand/elm-default-cover.svg';
-    const lrc = this.adminNewLrc.value.trim() || '';
-
-    if (!artist || !title) {
-      alert('Artist Name and Song Title are required.');
-      return;
-    }
-    if (!audioUrl) {
-      alert('Audio URL (Cloudflare R2 link) is required for global catalog.');
-      return;
-    }
-
-    try {
-      this.btnAdminPublishDirect.textContent = 'Publishing...';
-      const published = await FirebaseService.publishTrack({
-        artist,
-        artistEn: artist,
-        title,
-        titleEn: title,
-        album,
-        year,
-        audioUrl,
-        cover: coverUrl,
-        discCenter: coverUrl,
-        lrc
-      });
-
-      this.btnAdminPublishDirect.textContent = 'Publish Directly to Global Catalog';
-      if (this.adminModal) this.adminModal.classList.remove('active');
-      await this.loadPublicCatalog();
-      this.renderHomePage();
-      await this.loadTrack(published, true);
-      alert(`Published "${title}" directly to the Global Catalog!`);
-
-      this.adminNewArtist.value = '';
-      this.adminNewTitle.value = '';
-      this.adminNewAlbum.value = '';
-      this.adminNewAudioUrl.value = '';
-      this.adminNewCoverUrl.value = '';
-      this.adminNewLrc.value = '';
-    } catch (err) {
-      this.btnAdminPublishDirect.textContent = 'Publish Directly to Global Catalog';
-      alert('Publishing error: ' + err.message);
-    }
-  }
-
   initThemeSystem() {
     if (!this.themeOptionsList) return;
     this.themeOptionsList.innerHTML = '';
@@ -5662,7 +5662,16 @@ class LyricsApp {
       }
     }
     if (this.detailModalAlbum) {
-      this.detailModalAlbum.textContent = `${track.album || 'Single'} • ${track.year || '2024'}`;
+      const trackNumStr = track.trackNumber ? ` • Track #${track.trackNumber}` : '';
+      this.detailModalAlbum.textContent = `${track.album || 'Single'} • ${track.year || '2024'}${trackNumStr}`;
+    }
+    if (this.detailModalGenreChip) {
+      if (track.genre) {
+        this.detailModalGenreChip.textContent = track.genre;
+        this.detailModalGenreChip.style.display = 'inline-flex';
+      } else {
+        this.detailModalGenreChip.style.display = 'none';
+      }
     }
 
     // LRC status & lyrics preview snippet
@@ -5785,13 +5794,20 @@ class LyricsApp {
       this.editReviewCurrentArtist.textContent = track.artist || 'Unknown Artist';
     }
 
-    // Pre-populate input fields
+    this.rebuildCatalogIndex();
+
+    // Pre-populate structured fields
     if (this.inputEditReviewTitle) this.inputEditReviewTitle.value = track.title || '';
     if (this.inputEditReviewTitleEn) this.inputEditReviewTitleEn.value = track.titleEn || '';
-    if (this.inputEditReviewArtist) this.inputEditReviewArtist.value = track.artist || '';
-    if (this.inputEditReviewArtistEn) this.inputEditReviewArtistEn.value = track.artistEn || '';
-    if (this.inputEditReviewAlbum) this.inputEditReviewAlbum.value = track.album || '';
+
+    const artistId = track.artistId || makeArtistId(track.artist, track.artistEn);
+    this.populateEditReviewArtistPicker(artistId, track.artist || '', track.artistEn || '');
+    const albumVal = isSingleAlbumName(track.album) ? 'Single' : (track.albumId || track.album);
+    this.populateEditReviewAlbumPicker(artistId, albumVal, track.album || '');
+
+    if (this.selectEditReviewGenre) this.selectEditReviewGenre.value = track.genre || '';
     if (this.inputEditReviewYear) this.inputEditReviewYear.value = track.year || '';
+    if (this.inputEditReviewTrackNumber) this.inputEditReviewTrackNumber.value = track.trackNumber || '';
     if (this.inputEditReviewCover) this.inputEditReviewCover.value = track.cover || '';
     if (this.inputEditReviewLrc) this.inputEditReviewLrc.value = track.lrc || '';
     if (this.inputEditReviewNote) this.inputEditReviewNote.value = '';
@@ -5803,19 +5819,148 @@ class LyricsApp {
     this.editSongReviewModal.classList.add('active');
   }
 
+  populateEditReviewArtistPicker(selectedArtistId = '', fallbackName = '', fallbackNameEn = '') {
+    if (!this.selectEditReviewArtist) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const artists = index.artists || [];
+    this.selectEditReviewArtist.innerHTML = '<option value="">-- Select Existing Artist --</option>';
+    let matched = false;
+    for (const art of artists) {
+      if (!art.id || art.id === 'art_unknown') continue;
+      const opt = document.createElement('option');
+      opt.value = art.id;
+      opt.textContent = `${art.name}${art.nameEn && art.nameEn !== art.name ? ` (${art.nameEn})` : ''}`;
+      if (selectedArtistId && art.id === selectedArtistId) {
+        opt.selected = true;
+        matched = true;
+      }
+      this.selectEditReviewArtist.appendChild(opt);
+    }
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Add New Artist...';
+    this.selectEditReviewArtist.appendChild(newOpt);
+
+    if (!matched && fallbackName) {
+      newOpt.selected = true;
+      if (this.editReviewNewArtistWrap) this.editReviewNewArtistWrap.style.display = 'grid';
+      if (this.inputEditReviewArtist) this.inputEditReviewArtist.value = fallbackName;
+      if (this.inputEditReviewArtistEn) this.inputEditReviewArtistEn.value = fallbackNameEn || '';
+    } else {
+      if (this.editReviewNewArtistWrap) this.editReviewNewArtistWrap.style.display = 'none';
+      if (this.inputEditReviewArtist) this.inputEditReviewArtist.value = '';
+      if (this.inputEditReviewArtistEn) this.inputEditReviewArtistEn.value = '';
+    }
+  }
+
+  onEditReviewArtistChange() {
+    if (!this.selectEditReviewArtist) return;
+    const val = this.selectEditReviewArtist.value;
+    const isNew = val === '__new__';
+    if (this.editReviewNewArtistWrap) {
+      this.editReviewNewArtistWrap.style.display = isNew ? 'grid' : 'none';
+    }
+    this.populateEditReviewAlbumPicker(isNew ? '' : val, 'Single');
+  }
+
+  populateEditReviewAlbumPicker(artistId = '', selectedValue = 'Single', fallbackAlbumName = '') {
+    if (!this.selectEditReviewAlbum) return;
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
+    const albums = artistId ? index.getAlbumsByArtist(artistId).filter(a => !a.isSingle) : [];
+    this.selectEditReviewAlbum.innerHTML = '<option value="Single">Single (No Album)</option>';
+    let matched = selectedValue === 'Single' || !selectedValue;
+    for (const alb of albums) {
+      const opt = document.createElement('option');
+      opt.value = alb.id;
+      opt.textContent = `${alb.title}${alb.year ? ` (${alb.year})` : ''}`;
+      if (selectedValue && (alb.id === selectedValue || alb.title === selectedValue)) {
+        opt.selected = true;
+        matched = true;
+      }
+      this.selectEditReviewAlbum.appendChild(opt);
+    }
+    const newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Add New Album...';
+    this.selectEditReviewAlbum.appendChild(newOpt);
+
+    if (!matched && fallbackAlbumName && !isSingleAlbumName(fallbackAlbumName)) {
+      newOpt.selected = true;
+      if (this.editReviewNewAlbumWrap) this.editReviewNewAlbumWrap.style.display = 'block';
+      if (this.inputEditReviewAlbum) this.inputEditReviewAlbum.value = fallbackAlbumName;
+    } else {
+      if (this.editReviewNewAlbumWrap) this.editReviewNewAlbumWrap.style.display = 'none';
+      if (this.inputEditReviewAlbum) this.inputEditReviewAlbum.value = '';
+    }
+  }
+
+  onEditReviewAlbumChange() {
+    if (!this.selectEditReviewAlbum) return;
+    const val = this.selectEditReviewAlbum.value;
+    const isNew = val === '__new__';
+    if (this.editReviewNewAlbumWrap) {
+      this.editReviewNewAlbumWrap.style.display = isNew ? 'block' : 'none';
+    }
+    if (!isNew && val && val !== 'Single') {
+      const index = this.catalogIndex || this.rebuildCatalogIndex();
+      const alb = index.getAlbum(val);
+      if (alb) {
+        if (this.inputEditReviewYear && alb.year) this.inputEditReviewYear.value = alb.year;
+        if (this.selectEditReviewGenre && alb.genre) this.selectEditReviewGenre.value = alb.genre;
+      }
+    }
+  }
+
   async handleSubmitEditSongReview(e) {
     if (e) e.preventDefault();
     if (!this._editingReviewTrack) return;
 
+    const index = this.catalogIndex || this.rebuildCatalogIndex();
     const title = this.inputEditReviewTitle ? this.inputEditReviewTitle.value.trim() : '';
-    const artist = this.inputEditReviewArtist ? this.inputEditReviewArtist.value.trim() : '';
+
+    const artistSel = this.selectEditReviewArtist ? this.selectEditReviewArtist.value : '__new__';
+    let artist = '';
+    let artistEn = '';
+    let artistId = '';
+    if (artistSel === '__new__' || !artistSel) {
+      artist = this.inputEditReviewArtist ? this.inputEditReviewArtist.value.trim() : '';
+      artistEn = (this.inputEditReviewArtistEn ? this.inputEditReviewArtistEn.value.trim() : '') || artist;
+      artistId = artist ? makeArtistId(artist, artistEn) : '';
+    } else {
+      const artObj = index.getArtist(artistSel);
+      if (artObj) {
+        artist = artObj.name;
+        artistEn = artObj.nameEn || artObj.name;
+        artistId = artObj.id;
+      }
+    }
+
     if (!title || !artist) {
       if (this.editReviewErrorMsg) {
-        this.editReviewErrorMsg.textContent = 'Please enter both Song Title and Artist Name.';
+        this.editReviewErrorMsg.textContent = 'Please select or enter both Song Title and Artist Name.';
         this.editReviewErrorMsg.style.display = 'block';
       }
       return;
     }
+
+    const albumSel = this.selectEditReviewAlbum ? this.selectEditReviewAlbum.value : 'Single';
+    let album = 'Single';
+    let albumId = '';
+    if (albumSel === '__new__') {
+      album = (this.inputEditReviewAlbum ? this.inputEditReviewAlbum.value.trim() : '') || 'Single';
+      albumId = artistId ? makeAlbumId(artistId, album) : '';
+    } else if (albumSel && albumSel !== 'Single') {
+      const albObj = index.getAlbum(albumSel);
+      album = albObj ? albObj.title : 'Single';
+      albumId = albObj ? albObj.id : (artistId ? makeAlbumId(artistId, album) : '');
+    } else {
+      album = 'Single';
+      albumId = artistId ? makeAlbumId(artistId, 'Single') : '';
+    }
+
+    const genre = this.selectEditReviewGenre ? this.selectEditReviewGenre.value.trim() : '';
+    const trackNumRaw = this.inputEditReviewTrackNumber ? parseInt(this.inputEditReviewTrackNumber.value, 10) : NaN;
+    const trackNumber = Number.isFinite(trackNumRaw) && trackNumRaw > 0 ? trackNumRaw : null;
 
     const payload = {
       type: 'metadata_edit',
@@ -5823,10 +5968,14 @@ class LyricsApp {
       originalTitle: this._editingReviewTrack.title || 'Untitled',
       originalArtist: this._editingReviewTrack.artist || 'Unknown Artist',
       title: title,
-      titleEn: this.inputEditReviewTitleEn ? this.inputEditReviewTitleEn.value.trim() : title,
+      titleEn: (this.inputEditReviewTitleEn ? this.inputEditReviewTitleEn.value.trim() : '') || title,
       artist: artist,
-      artistEn: this.inputEditReviewArtistEn ? this.inputEditReviewArtistEn.value.trim() : artist,
-      album: this.inputEditReviewAlbum ? this.inputEditReviewAlbum.value.trim() : 'Single',
+      artistEn: artistEn,
+      artistId: artistId,
+      album: album,
+      albumId: albumId,
+      genre: genre,
+      trackNumber: trackNumber,
       year: this.inputEditReviewYear ? this.inputEditReviewYear.value.trim() : '2024',
       cover: this.inputEditReviewCover ? this.inputEditReviewCover.value.trim() : (this._editingReviewTrack.cover || 'brand/elm-default-cover.svg'),
       lrc: this.inputEditReviewLrc ? this.inputEditReviewLrc.value.trim() : '',
@@ -7415,9 +7564,67 @@ class LyricsApp {
     });
   }
 
-  openCreatePlaylistModal() {
-    if (this.inputPlaylistTitle) this.inputPlaylistTitle.value = '';
-    if (this.inputPlaylistDesc) this.inputPlaylistDesc.value = '';
+  _getPlaylistPresetCovers() {
+    const presets = [
+      'brand/elm-default-cover.svg',
+      'assets/weleta_cover.jpg'
+    ];
+    const seen = new Set(presets);
+    for (const t of this.getAllTracksMerged()) {
+      if (t && t.cover && !t.cover.startsWith('data:') && !seen.has(t.cover)) {
+        seen.add(t.cover);
+        presets.push(t.cover);
+        if (presets.length >= 12) break;
+      }
+    }
+    return presets;
+  }
+
+  _renderPlaylistPresetGallery(selectedUrl = '') {
+    if (!this.playlistPresetGallery) return;
+    this.playlistPresetGallery.innerHTML = '';
+    const presets = this._getPlaylistPresetCovers();
+    for (const url of presets) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `playlist-preset-thumb ${selectedUrl === url ? 'selected' : ''}`;
+      btn.dataset.coverUrl = url;
+      btn.title = 'Use this artwork';
+      btn.innerHTML = `<img src="${sanitizeUrl(url)}" alt="Cover preset" loading="lazy" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">`;
+      btn.addEventListener('click', () => {
+        this._selectedPlaylistCover = url;
+        if (this.playlistCoverPreviewImg) this.playlistCoverPreviewImg.src = sanitizeUrl(url);
+        this._highlightSelectedPlaylistPreset(url);
+      });
+      this.playlistPresetGallery.appendChild(btn);
+    }
+  }
+
+  _highlightSelectedPlaylistPreset(url) {
+    if (!this.playlistPresetGallery) return;
+    this.playlistPresetGallery.querySelectorAll('.playlist-preset-thumb').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.coverUrl === url);
+    });
+  }
+
+  openCreatePlaylistModal(playlistToEdit = null) {
+    this._editingPlaylistId = playlistToEdit ? playlistToEdit.id : null;
+    this._selectedPlaylistCover = playlistToEdit ? (playlistToEdit.cover || '') : '';
+    if (this.createPlaylistModalTitle) {
+      this.createPlaylistModalTitle.textContent = playlistToEdit ? 'Edit Playlist' : 'Create Playlist';
+    }
+    if (this.btnSubmitCreatePlaylist) {
+      this.btnSubmitCreatePlaylist.textContent = playlistToEdit ? 'Save Changes' : 'Create';
+    }
+    if (this.inputPlaylistTitle) this.inputPlaylistTitle.value = playlistToEdit ? (playlistToEdit.title || '') : '';
+    if (this.inputPlaylistDesc) this.inputPlaylistDesc.value = playlistToEdit ? (playlistToEdit.description || '') : '';
+    if (this.inputPlaylistCoverFile) this.inputPlaylistCoverFile.value = '';
+    if (this.playlistCoverPreviewImg) {
+      this.playlistCoverPreviewImg.src = this._selectedPlaylistCover
+        ? sanitizeUrl(this._selectedPlaylistCover)
+        : 'brand/elm-default-cover.svg';
+    }
+    this._renderPlaylistPresetGallery(this._selectedPlaylistCover);
     if (this.createPlaylistModal) this.createPlaylistModal.classList.add('active');
   }
 
@@ -7426,13 +7633,23 @@ class LyricsApp {
     const title = this.inputPlaylistTitle ? this.inputPlaylistTitle.value.trim() : '';
     if (!title) return;
     const desc = this.inputPlaylistDesc ? this.inputPlaylistDesc.value.trim() : '';
-    const newPl = Storage.createPlaylist(title, desc);
+    const cover = this._selectedPlaylistCover || '';
+
+    let targetPl = null;
+    if (this._editingPlaylistId) {
+      targetPl = Storage.updatePlaylist(this._editingPlaylistId, { title, description: desc, cover });
+      this.showToast(`Playlist "${title}" updated!`);
+    } else {
+      targetPl = Storage.createPlaylist(title, desc, cover);
+      this.showToast(`Playlist "${targetPl.title}" created! 🎉`);
+    }
+
+    this._editingPlaylistId = null;
     this.playlists = Storage.getPlaylists();
     if (this.currentUser) this.pushCloudSyncDebounced();
     if (this.createPlaylistModal) this.createPlaylistModal.classList.remove('active');
-    this.showToast(`Playlist "${newPl.title}" created! 🎉`);
     this.renderPlaylists();
-    this.openPlaylistDetail(newPl.id);
+    if (targetPl) this.openPlaylistDetail(targetPl.id);
   }
 
   openSmartPlaylist(type) {
@@ -7504,6 +7721,9 @@ class LyricsApp {
       this.playlistBannerMeta.textContent = `${playlistTracks.length} songs ${totalMin > 0 ? `• ~${totalMin} min` : ''}`;
     }
 
+    if (this.btnPlaylistEdit) {
+      this.btnPlaylistEdit.style.display = playlist.isSmart ? 'none' : 'inline-flex';
+    }
     if (this.btnPlaylistDelete) {
       this.btnPlaylistDelete.style.display = playlist.isSmart ? 'none' : 'inline-flex';
     }

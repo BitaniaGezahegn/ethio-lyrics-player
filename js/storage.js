@@ -295,21 +295,7 @@ export const Storage = {
       if (data) {
         return JSON.parse(data);
       }
-      // Initialize with a default favorite mix if first time
-      const starterPlaylists = [
-        {
-          id: 'playlist_vibes',
-          title: 'Ethio Chill & Tizita',
-          description: 'Soothing Ethiopian melodies and acoustic vibes with synchronized lyrics.',
-          cover: 'brand/elm-default-cover.svg',
-          gradient: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)',
-          trackIds: [],
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        }
-      ];
-      this.setPlaylists(starterPlaylists);
-      return starterPlaylists;
+      return [];
     } catch (e) {
       return [];
     }
