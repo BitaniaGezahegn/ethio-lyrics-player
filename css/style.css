@@ -7281,3 +7281,188 @@ elm-logo {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ==========================================================================
+   Theme Bullet Toggle Switch & Creative Lyrics View Modes
+   ========================================================================== */
+.theme-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.elm-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.elm-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.elm-switch-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.elm-switch-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.elm-switch input:checked + .elm-switch-slider {
+  background: var(--color-gold, #e5b95a);
+  border-color: var(--color-gold, #e5b95a);
+}
+
+.elm-switch input:checked + .elm-switch-slider::before {
+  transform: translateX(20px);
+}
+
+/* Creative Lyrics View Toolbar */
+.lyrics-view-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lyrics-mode-group,
+.lyrics-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.lyrics-mode-btn,
+.lyrics-tool-btn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-dim);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.32rem 0.68rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.lyrics-mode-btn:hover,
+.lyrics-tool-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lyrics-mode-btn.active,
+.lyrics-tool-btn.active {
+  background: rgba(229, 185, 90, 0.22);
+  border-color: rgba(229, 185, 90, 0.6);
+  color: #fce7b2;
+}
+
+.lyric-line {
+  font-size: calc(1.35rem * var(--lyrics-font-scale, 1));
+}
+
+.lyric-line-ts {
+  display: none;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: rgba(229, 185, 90, 0.9);
+  background: rgba(229, 185, 90, 0.14);
+  border: 1px solid rgba(229, 185, 90, 0.25);
+  border-radius: 6px;
+  padding: 0.1rem 0.38rem;
+  margin-right: 0.55rem;
+  vertical-align: middle;
+}
+
+#app.lyrics-show-timestamps .lyric-line-ts {
+  display: inline-block;
+}
+
+/* Focus Mode: Hide vinyl disc, center lyrics full-width */
+#app.lyrics-mode-focus .visualizer-container {
+  display: none !important;
+}
+
+#app.lyrics-mode-focus .stage-split {
+  grid-template-columns: 1fr !important;
+}
+
+#app.lyrics-mode-focus .lyrics-container {
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#app.lyrics-mode-focus .lyric-line.active {
+  transform: scale(1.06);
+}
+
+/* Full Sheet Mode: Crisp, scrollable full-song lyric sheet */
+#app.lyrics-mode-sheet .visualizer-container {
+  display: none !important;
+}
+
+#app.lyrics-mode-sheet .stage-split {
+  grid-template-columns: 1fr !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-container {
+  overflow-y: auto !important;
+  max-width: 780px;
+  margin: 0 auto;
+  width: 100%;
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+#app.lyrics-mode-sheet .lyrics-scroll-wrap {
+  transform: none !important;
+  padding: 1rem 0.5rem 3rem !important;
+}
+
+#app.lyrics-mode-sheet .lyric-line {
+  opacity: 0.78 !important;
+  filter: none !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  margin: 0.45rem 0;
+  font-size: calc(1.08rem * var(--lyrics-font-scale, 1));
+}
+
+#app.lyrics-mode-sheet .lyric-line.active {
+  opacity: 1 !important;
+  color: var(--color-gold, #e5b95a);
+}

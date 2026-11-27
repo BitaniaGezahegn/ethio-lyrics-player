@@ -120,16 +120,22 @@
   visibility: visible !important;
 }
 
-#app.theme-artwork-ambient .lyric-line.active::before {
+/* Universal Active Lyric Bullet Indicator (controlled via Settings -> Display Themes) */
+#app.lyrics-bullet-on .lyric-line.active::before {
   content: '';
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   background: #ffffff;
   border-radius: 50%;
   margin-right: 0.85rem;
   flex-shrink: 0;
-  box-shadow: 0 0 10px #ffffff, 0 0 8px var(--art-primary, #ffffff);
+  box-shadow: 0 0 10px #ffffff, 0 0 8px var(--art-primary, rgba(255, 255, 255, 0.75));
+}
+
+#app.lyrics-bullet-off .lyric-line.active::before {
+  display: none !important;
+  content: none !important;
 }
 
 #app.theme-artwork-ambient .lyric-line.distant {
@@ -237,17 +243,7 @@
   visibility: visible !important;
 }
 
-#app.theme-ethio-classic .lyric-line.active::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: #ffffff;
-  border-radius: 50%;
-  margin-right: 0.9rem;
-  flex-shrink: 0;
-  box-shadow: 0 0 10px #ffffff, 0 0 8px rgba(220, 50, 60, 0.9);
-}
+/* Universal bullet rule above handles active::before */
 
 #app.theme-ethio-classic .lyric-line.distant {
   opacity: 0 !important;

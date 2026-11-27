@@ -142,6 +142,7 @@ class LyricsApp {
     });
 
     this.initThemeSystem();
+    this.initLyricsViewPreferences();
     this.initPerformanceMode();
     this.initAuth();
     this.initEvents();
@@ -152,8 +153,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.4';
-    this.cacheVersion = 'v39';
+    this.appVersion = 'v2.7.5';
+    this.cacheVersion = 'v40';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -473,6 +474,14 @@ class LyricsApp {
     // Lyrics Viewport
     this.lyricsViewport = document.getElementById('lyricsViewport');
     this.lyricsScrollWrap = document.getElementById('lyricsScrollWrap');
+    this.toggleLyricsBullet = document.getElementById('toggleLyricsBullet');
+    this.btnLyricsModeSynced = document.getElementById('btnLyricsModeSynced');
+    this.btnLyricsModeFocus = document.getElementById('btnLyricsModeFocus');
+    this.btnLyricsModeSheet = document.getElementById('btnLyricsModeSheet');
+    this.btnLyricsFontDec = document.getElementById('btnLyricsFontDec');
+    this.btnLyricsFontInc = document.getElementById('btnLyricsFontInc');
+    this.btnLyricsToggleTimestamps = document.getElementById('btnLyricsToggleTimestamps');
+    this.btnCopyAllLyrics = document.getElementById('btnCopyAllLyrics');
     this.noLyricsFileInput = document.getElementById('noLyricsFileInput');
 
     // Performance Mode Settings Controls
@@ -3314,7 +3323,14 @@ class LyricsApp {
       lineEl.className = 'lyric-line distant';
       lineEl.dataset.time = line.time;
       lineEl.dataset.index = index;
-      lineEl.textContent = line.text;
+
+      const mins = Math.floor((line.time || 0) / 60);
+      const secs = Math.floor((line.time || 0) % 60);
+      const tsSpan = document.createElement('span');
+      tsSpan.className = 'lyric-line-ts';
+      tsSpan.textContent = `[${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}]`;
+      lineEl.appendChild(tsSpan);
+      lineEl.appendChild(document.createTextNode(line.text));
 
       lineEl.addEventListener('click', () => {
         this.player.seek(line.time);
@@ -5197,6 +5213,132 @@ class LyricsApp {
     } catch (e) {
       console.warn('Submissions load error:', e);
       this.adminSubmissionsList.innerHTML = `<div style="color:#fca5a5; padding:1rem; text-align:center;">Failed to load submissions: ${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  initLyricsViewPreferences() {
+    // 1. Universal Active Lyric Bullet Indicator
+    let bulletOn = true;
+    try {
+      const saved = localStorage.getItem('ethio_lyrics_bullet_enabled');
+      if (saved !== null) bulletOn = saved === '1';
+    } catch (e) {}
+    this.applyLyricsBulletSetting(bulletOn, false);
+    if (this.toggleLyricsBullet) {
+      this.toggleLyricsBullet.checked = bulletOn;
+      this.toggleLyricsBullet.addEventListener('change', (e) => {
+        this.applyLyricsBulletSetting(!!e.target.checked, true);
+      });
+    }
+
+    // 2. Lyrics View Mode (synced | focus | sheet)
+    let savedMode = 'synced';
+    try {
+      savedMode = localStorage.getItem('ethio_lyrics_view_mode') || 'synced';
+    } catch (e) {}
+    this.setLyricsViewMode(savedMode, false);
+    [this.btnLyricsModeSynced, this.btnLyricsModeFocus, this.btnLyricsModeSheet].forEach(btn => {
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        this.setLyricsViewMode(btn.dataset.lyricsMode || 'synced', true);
+      });
+    });
+
+    // 3. Font Scale (A- / A+)
+    let scale = 1;
+    try {
+      const rawScale = parseFloat(localStorage.getItem('ethio_lyrics_font_scale'));
+      if (Number.isFinite(rawScale) && rawScale >= 0.75 && rawScale <= 1.5) scale = rawScale;
+    } catch (e) {}
+    this._lyricsFontScale = scale;
+    this.appEl?.style.setProperty('--lyrics-font-scale', String(scale));
+
+    if (this.btnLyricsFontDec) {
+      this.btnLyricsFontDec.addEventListener('click', () => this.adjustLyricsFontScale(-0.1));
+    }
+    if (this.btnLyricsFontInc) {
+      this.btnLyricsFontInc.addEventListener('click', () => this.adjustLyricsFontScale(0.1));
+    }
+
+    // 4. Timestamps Toggle
+    let showTs = false;
+    try {
+      showTs = localStorage.getItem('ethio_lyrics_show_ts') === '1';
+    } catch (e) {}
+    this.applyLyricsTimestampsSetting(showTs, false);
+    if (this.btnLyricsToggleTimestamps) {
+      this.btnLyricsToggleTimestamps.addEventListener('click', () => {
+        const next = !this.appEl?.classList.contains('lyrics-show-timestamps');
+        this.applyLyricsTimestampsSetting(next, true);
+      });
+    }
+
+    // 5. Copy All Lyrics
+    if (this.btnCopyAllLyrics) {
+      this.btnCopyAllLyrics.addEventListener('click', () => this.copyCurrentLyrics());
+    }
+  }
+
+  applyLyricsBulletSetting(enabled, persist = true) {
+    if (!this.appEl) return;
+    this.appEl.classList.toggle('lyrics-bullet-on', !!enabled);
+    this.appEl.classList.toggle('lyrics-bullet-off', !enabled);
+    if (persist) {
+      try { localStorage.setItem('ethio_lyrics_bullet_enabled', enabled ? '1' : '0'); } catch (e) {}
+    }
+  }
+
+  setLyricsViewMode(mode, persist = true) {
+    const valid = ['synced', 'focus', 'sheet'].includes(mode) ? mode : 'synced';
+    if (this.appEl) {
+      this.appEl.classList.remove('lyrics-mode-synced', 'lyrics-mode-focus', 'lyrics-mode-sheet');
+      this.appEl.classList.add(`lyrics-mode-${valid}`);
+    }
+    [this.btnLyricsModeSynced, this.btnLyricsModeFocus, this.btnLyricsModeSheet].forEach(btn => {
+      if (btn) btn.classList.toggle('active', btn.dataset.lyricsMode === valid);
+    });
+    if (persist) {
+      try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
+    }
+    if (valid !== 'sheet') {
+      requestAnimationFrame(() => this._measureLyricPositions());
+    }
+  }
+
+  adjustLyricsFontScale(delta) {
+    const next = Math.min(1.5, Math.max(0.75, Math.round(((this._lyricsFontScale || 1) + delta) * 100) / 100));
+    this._lyricsFontScale = next;
+    this.appEl?.style.setProperty('--lyrics-font-scale', String(next));
+    try { localStorage.setItem('ethio_lyrics_font_scale', String(next)); } catch (e) {}
+    requestAnimationFrame(() => this._measureLyricPositions());
+  }
+
+  applyLyricsTimestampsSetting(show, persist = true) {
+    if (this.appEl) {
+      this.appEl.classList.toggle('lyrics-show-timestamps', !!show);
+    }
+    if (this.btnLyricsToggleTimestamps) {
+      this.btnLyricsToggleTimestamps.classList.toggle('active', !!show);
+    }
+    if (persist) {
+      try { localStorage.setItem('ethio_lyrics_show_ts', show ? '1' : '0'); } catch (e) {}
+    }
+  }
+
+  async copyCurrentLyrics() {
+    if (!this.parsedLyrics || this.parsedLyrics.length === 0) {
+      this.showToast('No lyrics available to copy.');
+      return;
+    }
+    const header = this.currentTrack
+      ? `${this.currentTrack.title || 'Untitled'} — ${this.currentTrack.artist || 'Unknown Artist'}\n\n`
+      : '';
+    const body = this.parsedLyrics.map(l => l.text).filter(Boolean).join('\n');
+    try {
+      await navigator.clipboard.writeText(header + body);
+      this.showToast('Lyrics copied to clipboard!');
+    } catch (e) {
+      this.showToast('Could not access clipboard.');
     }
   }
 

@@ -941,6 +941,21 @@
           </div>
         </div>
 
+        <!-- Creative Lyrics View Toolbar -->
+        <div id="lyricsViewToolbar" class="lyrics-view-toolbar">
+          <div class="lyrics-mode-group" role="group" aria-label="Lyrics View Mode">
+            <button type="button" class="lyrics-mode-btn active" id="btnLyricsModeSynced" data-lyrics-mode="synced" title="Classic Synced Stage">Synced</button>
+            <button type="button" class="lyrics-mode-btn" id="btnLyricsModeFocus" data-lyrics-mode="focus" title="Distraction-free Focus Spotlight">Focus</button>
+            <button type="button" class="lyrics-mode-btn" id="btnLyricsModeSheet" data-lyrics-mode="sheet" title="Full Readable Lyric Sheet">Full Sheet</button>
+          </div>
+          <div class="lyrics-tools-group">
+            <button type="button" class="lyrics-tool-btn" id="btnLyricsFontDec" title="Decrease Lyrics Text Size">A-</button>
+            <button type="button" class="lyrics-tool-btn" id="btnLyricsFontInc" title="Increase Lyrics Text Size">A+</button>
+            <button type="button" class="lyrics-tool-btn" id="btnLyricsToggleTimestamps" title="Show/Hide Timestamps">00:00</button>
+            <button type="button" class="lyrics-tool-btn" id="btnCopyAllLyrics" title="Copy All Lyrics">Copy</button>
+          </div>
+        </div>
+
         <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
         <div class="stage-split">
           <!-- Lyrics Viewport -->
@@ -1105,6 +1120,16 @@
                 <span id="themeDescText">Living fluid ambient mesh dynamically extracted from song artwork with floating
                   particles.</span>
               </div>
+              <div class="theme-toggle-row">
+                <div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Active Lyric Bullet Dot</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Show a glowing bullet indicator next to the active line across all themes</div>
+                </div>
+                <label class="elm-switch" title="Toggle lyric bullet indicator">
+                  <input type="checkbox" id="toggleLyricsBullet" checked>
+                  <span class="elm-switch-slider"></span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -1241,7 +1266,7 @@
                   <div style="font-size:0.78rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                  <span class="badge-status-active" id="appVersionBadge">v2.7.4</span>
+                  <span class="badge-status-active" id="appVersionBadge">v2.7.5</span>
                 </div>
               </div>
 
@@ -1249,7 +1274,7 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0;">
                 <div>
                   <div style="font-weight:600; font-size:0.9rem;">Service Worker Cache</div>
-                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v39 (Active)</div>
+                  <div style="font-size:0.78rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v40 (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
