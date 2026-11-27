@@ -152,8 +152,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.2';
-    this.cacheVersion = 'v37';
+    this.appVersion = 'v2.7.3';
+    this.cacheVersion = 'v38';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -425,21 +425,26 @@ class LyricsApp {
     this.btnClearHomeSearch = document.getElementById('btnClearHomeSearch');
     this.sectionJumpBackIn = document.getElementById('sectionJumpBackIn');
     this.gridJumpBackIn = document.getElementById('gridJumpBackIn');
+    this.btnViewMoreJumpBackIn = document.getElementById('btnViewMoreJumpBackIn');
     this.sectionRecommendations = document.getElementById('sectionRecommendations');
     this.gridSuggestions = document.getElementById('gridSuggestions');
     this.btnShuffleRecommended = document.getElementById('btnShuffleRecommended');
+    this.btnViewMoreSuggestions = document.getElementById('btnViewMoreSuggestions');
     this.sectionBecauseYouListened = document.getElementById('sectionBecauseYouListened');
     this.becauseTitleText = document.getElementById('becauseTitleText');
     this.becauseSubtitleText = document.getElementById('becauseSubtitleText');
     this.gridBecauseYouListened = document.getElementById('gridBecauseYouListened');
     this.btnPlayBecauseShelf = document.getElementById('btnPlayBecauseShelf');
+    this.btnViewMoreBecause = document.getElementById('btnViewMoreBecause');
     this.sectionLyricsShowcase = document.getElementById('sectionLyricsShowcase');
     this.gridLyricsShowcase = document.getElementById('gridLyricsShowcase');
     this.btnPlayLyricsShowcase = document.getElementById('btnPlayLyricsShowcase');
+    this.btnViewMoreLyricsShowcase = document.getElementById('btnViewMoreLyricsShowcase');
     this.sectionIconicArtists = document.getElementById('sectionIconicArtists');
     this.rowIconicArtists = document.getElementById('rowIconicArtists');
     this.sectionGlobalCatalog = document.getElementById('sectionGlobalCatalog');
     this.gridGlobalCatalog = document.getElementById('gridGlobalCatalog');
+    this.btnViewMoreGlobalCatalog = document.getElementById('btnViewMoreGlobalCatalog');
     this.selectCatalogSort = document.getElementById('selectCatalogSort');
     this.catalogCounterSubtitle = document.getElementById('catalogCounterSubtitle');
     this.catalogSortOption = 'newest';
@@ -1276,6 +1281,22 @@ class LyricsApp {
           await this.loadTrack(showcase[0], true);
           this.showToast('Playing Synced Lyrics Showcase 📜');
         }
+      });
+    }
+
+    // Homepage Shelf "View All" / "Show Less" toggles
+    const shelfToggles = [
+      [this.btnViewMoreJumpBackIn, this.gridJumpBackIn],
+      [this.btnViewMoreGlobalCatalog, this.gridGlobalCatalog],
+      [this.btnViewMoreSuggestions, this.gridSuggestions],
+      [this.btnViewMoreBecause, this.gridBecauseYouListened],
+      [this.btnViewMoreLyricsShowcase, this.gridLyricsShowcase]
+    ];
+    for (const [btn, grid] of shelfToggles) {
+      if (!btn || !grid) continue;
+      btn.addEventListener('click', () => {
+        const expanded = grid.classList.toggle('is-expanded');
+        btn.textContent = expanded ? 'Show Less' : 'View All';
       });
     }
 

@@ -7145,3 +7145,68 @@ elm-logo {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Homepage 1-Line Horizontal Shelf Mode + View All Expansion
+   ========================================================================== */
+.home-music-grid:not(.is-expanded),
+.jump-back-in-grid:not(.is-expanded) {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 0.9rem;
+  padding-bottom: 0.45rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.home-music-grid:not(.is-expanded)::-webkit-scrollbar,
+.jump-back-in-grid:not(.is-expanded)::-webkit-scrollbar {
+  height: 5px;
+}
+
+.home-music-grid:not(.is-expanded)::-webkit-scrollbar-thumb,
+.jump-back-in-grid:not(.is-expanded)::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+}
+
+.home-music-grid:not(.is-expanded) .music-card {
+  flex: 0 0 175px;
+  scroll-snap-align: start;
+}
+
+.jump-back-in-grid:not(.is-expanded) .jump-card {
+  flex: 0 0 250px;
+  scroll-snap-align: start;
+}
+
+.btn-view-more {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .home-music-grid:not(.is-expanded) .music-card {
+    flex: 0 0 150px;
+  }
+
+  .jump-back-in-grid:not(.is-expanded) .jump-card {
+    flex: 0 0 230px;
+  }
+
+  .home-music-grid.is-expanded {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .jump-back-in-grid.is-expanded {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
