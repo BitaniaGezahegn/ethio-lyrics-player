@@ -152,8 +152,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.1';
-    this.cacheVersion = 'v36';
+    this.appVersion = 'v2.7.2';
+    this.cacheVersion = 'v37';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
