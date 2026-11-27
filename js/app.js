@@ -159,8 +159,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.9.0';
-    this.cacheVersion = 'v47';
+    this.appVersion = 'v2.9.1';
+    this.cacheVersion = 'v48';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -508,13 +508,6 @@ class LyricsApp {
     this.vinylDisc = document.getElementById('vinylDisc');
     this.kineticSleeveArt = document.getElementById('kineticSleeveArt');
     this.stageMobileCoverImg = document.getElementById('stageMobileCoverImg');
-    this.lyricsStageQuickBar = document.getElementById('lyricsStageQuickBar');
-    this.btnStageModeToggle = document.getElementById('btnStageModeToggle');
-    this.stageModeLabel = document.getElementById('stageModeLabel');
-    this.btnStageFontCycle = document.getElementById('btnStageFontCycle');
-    this.btnStageShareLyric = document.getElementById('btnStageShareLyric');
-    this.btnStageLrcStudio = document.getElementById('btnStageLrcStudio');
-    this.btnStageTrackMore = document.getElementById('btnStageTrackMore');
     this.btnLyricsResumeSync = document.getElementById('btnLyricsResumeSync');
     this.lyricsInstrumentalCue = document.getElementById('lyricsInstrumentalCue');
     this.lyricsCueLabel = document.getElementById('lyricsCueLabel');
@@ -1270,7 +1263,7 @@ class LyricsApp {
               }
             }
           }
-          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.0'})!`);
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.1'})!`);
         } catch (err) {
           console.warn('Update check failed:', err);
           this.showToast('Unable to check for updates right now.');
@@ -1462,49 +1455,7 @@ class LyricsApp {
       });
     }
 
-    // Lyrics Stage Floating Quick-Bar & Manual Browse Controls
-    if (this.btnStageModeToggle) {
-      this.btnStageModeToggle.addEventListener('click', () => {
-        const nextMode = this.appEl?.classList.contains('lyrics-mode-sheet') ? 'synced' : 'sheet';
-        this.setLyricsViewMode(nextMode, true);
-      });
-    }
-    if (this.btnStageFontCycle) {
-      const order = ['compact', 'standard', 'large', 'xlarge'];
-      this.btnStageFontCycle.addEventListener('click', () => {
-        const current = order.find((k) => this.appEl?.classList.contains(`lyrics-size-${k}`)) || 'standard';
-        const next = order[(order.indexOf(current) + 1) % order.length];
-        this.setLyricsFontSize(next, true);
-        this.showToast(`Lyrics size: ${next}`, 1400);
-      });
-    }
-    if (this.btnStageShareLyric) {
-      this.btnStageShareLyric.addEventListener('click', () => {
-        if (!this.currentTrack) {
-          this.showToast('Load a song first to create a lyric card');
-          return;
-        }
-        LyricShareCard.open({
-          track: this.currentTrack,
-          parsedLyrics: this.parsedLyrics,
-          initialIndex: this.activeLyricIndex,
-          palette: this._currentPalette || PaletteExtractor.getDefaultPalette(),
-          onToast: (msg) => this.showToast(msg)
-        });
-      });
-    }
-    if (this.btnStageLrcStudio) {
-      this.btnStageLrcStudio.addEventListener('click', () => {
-        this.lrcEditor.open(this.currentTrack ? (this.currentTrack.lrc || '') : '');
-      });
-    }
-    if (this.btnStageTrackMore) {
-      this.btnStageTrackMore.addEventListener('click', (e) => {
-        if (this.currentTrack) {
-          this.openTrackMenu(this.currentTrack, this.btnStageTrackMore, e);
-        }
-      });
-    }
+    // Lyrics Stage Manual Browse & Instrumental Cue Controls
     if (this.btnLyricsResumeSync) {
       this.btnLyricsResumeSync.addEventListener('click', () => {
         this._resumeLyricsAutoSync();
@@ -2182,6 +2133,9 @@ class LyricsApp {
       }
 
       if (isEditing) return;
+
+      // Never intercept browser native shortcuts or commands with modifiers (Ctrl+R, Ctrl+Shift+R, Ctrl+S, Ctrl+P, Alt+..., etc.)
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (e.key === '?') {
         e.preventDefault();
@@ -6048,9 +6002,6 @@ class LyricsApp {
     }
     if (this.selectLyricsViewMode && this.selectLyricsViewMode.value !== valid) {
       this.selectLyricsViewMode.value = valid;
-    }
-    if (this.stageModeLabel) {
-      this.stageModeLabel.textContent = valid === 'sheet' ? 'Sheet' : 'Synced';
     }
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}

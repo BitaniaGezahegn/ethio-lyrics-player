@@ -1016,28 +1016,6 @@
           </div>
         </div>
 
-        <!-- Floating Stage Quick-Bar (Hidden in Fullscreen) -->
-        <div id="lyricsStageQuickBar" class="lyrics-stage-quickbar" aria-label="Lyrics controls">
-          <button id="btnStageModeToggle" class="stage-quick-btn" type="button" title="Toggle Synced / Full Sheet View">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            <span id="stageModeLabel">Synced</span>
-          </button>
-          <button id="btnStageFontCycle" class="stage-quick-btn" type="button" title="Cycle Lyrics Font Size">
-            <span style="font-weight:700;">Aa</span>
-          </button>
-          <button id="btnStageShareLyric" class="stage-quick-btn" type="button" title="Create Shareable Lyric Card">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-            <span>Share</span>
-          </button>
-          <button id="btnStageLrcStudio" class="stage-quick-btn" type="button" title="Open Sync Studio">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Studio</span>
-          </button>
-          <button id="btnStageTrackMore" class="stage-quick-btn stage-quick-icon" type="button" title="More track actions" aria-label="More track actions">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
-          </button>
-        </div>
-
         <!-- Main Split: Lyrics (Left) & Vinyl Record (Right) -->
         <div class="stage-split">
           <!-- Lyrics Viewport -->
@@ -1047,12 +1025,13 @@
               <span id="lyricsCueLabel" class="cue-label">Instrumental</span>
             </div>
             <div class="lyrics-scroll-wrap" id="lyricsScrollWrap"></div>
-            <button id="btnLyricsResumeSync" class="btn-lyrics-resume-sync" style="display:none;" type="button">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>
-              <span>Sync to Active Line</span>
-            </button>
             <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
           </div>
+
+          <button id="btnLyricsResumeSync" class="btn-lyrics-resume-sync" style="display:none;" type="button" aria-label="Resume auto sync">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>
+            <span>Sync to Active Line</span>
+          </button>
 
           <!-- Circular Vinyl Disc / Album Badge -->
           <div class="visualizer-container">
@@ -1375,7 +1354,7 @@
                   <div style="font-weight:600; font-size:0.86rem;">App Version</div>
                   <div style="font-size:0.75rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
-                <span class="badge-status-active" id="appVersionBadge">v2.9.0</span>
+                <span class="badge-status-active" id="appVersionBadge">v2.9.1</span>
               </div>
 
               <div

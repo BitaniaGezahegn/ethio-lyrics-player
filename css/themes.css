@@ -139,10 +139,10 @@
 }
 
 #app.theme-artwork-ambient .lyric-line.distant {
-  opacity: 0 !important;
-  transform: scale(0.9) translate3d(0, 0, 0);
-  pointer-events: none !important;
-  visibility: hidden !important;
+  opacity: 0.32;
+  transform: scale(0.96) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 /* Vinyl visualizer with ambient glow matching artwork */
@@ -246,10 +246,10 @@
 /* Universal bullet rule above handles active::before */
 
 #app.theme-ethio-classic .lyric-line.distant {
-  opacity: 0 !important;
-  transform: scale(0.9) translate3d(0, 0, 0);
-  pointer-events: none !important;
-  visibility: hidden !important;
+  opacity: 0.32;
+  transform: scale(0.96) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 #app.theme-ethio-classic .disc-wrapper {
@@ -331,9 +331,9 @@
 }
 
 #app.theme-apple-kinetic .lyric-line.distant {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 0.32;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 #app.theme-apple-kinetic .disc-wrapper {
@@ -487,9 +487,9 @@
 }
 
 #app.theme-cinema-horizon .lyric-line.distant {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
+  opacity: 0.32;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 #app.theme-cinema-horizon .visualizer-container {
@@ -602,10 +602,10 @@
 }
 
 #app.theme-karaoke-neon .lyric-line.distant {
-  opacity: 0 !important;
-  transform: scale(0.9) translate3d(0, 0, 0);
-  pointer-events: none !important;
-  visibility: hidden !important;
+  opacity: 0.32;
+  transform: scale(0.96) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible;
 }
 
 #app.theme-karaoke-neon .disc-wrapper {
@@ -772,4 +772,37 @@
   display: block !important;
   color: var(--color-gold, #e5b95a) !important;
   transform: none !important;
+}
+
+/* ==========================================================================
+   Manual Scroll-Browse in Synced Mode: All lines must be clearly visible & clickable
+   ========================================================================== */
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.distant,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.past,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.prev,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.next,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.near,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.upcoming,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.distant,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.past,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.prev,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.next,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.near,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.upcoming {
+  opacity: 0.74 !important;
+  visibility: visible !important;
+  filter: none !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  display: flex !important;
+}
+
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.active,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  pointer-events: auto !important;
 }

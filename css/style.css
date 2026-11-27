@@ -394,12 +394,12 @@ html, body {
   visibility: visible !important;
 }
 
-/* Out of view / distant lines: fully invisible, skipped by browser compositor */
+/* Distant lines: softly visible for continuous song context, active line retains spotlight */
 .lyric-line.distant {
-  opacity: 0 !important;
-  transform: scale(0.9) translate3d(0, 0, 0);
-  pointer-events: none !important;
-  visibility: hidden !important;
+  opacity: 0.32;
+  transform: scale(0.96) translate3d(0, 0, 0);
+  pointer-events: auto;
+  visibility: visible !important;
 }
 
 .lyric-line:hover:not(.distant) {
@@ -7470,6 +7470,25 @@ elm-logo {
   display: block !important;
   mask-image: none !important;
   -webkit-mask-image: none !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 185, 90, 0.4) transparent;
+}
+
+#app.lyrics-mode-sheet .lyrics-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#app.lyrics-mode-sheet .lyrics-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#app.lyrics-mode-sheet .lyrics-container::-webkit-scrollbar-thumb {
+  background: rgba(229, 185, 90, 0.35);
+  border-radius: 999px;
+}
+
+#app.lyrics-mode-sheet .lyrics-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(229, 185, 90, 0.65);
 }
 
 #app.lyrics-mode-sheet .lyrics-scroll-wrap {
@@ -8172,45 +8191,9 @@ elm-logo {
   }
 }
 
-.lyrics-stage-quickbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  padding: 0.15rem 1rem 0.45rem;
-  z-index: 12;
-}
-
-#app.is-fullscreen .lyrics-stage-quickbar,
-:fullscreen .lyrics-stage-quickbar {
-  display: none !important;
-}
-
+.lyrics-stage-quickbar,
 .stage-quick-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.34rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(18, 12, 20, 0.62);
-  color: rgba(241, 245, 249, 0.9);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease;
-}
-
-.stage-quick-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
-}
-
-.stage-quick-icon {
-  padding: 0.34rem 0.5rem;
+  display: none !important;
 }
 
 /* Instrumental Intro / Interlude Cue */
@@ -8261,37 +8244,60 @@ elm-logo {
   50% { transform: scale(1.25); opacity: 1; }
 }
 
-/* Manual Scroll-Browse Override + Resume Sync Pill */
-.lyrics-scroll-wrap.is-manual-browse .lyric-line,
-.lyrics-scroll-wrap.is-manual-browse .lyric-line.distant {
-  opacity: 0.62 !important;
+/* Manual Scroll-Browse Override + Pinned Resume Sync Pill */
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.distant,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.past,
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.upcoming,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.distant,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.past,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.prev,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.next,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.near,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.upcoming {
+  opacity: 0.72 !important;
   visibility: visible !important;
   filter: none !important;
+  transform: none !important;
   pointer-events: auto !important;
 }
 
-.lyrics-scroll-wrap.is-manual-browse .lyric-line.active {
+#app .lyrics-scroll-wrap.is-manual-browse .lyric-line.active,
+#app[class*="theme-"] .lyrics-scroll-wrap.is-manual-browse .lyric-line.active {
   opacity: 1 !important;
+  visibility: visible !important;
+  color: #ffffff !important;
+  pointer-events: auto !important;
 }
 
 .btn-lyrics-resume-sync {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 15;
+  position: fixed !important;
+  bottom: calc(var(--dock-height, 76px) + 20px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 300 !important;
   display: inline-flex;
   align-items: center;
-  gap: 0.42rem;
-  padding: 0.45rem 0.95rem;
+  gap: 0.45rem;
+  padding: 0.5rem 1.15rem;
   border-radius: 999px;
-  border: 1px solid rgba(229, 185, 90, 0.5);
-  background: rgba(18, 12, 22, 0.9);
+  border: 1px solid rgba(229, 185, 90, 0.6);
+  background: rgba(18, 12, 22, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   color: #fde68a;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 16px rgba(229, 185, 90, 0.25);
   cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.btn-lyrics-resume-sync:hover {
+  transform: translateX(-50%) scale(1.04) !important;
+  background: rgba(28, 18, 36, 0.98);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.75), 0 0 22px rgba(229, 185, 90, 0.35);
 }
 
 /* Shareable Lyric Card Modal */
