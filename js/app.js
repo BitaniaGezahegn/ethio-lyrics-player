@@ -153,8 +153,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.8';
-    this.cacheVersion = 'v43';
+    this.appVersion = 'v2.7.9';
+    this.cacheVersion = 'v44';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -3464,15 +3464,8 @@ class LyricsApp {
   _syncScrubberThumbPosition(ratio = null) {
     if (!this.scrubberThumb) return;
     const r = ratio !== null ? ratio : Math.max(0, Math.min(1, (this._lastTimelinePct >= 0 ? this._lastTimelinePct : 0)));
-    if (this._scrubberTrackWidth <= 0 && this.scrubberTrack) {
-      this._scrubberTrackWidth = this.scrubberTrack.offsetWidth || 0;
-    }
-    if (this._scrubberTrackWidth > 0) {
-      const px = r * this._scrubberTrackWidth;
-      this.scrubberThumb.style.transform = `translate3d(${px.toFixed(1)}px, -50%, 0)`;
-    } else {
-      this.scrubberThumb.style.left = `${(r * 100).toFixed(2)}%`;
-    }
+    this.scrubberThumb.style.left = `${(r * 100).toFixed(3)}%`;
+    this.scrubberThumb.style.transform = 'translate3d(0, -50%, 0)';
   }
 
   updateTimeline(currentTime, duration) {
