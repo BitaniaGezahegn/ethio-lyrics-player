@@ -7485,3 +7485,32 @@ elm-logo {
     display: none !important;
   }
 }
+
+/* Global Player Bar Dock Collapsed State (Desktop & Mobile) */
+.player-bar-dock.is-collapsed {
+  height: auto !important;
+  min-height: 54px !important;
+  padding: 0.45rem 0.9rem !important;
+  border-radius: 9999px !important;
+  gap: 0.75rem !important;
+  width: min(520px, 94vw) !important;
+  margin: 0 auto !important;
+}
+
+.player-bar-dock.is-collapsed .buttons-row,
+.player-bar-dock.is-collapsed .timeline-container,
+.player-bar-dock.is-collapsed .player-controls-right .btn-sleep-timer,
+.player-bar-dock.is-collapsed .player-controls-right .btn-queue-toggle,
+.player-bar-dock.is-collapsed .player-controls-right #btnSpeed,
+.player-bar-dock.is-collapsed .player-controls-right .volume-container {
+  display: none !important;
+}
+
+.player-bar-dock.is-collapsed .btn-dock-mini-play,
+.player-bar-dock.is-collapsed .btn-dock-collapse {
+  display: inline-flex !important;
+}
+
+.player-bar-dock.is-collapsed .dock-collapse-icon {
+  transform: rotate(180deg);
+}

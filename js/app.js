@@ -153,8 +153,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.7.7';
-    this.cacheVersion = 'v42';
+    this.appVersion = 'v2.7.8';
+    this.cacheVersion = 'v43';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -932,14 +932,18 @@ class LyricsApp {
     } else if (tabId === 'lyrics') {
       if (this.playerBarDock) {
         this.playerBarDock.classList.remove('is-collapsed');
+        this.resetPlayerAutoCollapseTimer();
       }
       requestAnimationFrame(() => {
         if (this.lyricsViewport) {
+          if (!this.appEl?.classList.contains('lyrics-mode-sheet')) {
+            this.lyricsViewport.scrollTop = 0;
+          }
           const h = this.lyricsViewport.offsetHeight;
           if (h > 0) this._lyricsViewportHeight = h;
         }
         this._measureLyricPositions();
-        this.syncLyrics(this.player.currentTime);
+        this.syncLyrics(this.player.currentTime, true);
       });
     } else if (tabId === 'settings') {
       this.renderSettingsView();
@@ -3362,11 +3366,11 @@ class LyricsApp {
     this._lyricPositions = positions;
   }
 
-  syncLyrics(currentTime) {
+  syncLyrics(currentTime, force = false) {
     if (!this.parsedLyrics || this.parsedLyrics.length === 0 || !this.lyricsScrollWrap) return;
 
     const newIndex = LyricsParser.getActiveIndex(this.parsedLyrics, currentTime);
-    if (newIndex === this.activeLyricIndex && this.activeLyricIndex !== -1) return;
+    if (!force && newIndex === this.activeLyricIndex && this.activeLyricIndex !== -1) return;
 
     const oldIndex = this.activeLyricIndex;
     this.activeLyricIndex = newIndex;
@@ -3411,9 +3415,6 @@ class LyricsApp {
       if (!this.lyricsViewport) return;
       if (this.appEl && this.appEl.classList.contains('lyrics-mode-sheet')) {
         this.lyricsScrollWrap.style.transform = 'none';
-        if (newIndex >= 0 && lines[newIndex]) {
-          lines[newIndex].scrollIntoView({ block: 'nearest', behavior: this.isPerfLite ? 'auto' : 'smooth' });
-        }
         return;
       }
       if (!this._lyricPositions || this._lyricPositions.length !== lines.length) {
@@ -5284,8 +5285,10 @@ class LyricsApp {
     if (!this.appEl) return;
     this.appEl.classList.toggle('lyrics-bullet-on', !!enabled);
     this.appEl.classList.toggle('lyrics-bullet-off', !enabled);
+    if (this.toggleLyricsBullet) this.toggleLyricsBullet.checked = !!enabled;
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_bullet_enabled', enabled ? '1' : '0'); } catch (e) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
     }
   }
 
@@ -5300,11 +5303,16 @@ class LyricsApp {
     }
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
     }
     if (valid === 'sheet') {
       if (this.lyricsScrollWrap) this.lyricsScrollWrap.style.transform = 'none';
     } else {
-      requestAnimationFrame(() => this._measureLyricPositions());
+      if (this.lyricsViewport) this.lyricsViewport.scrollTop = 0;
+      requestAnimationFrame(() => {
+        this._measureLyricPositions();
+        this.syncLyrics(this.player ? this.player.currentTime : 0, true);
+      });
     }
   }
 
@@ -5319,8 +5327,14 @@ class LyricsApp {
     }
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_font_size', valid); } catch (e) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
     }
-    requestAnimationFrame(() => this._measureLyricPositions());
+    requestAnimationFrame(() => {
+      this._measureLyricPositions();
+      if (!this.appEl?.classList.contains('lyrics-mode-sheet')) {
+        this.syncLyrics(this.player ? this.player.currentTime : 0, true);
+      }
+    });
   }
 
   applyLyricsTimestampsSetting(show, persist = true) {
@@ -5332,6 +5346,7 @@ class LyricsApp {
     }
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_show_ts', show ? '1' : '0'); } catch (e) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
     }
   }
 
@@ -5346,25 +5361,35 @@ class LyricsApp {
     if (this.toggleAutoCollapsePlayer) {
       this.toggleAutoCollapsePlayer.checked = enabled;
       this.toggleAutoCollapsePlayer.addEventListener('change', (e) => {
-        this._autoCollapseEnabled = !!e.target.checked;
-        try { localStorage.setItem('ethio_player_auto_collapse', this._autoCollapseEnabled ? '1' : '0'); } catch (err) {}
-        if (!this._autoCollapseEnabled && this._autoCollapseTimer) {
-          clearTimeout(this._autoCollapseTimer);
-          this._autoCollapseTimer = null;
-        } else if (this._autoCollapseEnabled) {
-          this.resetPlayerAutoCollapseTimer();
-        }
+        this.applyPlayerAutoCollapseSetting(!!e.target.checked, true);
       });
     }
 
     if (this.playerBarDock) {
-      const resetEvents = ['pointerdown', 'touchstart', 'input', 'click', 'keydown'];
+      const resetEvents = ['pointerdown', 'touchstart', 'input', 'click', 'keydown', 'mouseenter', 'mousemove'];
       resetEvents.forEach(evtName => {
         this.playerBarDock.addEventListener(evtName, () => this.resetPlayerAutoCollapseTimer(), { passive: true });
       });
     }
 
     this.resetPlayerAutoCollapseTimer();
+  }
+
+  applyPlayerAutoCollapseSetting(enabled, persist = true) {
+    this._autoCollapseEnabled = !!enabled;
+    if (this.toggleAutoCollapsePlayer) {
+      this.toggleAutoCollapsePlayer.checked = this._autoCollapseEnabled;
+    }
+    if (persist) {
+      try { localStorage.setItem('ethio_player_auto_collapse', this._autoCollapseEnabled ? '1' : '0'); } catch (err) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
+    }
+    if (!this._autoCollapseEnabled && this._autoCollapseTimer) {
+      clearTimeout(this._autoCollapseTimer);
+      this._autoCollapseTimer = null;
+    } else if (this._autoCollapseEnabled) {
+      this.resetPlayerAutoCollapseTimer();
+    }
   }
 
   resetPlayerAutoCollapseTimer() {
@@ -5625,6 +5650,9 @@ class LyricsApp {
           if (badgeLabel && tObj) badgeLabel.textContent = tObj.name;
         }
 
+        // Sync Lyrics & Player Display preferences
+        this.applyRemoteDisplayPrefs(remoteData);
+
         // Push combined state back to cloud so both sides are completely reconciled
         await this.pushCloudSync(false);
       } else {
@@ -5691,6 +5719,8 @@ class LyricsApp {
           if (badgeLabel && tObj) badgeLabel.textContent = tObj.name;
         }
 
+        this.applyRemoteDisplayPrefs(remote);
+
         if (this.lastSyncedTimeLabel) {
           this.lastSyncedTimeLabel.textContent = `Last synced: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         }
@@ -5710,6 +5740,30 @@ class LyricsApp {
     }
   }
 
+  applyRemoteDisplayPrefs(remote) {
+    if (!remote || typeof remote !== 'object') return;
+    if (typeof remote.lyricsBullet === 'boolean') {
+      this.applyLyricsBulletSetting(remote.lyricsBullet, false);
+      try { localStorage.setItem('ethio_lyrics_bullet_enabled', remote.lyricsBullet ? '1' : '0'); } catch (e) {}
+    }
+    if (remote.lyricsViewMode === 'synced' || remote.lyricsViewMode === 'sheet') {
+      this.setLyricsViewMode(remote.lyricsViewMode, false);
+      try { localStorage.setItem('ethio_lyrics_view_mode', remote.lyricsViewMode); } catch (e) {}
+    }
+    if (['compact', 'standard', 'large', 'xlarge'].includes(remote.lyricsFontSize)) {
+      this.setLyricsFontSize(remote.lyricsFontSize, false);
+      try { localStorage.setItem('ethio_lyrics_font_size', remote.lyricsFontSize); } catch (e) {}
+    }
+    if (typeof remote.lyricsShowTs === 'boolean') {
+      this.applyLyricsTimestampsSetting(remote.lyricsShowTs, false);
+      try { localStorage.setItem('ethio_lyrics_show_ts', remote.lyricsShowTs ? '1' : '0'); } catch (e) {}
+    }
+    if (typeof remote.playerAutoCollapse === 'boolean') {
+      this.applyPlayerAutoCollapseSetting(remote.playerAutoCollapse, false);
+      try { localStorage.setItem('ethio_player_auto_collapse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) {}
+    }
+  }
+
   async pushCloudSync(updateBadge = true) {
     if (!this.currentUser) return;
     try {
@@ -5720,6 +5774,11 @@ class LyricsApp {
         playlists: Storage.getPlaylists(),
         preferredTheme: this.themeManager.currentTheme,
         lastActiveTrackId: this.currentTrack ? this.currentTrack.id : null,
+        lyricsBullet: this.appEl ? this.appEl.classList.contains('lyrics-bullet-on') : true,
+        lyricsViewMode: this.appEl?.classList.contains('lyrics-mode-sheet') ? 'sheet' : 'synced',
+        lyricsFontSize: (this.selectLyricsFontSize && this.selectLyricsFontSize.value) || 'standard',
+        lyricsShowTs: !!(this.appEl && this.appEl.classList.contains('lyrics-show-timestamps')),
+        playerAutoCollapse: !!this._autoCollapseEnabled
       };
 
       await FirebaseService.saveUserSync(this.currentUser.uid, syncData);
