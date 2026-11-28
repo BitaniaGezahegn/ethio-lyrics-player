@@ -8,6 +8,7 @@ desktop.ini
 .idea/
 *.sublime-project
 *.sublime-workspace
+screenshots/
 
 # Logs & temp
 *.log

@@ -8927,6 +8927,51 @@ elm-logo {
   overscroll-behavior-x: contain;
 }
 
+/* Subtle, Premium Micro-Animations */
+@keyframes elmTabEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes elmCueEnter {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px) scale(0.95); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+#app:not(.perf-lite) .tab-view.active {
+  animation: elmTabEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#app:not(.perf-lite) .lyrics-instrumental-cue {
+  animation: elmCueEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.elm-switch-slider::before {
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.music-card:active,
+.jump-card:active,
+.artist-circle-card:active {
+  transform: scale(0.985) !important;
+}
+
+.scrubber-thumb {
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scrubber-track:hover .scrubber-thumb,
+.scrubber-track.is-scrubbing .scrubber-thumb {
+  transform: translate3d(0, -50%, 0) scale(1.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app .tab-view.active,
+  #app .lyrics-instrumental-cue {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 520px) {
   .home-search-filter-container {
     gap: 0.5rem;

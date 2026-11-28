@@ -535,6 +535,7 @@ class LyricsApp {
     this.selectLyricsViewMode = document.getElementById('selectLyricsViewMode');
     this.selectLyricsFontSize = document.getElementById('selectLyricsFontSize');
     this.toggleLyricsTimestamps = document.getElementById('toggleLyricsTimestamps');
+    this.togglePlayOnLyricClick = document.getElementById('togglePlayOnLyricClick');
     this.toggleAutoCollapsePlayer = document.getElementById('toggleAutoCollapsePlayer');
     this.noLyricsFileInput = document.getElementById('noLyricsFileInput');
 
@@ -3991,8 +3992,14 @@ class LyricsApp {
 
       lineEl.addEventListener('click', () => {
         this.player.seek(line.time);
-        if (!this.player.isPlaying) this.player.play();
-        if (this._manualScrollActive) this._resumeLyricsAutoSync();
+        if (this._playOnLyricClick !== false && !this.player.isPlaying) {
+          this.player.play();
+        }
+        if (this._manualScrollActive) {
+          this._resumeLyricsAutoSync();
+        } else {
+          this.syncLyrics(line.time, true);
+        }
       });
 
       frag.appendChild(lineEl);
@@ -6061,8 +6068,33 @@ class LyricsApp {
       });
     }
 
+    // 4b. Play on Lyric Tap Toggle (default: ON)
+    let playOnClick = true;
+    try {
+      const savedPlay = localStorage.getItem('ethio_lyrics_play_on_click');
+      if (savedPlay !== null) playOnClick = savedPlay === '1';
+    } catch (e) {}
+    this.applyPlayOnLyricClickSetting(playOnClick, false);
+    if (this.togglePlayOnLyricClick) {
+      this.togglePlayOnLyricClick.checked = playOnClick;
+      this.togglePlayOnLyricClick.addEventListener('change', (e) => {
+        this.applyPlayOnLyricClickSetting(!!e.target.checked, true);
+      });
+    }
+
     // 5. Auto-Collapse Media Controller
     this.initPlayerAutoCollapse();
+  }
+
+  applyPlayOnLyricClickSetting(enabled, persist = true) {
+    this._playOnLyricClick = !!enabled;
+    if (this.togglePlayOnLyricClick) {
+      this.togglePlayOnLyricClick.checked = this._playOnLyricClick;
+    }
+    if (persist) {
+      try { localStorage.setItem('ethio_lyrics_play_on_click', this._playOnLyricClick ? '1' : '0'); } catch (e) {}
+      if (this.currentUser) this.pushCloudSyncDebounced();
+    }
   }
 
   applyLyricsBulletSetting(enabled, persist = true) {
@@ -6529,6 +6561,10 @@ class LyricsApp {
       this.applyLyricsTimestampsSetting(remote.lyricsShowTs, false);
       try { localStorage.setItem('ethio_lyrics_show_ts', remote.lyricsShowTs ? '1' : '0'); } catch (e) {}
     }
+    if (typeof remote.lyricsPlayOnClick === 'boolean') {
+      this.applyPlayOnLyricClickSetting(remote.lyricsPlayOnClick, false);
+      try { localStorage.setItem('ethio_lyrics_play_on_click', remote.lyricsPlayOnClick ? '1' : '0'); } catch (e) {}
+    }
     if (typeof remote.playerAutoCollapse === 'boolean') {
       this.applyPlayerAutoCollapseSetting(remote.playerAutoCollapse, false);
       try { localStorage.setItem('ethio_player_mini_browse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) {}
@@ -6549,6 +6585,7 @@ class LyricsApp {
         lyricsViewMode: this.appEl?.classList.contains('lyrics-mode-sheet') ? 'sheet' : 'synced',
         lyricsFontSize: (this.selectLyricsFontSize && this.selectLyricsFontSize.value) || 'standard',
         lyricsShowTs: !!(this.appEl && this.appEl.classList.contains('lyrics-show-timestamps')),
+        lyricsPlayOnClick: this._playOnLyricClick !== false,
         playerAutoCollapse: !!this._autoCollapseEnabled
       };
 
