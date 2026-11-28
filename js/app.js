@@ -161,8 +161,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.9.2';
-    this.cacheVersion = 'v49';
+    this.appVersion = 'v2.9.3';
+    this.cacheVersion = 'v50';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -1283,7 +1283,7 @@ class LyricsApp {
               }
             }
           }
-          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.2'})!`);
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.3'})!`);
         } catch (err) {
           console.warn('Update check failed:', err);
           this.showToast('Unable to check for updates right now.');

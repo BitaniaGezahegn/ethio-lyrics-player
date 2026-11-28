@@ -1,6 +1,6 @@
 {
   "name": "ethio-lyrics-player",
-  "version": "2.9.2",
+  "version": "2.9.3",
   "description": "Modern Ethiopian and multilingual lyrics player with real-time local and cloud listen-together synchronization.",
   "main": "local-sync-server.js",
   "scripts": {
