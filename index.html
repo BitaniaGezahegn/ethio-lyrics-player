@@ -199,31 +199,21 @@
            TAB 1: HOME (Redesigned Music Discovery & Recommendation Hub)
            ==================================================================== -->
       <section id="tabViewHome" class="tab-view active">
-        <!-- 0. Compact Greeting & Library Pulse Strip -->
-        <div class="home-greeting-banner home-greeting-compact">
-          <div class="greeting-left">
-            <div class="greeting-period-badge" id="greetingMoodBadge">
-              <span class="live-dot-pulse"></span>
-              <span id="greetingMoodText">Your Library</span>
-            </div>
-            <h2 class="greeting-heading" id="greetingHeadingText">Listening Overview <span class="greeting-amharic-sub" id="greetingHeadingAmharic">የሙዚቃ ስብስብ</span></h2>
-            <p class="greeting-subtext" id="greetingSubtext">Catalog songs, synchronized lyrics, and your saved favorites</p>
+        <!-- 0. Library Counter Strip (Songs, Synced LRC, Favorites) -->
+        <div class="greeting-dna-stats" id="greetingDnaStats">
+          <div class="dna-stat-item">
+            <span class="dna-stat-val" id="dnaStatTotal">0</span>
+            <span class="dna-stat-lbl">Songs</span>
           </div>
-          <div class="greeting-dna-stats" id="greetingDnaStats">
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatTotal">0</span>
-              <span class="dna-stat-lbl">Songs</span>
-            </div>
-            <div class="dna-stat-divider"></div>
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatLrc">0</span>
-              <span class="dna-stat-lbl">Synced LRC</span>
-            </div>
-            <div class="dna-stat-divider"></div>
-            <div class="dna-stat-item">
-              <span class="dna-stat-val" id="dnaStatFavs">0</span>
-              <span class="dna-stat-lbl">Favorites</span>
-            </div>
+          <div class="dna-stat-divider"></div>
+          <div class="dna-stat-item">
+            <span class="dna-stat-val" id="dnaStatLrc">0</span>
+            <span class="dna-stat-lbl">Synced LRC</span>
+          </div>
+          <div class="dna-stat-divider"></div>
+          <div class="dna-stat-item">
+            <span class="dna-stat-val" id="dnaStatFavs">0</span>
+            <span class="dna-stat-lbl">Favorites</span>
           </div>
         </div>
 

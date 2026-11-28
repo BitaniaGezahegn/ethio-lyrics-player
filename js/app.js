@@ -450,11 +450,6 @@ class LyricsApp {
     this.btnHeroFavorite = document.getElementById('btnHeroFavorite');
 
     // Home Discovery Grids, Shelves & Filters
-    this.greetingMoodBadge = document.getElementById('greetingMoodBadge');
-    this.greetingMoodText = document.getElementById('greetingMoodText');
-    this.greetingHeadingText = document.getElementById('greetingHeadingText');
-    this.greetingHeadingAmharic = document.getElementById('greetingHeadingAmharic');
-    this.greetingSubtext = document.getElementById('greetingSubtext');
     this.dnaStatTotal = document.getElementById('dnaStatTotal');
     this.dnaStatLrc = document.getElementById('dnaStatLrc');
     this.dnaStatFavs = document.getElementById('dnaStatFavs');
@@ -3198,19 +3193,6 @@ class LyricsApp {
   renderHomePage() {
     if (!this.homeExploreView) return;
     this._homeDirty = false;
-
-    // 1. Live Greeting & Listening DNA Stats
-    const userFirstName = this.currentUser && this.currentUser.displayName ? this.currentUser.displayName.split(' ')[0] : '';
-    const greetingData = RecommendationEngine.getGreetingData(userFirstName);
-    if (this.greetingMoodText) {
-      this.greetingMoodText.textContent = `${greetingData.moodTag} • ${greetingData.moodTagAm}`;
-    }
-    if (this.greetingHeadingText) {
-      this.greetingHeadingText.innerHTML = `${escapeHtml(greetingData.greetingEn)} <span class="greeting-amharic-sub" id="greetingHeadingAmharic">${escapeHtml(greetingData.greetingAm)}</span>`;
-    }
-    if (this.greetingSubtext) {
-      this.greetingSubtext.textContent = greetingData.moodSubtitle;
-    }
 
     const uniquePool = this._getUniqueTrackPool();
 
