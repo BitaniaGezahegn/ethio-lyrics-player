@@ -55,7 +55,8 @@ export function findMatchingLyricSnippet(track, normalizedQuery) {
 }
 
 /**
- * Score and match tracks across bilingual fields (title, titleEn, artist, artistEn, album, genre)
+ * Score and match Mezmurs across bilingual fields (title, titleEn, artist, artistEn, album,
+ * hymnCategory, liturgicalSeason, feastOrDedication, zemaMode, language, scriptureReference, churchDebir, tags)
  * as well as full-text LRC/plain lyrics lines.
  *
  * @param {Array<object>} tracks
@@ -92,8 +93,20 @@ export function searchCatalog(tracks, query, options = {}) {
     const artist = normalizeSearchText(track.artist);
     const artistEn = normalizeSearchText(track.artistEn);
     const album = normalizeSearchText(track.album);
-    const genre = normalizeSearchText(track.genre);
+    const genre = normalizeSearchText(track.hymnCategory || track.genre);
     const tags = Array.isArray(track.tags) ? normalizeSearchText(track.tags.join(' ')) : normalizeSearchText(track.tags);
+    const hymnMeta = normalizeSearchText([
+      track.liturgicalSeason,
+      track.feastOrDedication,
+      track.zemaMode,
+      track.vocalStyle,
+      track.language,
+      track.devotionalMood,
+      track.era,
+      track.composer,
+      track.scriptureReference,
+      track.churchDebir
+    ].filter(Boolean).join(' '));
 
     let score = 0;
     let matchType = '';
@@ -117,11 +130,11 @@ export function searchCatalog(tracks, query, options = {}) {
     } else if (album && album.includes(normalizedQuery)) {
       score = 56;
       matchType = 'album';
-    } else if ((genre && genre.includes(normalizedQuery)) || (tags && tags.includes(normalizedQuery))) {
+    } else if ((genre && genre.includes(normalizedQuery)) || (tags && tags.includes(normalizedQuery)) || (hymnMeta && hymnMeta.includes(normalizedQuery))) {
       score = 44;
       matchType = 'genre';
     } else if (terms.length > 1) {
-      const combined = `${title} ${titleEn} ${artist} ${artistEn} ${album} ${genre} ${tags}`;
+      const combined = `${title} ${titleEn} ${artist} ${artistEn} ${album} ${genre} ${hymnMeta} ${tags}`;
       if (terms.every((t) => combined.includes(t))) {
         score = 52;
         matchType = 'title';
@@ -141,10 +154,10 @@ export function searchCatalog(tracks, query, options = {}) {
     }
 
     if (artist.includes(normalizedQuery) || artistEn.includes(normalizedQuery)) {
-      const key = (track.artistEn || track.artist || 'Unknown Artist').trim().toLowerCase();
+      const key = (track.artistEn || track.artist || 'Unknown Zemari').trim().toLowerCase();
       if (!artistMap.has(key)) {
         artistMap.set(key, {
-          name: track.artist || track.artistEn || 'Unknown Artist',
+          name: track.artist || track.artistEn || 'Unknown Zemari',
           subtitle: track.artistEn && track.artistEn !== track.artist ? track.artistEn : '',
           count: 0,
           cover: track.cover || ''

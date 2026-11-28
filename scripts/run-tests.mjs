@@ -459,6 +459,75 @@ async function run() {
   assert.ok(EQ_PRESETS.flat && EQ_PRESETS.tizita && EQ_PRESETS.tizita.gains.length === 5);
   console.log('   OK');
 
+  console.log('14. Testing Mezmur metadata normalization, search & recommendation scoring...');
+  const rawMezmur = {
+    id: 'm1',
+    title: 'ይትባረክ እግዚአብሔር',
+    artist: 'ዘማሪ ይልማ ኃይሉ',
+    hymnCategory: 'Misgana (Praise & Thanksgiving)',
+    liturgicalSeason: 'Tinsae / Easter (ትንሣኤ)',
+    feastOrDedication: 'Medhane Alem',
+    zemaMode: "Ge'ez (ግዕዝ)",
+    vocalStyle: 'Solo Zemari (ነጠላ ዘማሪ)',
+    language: 'Amharic (አማርኛ)',
+    devotionalMood: 'Joyful & Festive (ደስታና ምስጋና)',
+    era: 'Classical / Traditional (ቀደምት)',
+    composer: 'Traditional',
+    scriptureReference: 'Psalm 118',
+    churchDebir: 'Kidist Silassie',
+    externalUrl: 'https://youtube.com/watch?v=example',
+    tags: 'praise, resurrection, morning'
+  };
+  const normMezmur = CatalogSchema.normalizeTrack(rawMezmur);
+  assert.equal(normMezmur.hymnCategory, 'Misgana (Praise & Thanksgiving)');
+  assert.equal(normMezmur.genre, 'Misgana (Praise & Thanksgiving)');
+  assert.equal(normMezmur.scriptureReference, 'Psalm 118');
+  assert.equal(normMezmur.churchDebir, 'Kidist Silassie');
+  assert.equal(normMezmur.externalUrl, 'https://youtube.com/watch?v=example');
+  assert.deepEqual(normMezmur.tags, ['praise', 'resurrection', 'morning']);
+  assert.equal(CatalogSchema.normalizeTrack({ ...rawMezmur, externalUrl: 'javascript:alert(1)' }).externalUrl, '');
+
+  const mezmurPool = [
+    normMezmur,
+    CatalogSchema.normalizeTrack({
+      id: 'm2',
+      title: 'እንደ ቸርነትህ',
+      artist: 'ዘማሪ ቴዎድሮስ ዮሴፍ',
+      hymnCategory: 'Nisiha (Repentance & Mercy)',
+      liturgicalSeason: 'Abiy Tsom / Great Lent (ዐቢይ ጾም)',
+      zemaMode: 'Begena / Traditional',
+      tags: ['mercy', 'lent']
+    }),
+    CatalogSchema.normalizeTrack({
+      id: 'm3',
+      title: 'ተነሣ ክርስቶስ',
+      artist: 'መዘምራን',
+      hymnCategory: 'Misgana (Praise & Thanksgiving)',
+      liturgicalSeason: 'Tinsae / Easter (ትንሣኤ)',
+      zemaMode: "Ge'ez (ግዕዝ)",
+      tags: ['resurrection']
+    })
+  ];
+  const debirSearch = searchCatalog(mezmurPool, 'Silassie');
+  assert.equal(debirSearch.results.length, 1);
+  assert.equal(debirSearch.results[0].track.id, 'm1');
+  const scriptureSearch = searchCatalog(mezmurPool, 'Psalm 118');
+  assert.equal(scriptureSearch.results.length, 1);
+  const seasonSearch = searchCatalog(mezmurPool, 'Abiy Tsom');
+  assert.equal(seasonSearch.results.length, 1);
+  assert.equal(seasonSearch.results[0].track.id, 'm2');
+
+  const mezmurRecs = RecommendationEngine.getPersonalizedRecommendations(mezmurPool, {
+    favorites: ['m1'],
+    recentlyPlayed: ['m1'],
+    currentTrack: normMezmur,
+    limit: 3
+  });
+  assert.equal(mezmurRecs.length, 3);
+  const related = RecommendationEngine.getBecauseYouListenedShelf(mezmurPool, { currentTrack: normMezmur });
+  assert.ok(related && related.tracks[0].id === 'm3');
+  console.log('   OK');
+
   console.log('\nALL TESTS PASSED!');
 }
 

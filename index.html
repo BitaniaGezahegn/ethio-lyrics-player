@@ -5,24 +5,24 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics</title>
+  <title>ELM | Ethio Lyrics Media — Synced Ethiopian Mezmur &amp; Lyrics</title>
   <meta name="description"
-    content="ELM (Ethio Lyrics Media) — Synchronized Ethiopian Music Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
+    content="ELM (Ethio Lyrics Media) — Synchronized Ethiopian Mezmur Lyrics Player featuring customizable themes, mobile-first design, and offline library.">
 
   <!-- Open Graph / TikTok / Social Previews -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ethio-lyrics-player.pages.dev/">
   <meta property="og:site_name" content="ELM - Ethio Lyrics Media">
-  <meta property="og:title" content="ELM | Ethio Lyrics Media — Synced Ethiopian Music &amp; Lyrics">
+  <meta property="og:title" content="ELM | Ethio Lyrics Media — Synced Ethiopian Mezmur &amp; Lyrics">
   <meta property="og:description"
-    content="Stream Ethiopian music with real-time synchronized Amharic lyrics, vibrant dynamic artwork themes, and listening parties.">
+    content="Stream Ethiopian Mezmurs with real-time synchronized Amharic and Ge'ez lyrics, dynamic artwork themes, and synchronized fellowship listening.">
   <meta property="og:image" content="https://ethio-lyrics-player.pages.dev/brand/icon-512x512.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ELM | Ethio Lyrics Media">
   <meta name="twitter:description"
-    content="Synchronized Ethiopian Music Lyrics with live listening rooms and dynamic ambient themes.">
+    content="Synchronized Ethiopian Mezmur Lyrics with live listening rooms and dynamic ambient themes.">
   <meta name="twitter:image" content="https://ethio-lyrics-player.pages.dev/brand/icon-512x512.png">
 
   <!-- PWA & Mobile Web Meta -->
@@ -132,7 +132,8 @@
 
       <!-- Top Right Actions -->
       <div class="top-actions">
-        <button id="btnOpenGlobalSearch" class="btn-pill btn-icon-only" title="Search Songs &amp; Lyrics (/ or Ctrl+K)" aria-label="Search Songs and Lyrics" type="button">
+        <button id="btnOpenGlobalSearch" class="btn-pill btn-icon-only"
+          title="Search Mezmurs &amp; Lyrics (/ or Ctrl+K)" aria-label="Search Mezmurs and Lyrics" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -196,14 +197,14 @@
       </div>
 
       <!-- ====================================================================
-           TAB 1: HOME (Redesigned Music Discovery & Recommendation Hub)
+           TAB 1: HOME (Decluttered Ethiopian Mezmur Discovery Hub)
            ==================================================================== -->
       <section id="tabViewHome" class="tab-view active">
-        <!-- 0. Library Counter Strip (Songs, Synced LRC, Favorites) -->
+        <!-- 0. Library Counter Strip (Mezmurs, Synced LRC, Favorites) -->
         <div class="greeting-dna-stats" id="greetingDnaStats">
           <div class="dna-stat-item">
             <span class="dna-stat-val" id="dnaStatTotal">0</span>
-            <span class="dna-stat-lbl">Songs</span>
+            <span class="dna-stat-lbl">Mezmurs</span>
           </div>
           <div class="dna-stat-divider"></div>
           <div class="dna-stat-item">
@@ -217,16 +218,20 @@
           </div>
         </div>
 
-        <!-- 1b. Instant Bilingual & Lyrics Search Results (Shown when searching) -->
+        <!-- 1. Instant Bilingual & Lyrics Search Results (Shown when searching) -->
         <div class="home-catalog-section" id="sectionHomeSearchResults" style="display:none;">
           <div class="home-section-header">
             <div class="section-title-wrap">
               <div class="section-icon-badge" style="background:rgba(229,185,90,0.16); color:var(--color-gold);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
               </div>
               <div>
                 <h2 class="home-section-title" id="homeSearchTitleText">Search Results</h2>
-                <div class="home-section-subtitle" id="homeSearchSubtitleText">Matched across titles, artists, albums &amp; lyrics</div>
+                <div class="home-section-subtitle" id="homeSearchSubtitleText">Matched across titles, Zemariyan,
+                  seasons, saints &amp; lyrics</div>
               </div>
             </div>
           </div>
@@ -234,207 +239,125 @@
           <div class="home-music-grid" id="gridHomeSearchResults"></div>
         </div>
 
-        <!-- 2. Section: Jump Back In (Chronological Recent Resume) -->
+        <!-- 2. Section: Continue Listening (Recent & Favorites Resume) -->
         <div class="home-catalog-section" id="sectionJumpBackIn" style="display:none;">
           <div class="home-section-header">
             <div class="section-title-wrap">
               <div class="section-icon-badge" style="background:rgba(229,185,90,0.15); color:var(--color-gold);">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
               </div>
               <div>
-                <h2 class="home-section-title">Jump Back In <span class="home-section-amharic">እንደገና ያድምጡ</span></h2>
-                <div class="home-section-subtitle">Quick resume your recent tracks and personal favorites</div>
+                <h2 class="home-section-title">Continue Listening <span class="home-section-amharic">እንደገና ያድምጡ</span>
+                </h2>
+                <div class="home-section-subtitle">Resume recent Mezmurs and your saved favorites</div>
               </div>
-            </div>
-            <div class="section-actions-right">
-              <button id="btnViewMoreJumpBackIn" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
             </div>
           </div>
           <div class="jump-back-in-grid" id="gridJumpBackIn"></div>
         </div>
 
-        <!-- 3. Shelf: New Drops (Preview of Catalog; Full Catalog lives in Library -> Songs) -->
-        <div class="home-catalog-section" id="sectionGlobalCatalog">
-          <div class="home-section-header">
-            <div class="section-title-wrap">
-              <div class="section-icon-badge" style="background:rgba(244,162,97,0.15); color:#f4a261;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-              </div>
-              <div>
-                <h2 class="home-section-title">New Drops <span class="home-section-amharic">አዲስ ዜማዎች</span></h2>
-                <div class="home-section-subtitle" id="catalogCounterSubtitle">Latest additions &amp; filtered tracks</div>
-              </div>
-            </div>
-            <div class="section-actions-right">
-              <div class="catalog-sort-wrap">
-                <select id="selectCatalogSort" class="catalog-sort-select" title="Sort Catalog">
-                  <option value="newest">Chronological (Newest First)</option>
-                  <option value="oldest">Chronological (Oldest First)</option>
-                  <option value="year">Release Year</option>
-                  <option value="title">Song Title (A-Z)</option>
-                  <option value="artist">Artist Name (A-Z)</option>
-                  <option value="lrc">Synced Lyrics First</option>
-                </select>
-              </div>
-              <button id="btnViewMoreGlobalCatalog" class="btn-pill btn-xs btn-view-more" type="button">Browse All</button>
-            </div>
-          </div>
-          <div class="home-music-grid" id="gridGlobalCatalog"></div>
-        </div>
-
-        <!-- 4. Featured Spotlight Section -->
-        <div class="home-hero-section">
-          <div class="hero-card" id="heroCard">
-            <div class="hero-glow-bg" id="heroGlowBg"></div>
-            <div class="hero-content-wrap">
-              <div id="heroArtworkBox" class="hero-artwork-box has-default-artwork">
-                <div class="elm-default-artwork elm-default-artwork--hero" aria-hidden="true">
-                  <elm-logo variant="icon" class="elm-default-artwork-logo"></elm-logo>
-                </div>
-                <img id="heroArtworkImg" src="brand/elm-default-cover.svg" alt="Featured Track" class="hero-artwork-img"
-                  crossorigin="anonymous" onerror="this.parentElement.classList.add('has-default-artwork')">
-                <div class="hero-play-badge" id="btnHeroPlayBadge">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="6 3 20 12 6 21 6 3" />
-                  </svg>
-                </div>
-              </div>
-              <div class="hero-details">
-                <div class="hero-badge-tag">
-                  <span class="spotlight-dot"></span>
-                  <span id="heroBadgeText">Featured Spotlight</span>
-                  <span id="heroDurationBadge" class="hero-meta-badge" style="display:none;">0:00</span>
-                  <span id="heroLrcBadge" class="hero-meta-badge hero-lrc-pill">Synced Lyrics</span>
-                </div>
-                <h2 id="heroTitle" class="hero-title">Select a Song to Begin</h2>
-                <div id="heroArtist" class="hero-artist">ELM — Ethio Lyrics Media</div>
-                <p id="heroDescription" class="hero-description">
-                  Stream Ethiopian music &amp; spiritual melodies with real-time synchronized Amharic lyrics, vibrant themes, and offline listening.
-                </p>
-                <div class="hero-actions">
-                  <button id="btnHeroPlay" class="btn-primary hero-btn-play">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                      <polygon points="6 3 20 12 6 21 6 3" />
-                    </svg>
-                    <span id="heroPlayLabel">Play Track</span>
-                  </button>
-                  <button id="btnHeroOpenLyrics" class="btn-pill hero-btn-lyrics">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M9 18V5l12-2v13"></path>
-                      <circle cx="6" cy="18" r="3"></circle>
-                      <circle cx="18" cy="16" r="3"></circle>
-                    </svg>
-                    <span>View Lyrics</span>
-                  </button>
-                  <button id="btnHeroDetails" class="btn-pill hero-btn-details" title="Song Details">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <span>Details</span>
-                  </button>
-                  <button id="btnHeroFavorite" class="btn-pill btn-fav-toggle btn-hero-fav" title="Toggle Favorite"
-                    type="button">
-                    <svg class="heart-icon-outline" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="#ffffff" stroke-width="2">
-                      <path
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                    <svg class="heart-icon-filled" width="16" height="16" viewBox="0 0 24 24" fill="#ffffff"
-                      stroke="#ffffff" stroke-width="2" style="display:none;">
-                      <path
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Shelf: Recommended For You -->
+        <!-- 3. Section: Chosen For You (Personalized Mezmur Discovery) -->
         <div class="home-catalog-section" id="sectionRecommendations">
           <div class="home-section-header">
             <div class="section-title-wrap">
               <div class="section-icon-badge" style="background:rgba(96,165,250,0.15); color:#60a5fa;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                </svg>
               </div>
               <div>
-                <h2 class="home-section-title">Made For You <span class="home-section-amharic">የተመረጡ ዜማዎች</span></h2>
-                <div class="home-section-subtitle">Ranked by your listening habits, artist affinity, and synced lyrics richness</div>
+                <h2 class="home-section-title">Chosen For You <span class="home-section-amharic">የተመረጡ መዝሙሮች</span></h2>
+                <div class="home-section-subtitle">Ranked by Zemari affinity, hymn category, Zema mode, and synced
+                  lyrics</div>
               </div>
             </div>
             <div class="section-actions-right">
-              <button id="btnShuffleRecommended" class="btn-pill btn-xs btn-shelf-action" title="Shuffle Recommended Mix">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-                <span>Shuffle Mix</span>
+              <button id="btnShuffleRecommended" class="btn-pill btn-xs btn-shelf-action"
+                title="Shuffle Recommended Mezmurs">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                </svg>
+                <span>Shuffle</span>
               </button>
-              <button id="btnViewMoreSuggestions" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
             </div>
           </div>
           <div class="home-music-grid" id="gridSuggestions"></div>
         </div>
 
-        <!-- 6. Shelf: "Because You Listened To..." Context Shelf -->
+        <!-- 4. Section: Recently Added Archive -->
+        <div class="home-catalog-section" id="sectionGlobalCatalog">
+          <div class="home-section-header">
+            <div class="section-title-wrap">
+              <div class="section-icon-badge" style="background:rgba(244,162,97,0.15); color:#f4a261;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+                </svg>
+              </div>
+              <div>
+                <h2 class="home-section-title">Recently Added <span class="home-section-amharic">አዲስ መዝሙሮች</span></h2>
+                <div class="home-section-subtitle" id="catalogCounterSubtitle">Latest Mezmurs in the cloud archive</div>
+              </div>
+            </div>
+            <div class="section-actions-right">
+              <button id="btnViewMoreGlobalCatalog" class="btn-pill btn-xs btn-view-more" type="button">Browse
+                All</button>
+            </div>
+          </div>
+          <div class="home-music-grid" id="gridGlobalCatalog"></div>
+        </div>
+
+        <!-- 5. Section: Related Mezmurs Context Shelf -->
         <div class="home-catalog-section" id="sectionBecauseYouListened" style="display:none;">
           <div class="home-section-header">
             <div class="section-title-wrap">
               <div class="section-icon-badge" style="background:rgba(236,72,153,0.15); color:#ec4899;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4l3 3" />
+                </svg>
               </div>
               <div>
                 <h2 class="home-section-title" id="becauseTitleText">Because You Listened To...</h2>
-                <div class="home-section-subtitle" id="becauseSubtitleText">More tracks sharing this mood and vocal texture</div>
+                <div class="home-section-subtitle" id="becauseSubtitleText">More Mezmurs sharing this spiritual theme
+                  and Zema</div>
               </div>
             </div>
             <div class="section-actions-right">
-              <button id="btnPlayBecauseShelf" class="btn-pill btn-xs btn-shelf-action" title="Play All from this shelf">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <button id="btnPlayBecauseShelf" class="btn-pill btn-xs btn-shelf-action"
+                title="Play All from this section">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
                 <span>Play All</span>
               </button>
-              <button id="btnViewMoreBecause" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
             </div>
           </div>
           <div class="home-music-grid" id="gridBecauseYouListened"></div>
         </div>
 
-        <!-- 7. Shelf: Synced Lyrics Showcase -->
-        <div class="home-catalog-section" id="sectionLyricsShowcase">
-          <div class="home-section-header">
-            <div class="section-title-wrap">
-              <div class="section-icon-badge" style="background:rgba(16,185,129,0.15); color:#10b981;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-              </div>
-              <div>
-                <h2 class="home-section-title">Lyrics Stage Showcase <span class="home-section-amharic">ከግጥም ጋር የቀረቡ</span></h2>
-                <div class="home-section-subtitle">Certified line-by-line synchronized Amharic lyrics for sing-along</div>
-              </div>
-            </div>
-            <div class="section-actions-right">
-              <button id="btnPlayLyricsShowcase" class="btn-pill btn-xs btn-shelf-action" title="Play Synced Lyrics Showcase">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                <span>Play All</span>
-              </button>
-              <button id="btnViewMoreLyricsShowcase" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
-            </div>
-          </div>
-          <div class="home-music-grid" id="gridLyricsShowcase"></div>
-        </div>
-
-        <!-- 8. Shelf: Artists Discovery Circle -->
+        <!-- 6. Section: Zemariyan & Choirs Discovery Row -->
         <div class="home-catalog-section" id="sectionIconicArtists">
           <div class="home-section-header">
             <div class="section-title-wrap">
               <div class="section-icon-badge" style="background:rgba(168,85,247,0.15); color:#a855f7;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
               </div>
               <div>
-                <h2 class="home-section-title">Featured Artists &amp; Singers <span class="home-section-amharic">ድምጻውያን</span></h2>
-                <div class="home-section-subtitle">Explore catalog tracks grouped by artist</div>
+                <h2 class="home-section-title">Zemariyan &amp; Choirs <span class="home-section-amharic">ዘማሪያን እና
+                    መዘምራን</span></h2>
+                <div class="home-section-subtitle">Explore Mezmurs grouped by Zemari or Choir</div>
               </div>
+            </div>
+            <div class="section-actions-right">
+              <button id="btnViewAllZemariyan" class="btn-pill btn-xs btn-view-more" type="button">View All</button>
             </div>
           </div>
           <div class="artists-circle-scroll" id="rowIconicArtists"></div>
@@ -448,8 +371,8 @@
         <div class="library-view-container">
           <div class="library-header-row">
             <div>
-              <h1 class="library-page-title">Music Library</h1>
-              <p class="library-page-subtitle">Manage cloud catalog songs and your offline downloads</p>
+              <h1 class="library-page-title">Mezmur Library</h1>
+              <p class="library-page-subtitle">Manage cloud archive Mezmurs and your offline downloads</p>
             </div>
             <button id="btnShowUploadForm" class="btn-primary"
               style="display:inline-flex; align-items:center; gap:0.5rem; font-size:0.85rem; padding:0.55rem 1.1rem;">
@@ -458,11 +381,11 @@
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>Upload Song</span>
+              <span>Upload Mezmur</span>
             </button>
           </div>
 
-          <!-- View A: Library Track List with Sub-Tabs -->
+          <!-- View A: Library Mezmur List with Sub-Tabs -->
           <div id="trackListView">
             <div class="library-tabs-nav">
               <button id="tabGlobalCatalog" class="library-tab active">
@@ -472,7 +395,7 @@
                   <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                   <path d="M2 12h20" />
                 </svg>
-                <span>Songs</span>
+                <span>Mezmurs</span>
               </button>
               <button id="tabArtists" class="library-tab">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -482,7 +405,7 @@
                   <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
                   <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                <span>Artists</span>
+                <span>Zemariyan</span>
               </button>
               <button id="tabAlbums" class="library-tab">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -490,7 +413,7 @@
                   <circle cx="12" cy="12" r="10" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                <span>Albums</span>
+                <span>Collections</span>
               </button>
               <button id="tabPlaylists" class="library-tab">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -516,29 +439,29 @@
             <div id="globalCatalogList" style="display:flex; flex-direction:column; gap:0.65rem;">
               <div class="loading-catalog-spinner"
                 style="text-align:center; padding:3rem; color:var(--color-text-dim);">
-                <div>Loading catalog...</div>
+                <div>Loading Mezmur archive...</div>
               </div>
             </div>
 
-            <!-- Artists Directory Container -->
+            <!-- Zemariyan Directory Container -->
             <div id="artistsContainer" style="display:none; flex-direction:column; gap:1.25rem;">
               <div id="artistsGrid" class="catalog-entity-grid"></div>
             </div>
 
-            <!-- Single Artist Detail View -->
+            <!-- Single Zemari Detail View -->
             <div id="singleArtistView" style="display:none; flex-direction:column; gap:1.35rem;">
               <button id="btnBackToArtistsList" class="btn-pill"
                 style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
-                &larr; Back to Artists
+                &larr; Back to Zemariyan
               </button>
               <div class="entity-banner-header">
-                <img id="artistBannerArt" src="brand/elm-default-cover.svg" alt="Artist" class="entity-banner-avatar"
+                <img id="artistBannerArt" src="brand/elm-default-cover.svg" alt="Zemari" class="entity-banner-avatar"
                   crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
                 <div class="playlist-banner-info">
-                  <div class="playlist-banner-type">ARTIST</div>
-                  <h2 id="artistBannerTitle" class="playlist-banner-title">Artist Name</h2>
+                  <div class="playlist-banner-type">ZEMARI / CHOIR</div>
+                  <h2 id="artistBannerTitle" class="playlist-banner-title">Zemari Name</h2>
                   <p id="artistBannerSubtitle" class="playlist-banner-desc"></p>
-                  <div class="playlist-banner-meta" id="artistBannerMeta">0 albums • 0 songs</div>
+                  <div class="playlist-banner-meta" id="artistBannerMeta">0 albums • 0 Mezmurs</div>
                 </div>
               </div>
               <div class="playlist-actions-bar">
@@ -558,34 +481,35 @@
                 </button>
               </div>
               <div id="artistAlbumsSection" style="display:flex; flex-direction:column; gap:0.75rem;">
-                <h3 class="entity-sub-heading">Albums &amp; Releases</h3>
+                <h3 class="entity-sub-heading">Collections &amp; Releases</h3>
                 <div id="artistAlbumsGrid" class="catalog-entity-grid"></div>
               </div>
               <div style="display:flex; flex-direction:column; gap:0.65rem;">
-                <h3 class="entity-sub-heading">All Songs</h3>
+                <h3 class="entity-sub-heading">All Mezmurs</h3>
                 <div id="artistTracksList" style="display:flex; flex-direction:column; gap:0.6rem;"></div>
               </div>
             </div>
 
-            <!-- Albums Directory Container -->
+            <!-- Collections Directory Container -->
             <div id="albumsContainer" style="display:none; flex-direction:column; gap:1.25rem;">
               <div id="albumsGrid" class="catalog-entity-grid"></div>
             </div>
 
-            <!-- Single Album Detail View -->
+            <!-- Single Collection Detail View -->
             <div id="singleAlbumView" style="display:none; flex-direction:column; gap:1.35rem;">
               <button id="btnBackToAlbumsList" class="btn-pill"
                 style="align-self:flex-start; font-size:0.8rem; padding:0.35rem 0.85rem;" type="button">
-                &larr; Back to Albums
+                &larr; Back to Collections
               </button>
               <div class="entity-banner-header">
-                <img id="albumBannerArt" src="brand/elm-default-cover.svg" alt="Album" class="entity-banner-cover"
+                <img id="albumBannerArt" src="brand/elm-default-cover.svg" alt="Collection" class="entity-banner-cover"
                   crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
                 <div class="playlist-banner-info">
-                  <div class="playlist-banner-type" id="albumBannerType">ALBUM</div>
-                  <h2 id="albumBannerTitle" class="playlist-banner-title">Album Title</h2>
-                  <p id="albumBannerArtist" class="playlist-banner-desc entity-clickable-artist" title="View Artist"></p>
-                  <div class="playlist-banner-meta" id="albumBannerMeta">0 songs</div>
+                  <div class="playlist-banner-type" id="albumBannerType">COLLECTION</div>
+                  <h2 id="albumBannerTitle" class="playlist-banner-title">Collection Title</h2>
+                  <p id="albumBannerArtist" class="playlist-banner-desc entity-clickable-artist"
+                    title="View Zemari / Choir"></p>
+                  <div class="playlist-banner-meta" id="albumBannerMeta">0 Mezmurs</div>
                 </div>
               </div>
               <div class="playlist-actions-bar">
@@ -594,7 +518,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="6 3 20 12 6 21 6 3" />
                   </svg>
-                  <span>Play Album</span>
+                  <span>Play Collection</span>
                 </button>
                 <button id="btnAlbumShuffle" class="btn-pill"
                   style="padding:0.6rem 1.1rem; font-size:0.85rem; gap:0.45rem;" type="button">
@@ -622,8 +546,8 @@
               <div class="playlists-action-header">
                 <div>
                   <h3 style="font-size:1.15rem; font-weight:700; color:#fff; margin:0;">Your Playlists</h3>
-                  <div style="font-size:0.8rem; color:var(--color-text-dim);">Create customized collections and listen
-                    seamlessly</div>
+                  <div style="font-size:0.8rem; color:var(--color-text-dim);">Create curated Mezmur collections for
+                    prayer and worship</div>
                 </div>
                 <button id="btnOpenCreatePlaylistModal" class="btn-primary"
                   style="padding:0.5rem 1rem; font-size:0.82rem; gap:0.45rem;" type="button">
@@ -637,7 +561,7 @@
 
               <!-- Curated / Smart Playlists Row -->
               <div class="smart-playlists-grid">
-                <!-- Liked Songs Smart Card -->
+                <!-- Liked Mezmurs Smart Card -->
                 <div class="smart-playlist-card smart-card-liked" id="cardSmartLikedSongs">
                   <div class="smart-card-bg-icon">
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
@@ -647,10 +571,10 @@
                   </div>
                   <div class="smart-card-content">
                     <div class="smart-card-badge">Auto Playlist</div>
-                    <h4 class="smart-card-title">Liked Songs</h4>
-                    <div class="smart-card-meta" id="smartLikedSongsCount">0 songs</div>
+                    <h4 class="smart-card-title">Liked Mezmurs</h4>
+                    <div class="smart-card-meta" id="smartLikedSongsCount">0 Mezmurs</div>
                   </div>
-                  <button class="smart-card-play-btn" title="Play Liked Songs" type="button">
+                  <button class="smart-card-play-btn" title="Play Liked Mezmurs" type="button">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                       <polygon points="6 3 20 12 6 21 6 3" />
                     </svg>
@@ -668,7 +592,7 @@
                   <div class="smart-card-content">
                     <div class="smart-card-badge">History</div>
                     <h4 class="smart-card-title">Recently Played</h4>
-                    <div class="smart-card-meta" id="smartRecentSongsCount">0 songs</div>
+                    <div class="smart-card-meta" id="smartRecentSongsCount">0 Mezmurs</div>
                   </div>
                   <button class="smart-card-play-btn" title="Play Recently Played" type="button">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -702,7 +626,7 @@
                   <div class="playlist-banner-type">PLAYLIST</div>
                   <h2 id="playlistBannerTitle" class="playlist-banner-title">Playlist Title</h2>
                   <p id="playlistBannerDesc" class="playlist-banner-desc">Playlist Description</p>
-                  <div class="playlist-banner-meta" id="playlistBannerMeta">0 songs • 0 min</div>
+                  <div class="playlist-banner-meta" id="playlistBannerMeta">0 Mezmurs • 0 min</div>
                 </div>
               </div>
 
@@ -728,7 +652,7 @@
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                   </svg>
-                  <span>Add Songs</span>
+                  <span>Add Mezmurs</span>
                 </button>
                 <button id="btnPlaylistDownloadAll" class="btn-pill"
                   style="padding:0.6rem 1rem; font-size:0.85rem; gap:0.45rem;" type="button">
@@ -766,7 +690,7 @@
             <div id="localTracksList" style="display:none; flex-direction:column; gap:0.65rem;"></div>
           </div>
 
-          <!-- View B: Track Upload / Edit Form View -->
+          <!-- View B: Mezmur Upload / Edit Form View -->
           <div id="trackFormView"
             style="display:none; flex-direction:column; gap:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:1.5rem;">
             <div
@@ -774,7 +698,7 @@
               <button id="btnBackToLibrary" class="btn-pill" style="font-size:0.8rem; padding:0.35rem 0.8rem;">
                 &larr; Back to Library
               </button>
-              <h3 id="trackFormModeTitle" style="font-size:1.05rem; font-weight:600; margin:0;">Upload Song</h3>
+              <h3 id="trackFormModeTitle" style="font-size:1.05rem; font-weight:600; margin:0;">Upload Mezmur</h3>
             </div>
 
             <div id="trackFormError"
@@ -783,7 +707,7 @@
 
             <!-- Audio File Dropzone -->
             <div class="form-group">
-              <label>Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
+              <label>Mezmur Audio File <span id="audioRequiredBadge" class="required-badge">* Required</span></label>
               <div class="dropzone" id="audioDropzone">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                   stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;">
@@ -802,15 +726,15 @@
               <label>Artwork Image <span class="optional-badge">(Optional)</span></label>
               <div class="cover-picker-container">
                 <div class="cover-preview-box" id="coverPreviewBox" title="Click to upload custom cover image">
-                  <img id="coverPreviewImg" src="brand/elm-default-cover.svg" alt="Cover Preview" class="cover-preview-img"
-                    crossorigin="anonymous">
+                  <img id="coverPreviewImg" src="brand/elm-default-cover.svg" alt="Cover Preview"
+                    class="cover-preview-img" crossorigin="anonymous">
                   <div class="cover-preview-overlay">
                     <span>Change</span>
                   </div>
                 </div>
                 <div class="cover-picker-info">
                   <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0;">
-                    Select custom album cover or artwork (JPG, PNG, WebP).
+                    Select custom collection cover or artwork (JPG, PNG, WebP).
                   </p>
                   <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.4rem;">
                     <button type="button" id="btnUploadCoverFile" class="btn-pill" style="font-size:0.75rem;">
@@ -826,52 +750,64 @@
               </div>
             </div>
 
-            <!-- Mandatory Fields: Artist Selector & Song Title -->
+            <!-- Mandatory Fields: Zemari / Choir Selector & Mezmur Title -->
             <div class="form-grid-2col">
               <div class="form-group">
-                <label for="selectCustomArtist">Artist <span class="required-badge">* Required</span></label>
+                <label for="selectCustomArtist">Zemari / Choir (ዘማሪ / መዘምራን) <span class="required-badge">*
+                    Required</span></label>
                 <select id="selectCustomArtist" class="form-input form-select">
-                  <option value="">-- Select Existing Artist --</option>
-                  <option value="__new__">+ Add New Artist...</option>
+                  <option value="">-- Select Existing Zemari / Choir --</option>
+                  <option value="__new__">+ Add New Zemari / Choir...</option>
                 </select>
-                <div id="newArtistFieldsWrap" style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.55rem;">
-                  <input type="text" id="inputCustomArtist" class="form-input" placeholder="New Artist Name (e.g. አቢነት አጎናፍር / Abinet)">
-                  <input type="text" id="inputCustomArtistEn" class="form-input" placeholder="English / Latin Name (Optional, e.g. Abinet Agonafir)">
+                <div id="newArtistFieldsWrap"
+                  style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.55rem;">
+                  <input type="text" id="inputCustomArtist" class="form-input"
+                    placeholder="Zemari / Choir Name (e.g. ዘማሪ ይልማ ኃይሉ)">
+                  <input type="text" id="inputCustomArtistEn" class="form-input"
+                    placeholder="English / Latin Name (Optional, e.g. Zemari Yilma Hailu)">
                 </div>
               </div>
               <div class="form-group">
-                <label for="inputCustomTitle">Song Title <span class="required-badge">* Required</span></label>
-                <input type="text" id="inputCustomTitle" class="form-input" placeholder="e.g. አትሒጅብኝ / Athijibegn"
+                <label for="inputCustomTitle">Mezmur Title (የመዝሙር ርዕስ) <span class="required-badge">*
+                    Required</span></label>
+                <input type="text" id="inputCustomTitle" class="form-input" placeholder="e.g. ይትባረክ እግዚአብሔር / Yitbarek"
                   required>
               </div>
             </div>
 
-            <!-- Album Selector (Filtered by Artist) & Classification -->
+            <!-- Collection Selector (Filtered by Zemari) & Mezmur Category -->
             <div class="form-grid-2col">
               <div class="form-group">
-                <label for="selectCustomAlbum">Album <span class="optional-badge">(For Selected Artist)</span></label>
+                <label for="selectCustomAlbum">Collection / Album <span class="optional-badge">(For Selected
+                    Zemari)</span></label>
                 <select id="selectCustomAlbum" class="form-input form-select">
-                  <option value="Single">Single (No Album)</option>
-                  <option value="__new__">+ Add New Album...</option>
+                  <option value="Single">Single (Standalone Mezmur)</option>
+                  <option value="__new__">+ Add New Collection / Album...</option>
                 </select>
                 <div id="newAlbumFieldsWrap" style="display:none; margin-top:0.55rem;">
-                  <input type="text" id="inputCustomAlbum" class="form-input" placeholder="New Album Name (e.g. ውለታ / Weleta)">
+                  <input type="text" id="inputCustomAlbum" class="form-input"
+                    placeholder="New Collection Name (e.g. ምስጋና / Misgana Vol. 1)">
                 </div>
               </div>
               <div class="form-group">
-                <label for="selectCustomGenre">Genre / Style <span class="optional-badge">(Classification)</span></label>
+                <label for="selectCustomGenre">Mezmur Category (የመዝሙር ዓይነት) <span
+                    class="optional-badge">(Primary)</span></label>
                 <select id="selectCustomGenre" class="form-input form-select">
-                  <option value="">Auto-detect / Unspecified</option>
-                  <option value="Tizita">Tizita</option>
-                  <option value="Ethio-Pop">Ethio-Pop</option>
-                  <option value="Bati">Bati</option>
-                  <option value="Ambassel">Ambassel</option>
-                  <option value="Anchihoye">Anchihoye</option>
-                  <option value="Eskista">Eskista</option>
-                  <option value="Ethio-Jazz">Ethio-Jazz</option>
-                  <option value="Reggae">Reggae</option>
-                  <option value="Spiritual / Gospel">Spiritual / Gospel</option>
-                  <option value="Traditional">Traditional</option>
+                  <option value="">Unspecified / Auto-detect</option>
+                  <option value="Misgana (Praise & Thanksgiving)">Misgana (Praise &amp; Thanksgiving)</option>
+                  <option value="Tselot & Limena (Prayer & Supplication)">Tselot &amp; Limena (Prayer &amp;
+                    Supplication)</option>
+                  <option value="Nisiha (Repentance & Mercy)">Nisiha (Repentance &amp; Mercy)</option>
+                  <option value="Be'alat (Feast & Holiday)">Be'alat (Feast &amp; Holiday)</option>
+                  <option value="Mariam (Kidist Dingil)">Mariam (Kidist Dingil)</option>
+                  <option value="Medhane Alem & Meskel">Medhane Alem &amp; Meskel</option>
+                  <option value="Qiddusan & Melaekt (Saints & Angels)">Qiddusan &amp; Melaekt (Saints &amp; Angels)
+                  </option>
+                  <option value="Werib & Mahlet (Liturgical Chant)">Werib &amp; Mahlet (Liturgical Chant)</option>
+                  <option value="Kidassie & Zema (Liturgy)">Kidassie &amp; Zema (Liturgy)</option>
+                  <option value="Wedding / Serg (የሠርግ)">Wedding / Serg (የሠርግ)</option>
+                  <option value="Sunday School / Kids (የሕጻናት)">Sunday School / Kids (የሕጻናት)</option>
+                  <option value="Instrumental / Begena">Instrumental / Begena</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -881,13 +817,164 @@
             <div class="form-grid-2col">
               <div class="form-group">
                 <label for="inputCustomYear">Release Year <span class="optional-badge">(Optional)</span></label>
-                <input type="text" id="inputCustomYear" class="form-input" placeholder="e.g. 2024">
+                <input type="text" id="inputCustomYear" class="form-input" placeholder="e.g. 2016 E.C. / 2024">
               </div>
               <div class="form-group">
-                <label for="inputCustomTrackNumber">Track # in Album <span class="optional-badge">(Optional)</span></label>
-                <input type="number" id="inputCustomTrackNumber" class="form-input" min="1" max="99" placeholder="e.g. 1">
+                <label for="inputCustomTrackNumber">Track # in Collection <span
+                    class="optional-badge">(Optional)</span></label>
+                <input type="number" id="inputCustomTrackNumber" class="form-input" min="1" max="99"
+                  placeholder="e.g. 1">
               </div>
             </div>
+
+            <!-- Rich Mezmur Liturgical & Discovery Metadata Panel -->
+            <div class="mezmur-meta-panel">
+              <div class="mezmur-meta-panel-header">
+                <div class="mezmur-meta-panel-title">Spiritual &amp; Musical Context</div>
+                <div class="mezmur-meta-panel-sub">Optional fields powering Mezmur search &amp; future recommendations
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="selectCustomSeason">Liturgical Season / Fasting (ወቅት / ጾም)</label>
+                  <select id="selectCustomSeason" class="form-input form-select">
+                    <option value="">Anytime / Unspecified</option>
+                    <option value="Year-Round (ዘወትር)">Year-Round (ዘወትር)</option>
+                    <option value="Abiy Tsom / Great Lent (ዐቢይ ጾም)">Abiy Tsom / Great Lent (ዐቢይ ጾም)</option>
+                    <option value="Himamat / Holy Week (ሕማማት)">Himamat / Holy Week (ሕማማት)</option>
+                    <option value="Tinsae / Easter (ትንሣኤ)">Tinsae / Easter (ትንሣኤ)</option>
+                    <option value="Zemene Tsige (ዘመነ ጽጌ)">Zemene Tsige (ዘመነ ጽጌ)</option>
+                    <option value="Kiremt (ክረምት)">Kiremt (ክረምት)</option>
+                    <option value="Filseta (ፍልሰታ)">Filseta (ፍልሰታ)</option>
+                    <option value="Meskel (መስቀል)">Meskel (መስቀል)</option>
+                    <option value="Gena / Lideta (ገና)">Gena / Lideta (ገና)</option>
+                    <option value="Timket (ጥምቀት)">Timket (ጥምቀት)</option>
+                    <option value="Enkutatash (ዘመን መለወጫ)">Enkutatash (ዘመን መለወጫ)</option>
+                    <option value="Tsome Nebiyat (Advent)">Tsome Nebiyat (Advent)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inputCustomFeast">Saint / Feast Dedication (መታሰቢያ / በዓል)</label>
+                  <input type="text" id="inputCustomFeast" class="form-input" list="feastSuggestionsList"
+                    placeholder="e.g. Kidus Michael, Kidane Mihret, Debre Tabor">
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="selectCustomZema">Zema / Qenet Mode (ዜማ / ቅኝት)</label>
+                  <select id="selectCustomZema" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Ge'ez (ግዕዝ)">Ge'ez (ግዕዝ)</option>
+                    <option value="Ezel (ዕዝል)">Ezel (ዕዝል)</option>
+                    <option value="Araray (አራራይ)">Araray (አራራይ)</option>
+                    <option value="Begena / Traditional">Begena / Traditional</option>
+                    <option value="Tizita">Tizita</option>
+                    <option value="Bati">Bati</option>
+                    <option value="Ambassel">Ambassel</option>
+                    <option value="Anchihoye">Anchihoye</option>
+                    <option value="Modern Choir / Studio">Modern Choir / Studio</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="selectCustomVocal">Vocal / Ensemble (አቀራረብ)</label>
+                  <select id="selectCustomVocal" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Solo Zemari (ነጠላ ዘማሪ)">Solo Zemari (ነጠላ ዘማሪ)</option>
+                    <option value="Choir / Zemariyan (መዘምራን)">Choir / Zemariyan (መዘምራን)</option>
+                    <option value="Duet / Group">Duet / Group</option>
+                    <option value="Male Vocal">Male Vocal</option>
+                    <option value="Female Vocal">Female Vocal</option>
+                    <option value="Congregational / A Cappella">Congregational / A Cappella</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="selectCustomLanguage">Language (ቋንቋ)</label>
+                  <select id="selectCustomLanguage" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Amharic (አማርኛ)">Amharic (አማርኛ)</option>
+                    <option value="Ge'ez (ግዕዝ)">Ge'ez (ግዕዝ)</option>
+                    <option value="Amharic & Ge'ez">Amharic &amp; Ge'ez</option>
+                    <option value="Afaan Oromo">Afaan Oromo</option>
+                    <option value="Tigrigna (ትግርኛ)">Tigrigna (ትግርኛ)</option>
+                    <option value="Other Ethiopian Regional">Other Ethiopian Regional</option>
+                    <option value="Multilingual / English">Multilingual / English</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="selectCustomMood">Devotional Mood (መንፈሳዊ ስሜት)</label>
+                  <select id="selectCustomMood" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Reverent & Contemplative (ተመስጦ)">Reverent &amp; Contemplative (ተመስጦ)</option>
+                    <option value="Joyful & Festive (ደስታና ምስጋና)">Joyful &amp; Festive (ደስታና ምስጋና)</option>
+                    <option value="Sorrowful & Lenten (ሐዘንና ንስሐ)">Sorrowful &amp; Lenten (ሐዘንና ንስሐ)</option>
+                    <option value="Comforting & Peaceful (መጽናናት)">Comforting &amp; Peaceful (መጽናናት)</option>
+                    <option value="Solemn Intercession (ምልጃ)">Solemn Intercession (ምልጃ)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="selectCustomEra">Tradition / Era (ዘመን)</label>
+                  <select id="selectCustomEra" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Classical / Traditional (ቀደምት)">Classical / Traditional (ቀደምት)</option>
+                    <option value="Contemporary (ዘመናዊ)">Contemporary (ዘመናዊ)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="inputCustomComposer">Composer / Source (ደራሲ / ምንጭ)</label>
+                  <input type="text" id="inputCustomComposer" class="form-input"
+                    placeholder="e.g. St. Yared, Mahibere Kidusan, Sunday School">
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="inputCustomScripture">Scripture Reference (ጥቅስ)</label>
+                  <input type="text" id="inputCustomScripture" class="form-input"
+                    placeholder="e.g. መዝሙረ ዳዊት ፳፫ / Psalm 23">
+                </div>
+                <div class="form-group">
+                  <label for="inputCustomDebir">Church / Debir (ደብር / ቤተ ክርስቲያን)</label>
+                  <input type="text" id="inputCustomDebir" class="form-input"
+                    placeholder="e.g. Bole Medhane Alem, Kidist Silassie">
+                </div>
+              </div>
+
+              <div class="form-grid-2col">
+                <div class="form-group">
+                  <label for="inputCustomExternalUrl">Listen Link (YouTube, Spotify, etc.)</label>
+                  <input type="url" id="inputCustomExternalUrl" class="form-input"
+                    placeholder="https://youtube.com/... or https://open.spotify.com/...">
+                </div>
+                <div class="form-group">
+                  <label for="inputCustomTags">Themes &amp; Keywords (ቁልፍ ቃላት)</label>
+                  <input type="text" id="inputCustomTags" class="form-input"
+                    placeholder="Comma-separated: mercy, cross, morning, forgiveness">
+                </div>
+              </div>
+            </div>
+
+            <datalist id="feastSuggestionsList">
+              <option value="Kidus Michael (ቅዱስ ሚካኤል)">
+              <option value="Kidus Gabriel (ቅዱስ ገብርኤል)">
+              <option value="Kidist Mariam / Kidane Mihret (ኪዳነ ምሕረት)">
+              <option value="Medhane Alem (መድኃኔ ዓለም)">
+              <option value="Kidist Silassie (ቅድስት ሥላሴ)">
+              <option value="Abune Tekle Haymanot (አቡነ ተክለ ሃይማኖት)">
+              <option value="Kidus Giorgis (ቅዱስ ጊዮርጊስ)">
+              <option value="Kidist Arsema (ቅድስት አርሴማ)">
+              <option value="Debre Tabor / Buhe (ደብረ ታቦር)">
+              <option value="Kidus Yohannes (ቅዱስ ዮሐንስ)">
+              <option value="Hosaena (ሆሣዕና)">
+              <option value="Siklet / Good Friday (ስቅለት)">
+            </datalist>
 
             <!-- Optional Field: LRC Lyrics -->
             <div class="form-group">
@@ -898,7 +985,7 @@
                 <input type="file" id="lrcFileInput" accept=".lrc,.txt" style="display:none;">
               </div>
               <textarea id="inputCustomLrc" class="form-textarea"
-                placeholder="[00:08.00] ውለታ | 1999 - አቢነት አጎናፍር&#10;[00:14.00] አልቻለም ልቤ ይቅርታሽን&#10;..."></textarea>
+                placeholder="[00:08.00] ይትባረክ እግዚአብሔር | ዘማሪ ይልማ&#10;[00:14.00] ለዘለዓለም ምሕረቱ ነውና&#10;..."></textarea>
             </div>
 
             <!-- Public Submission Card -->
@@ -906,18 +993,20 @@
               <label class="checkbox-container">
                 <input type="checkbox" id="checkSubmitToPublic">
                 <span class="checkmark"></span>
-                <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Catalog (Admin
+                <span class="checkbox-label-text" id="publicSubmitCheckLabel">Submit for Public Mezmur Archive (Admin
                   Review)</span>
               </label>
               <p id="publicSubmitCheckDesc"
                 style="font-size:0.78rem; color:var(--color-text-dim); margin:0.35rem 0 0.5rem 1.6rem; line-height:1.4;">
-                Audio is automatically uploaded to Cloudflare R2 so everyone can stream it. Once approved, the global
-                version replaces your local draft so there are no duplicates.
+                Audio is automatically uploaded to Cloudflare R2 so everyone can stream it. Once approved, the public
+                archive version replaces your local draft cleanly.
               </p>
 
               <!-- Automatic Cloudflare R2 Upload Status (Shown when public checkbox is checked) -->
-              <div id="publicCloudStatusPanel" class="r2-upload-status-box" style="display:none; margin-top:0.7rem; margin-left:1.6rem;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+              <div id="publicCloudStatusPanel" class="r2-upload-status-box"
+                style="display:none; margin-top:0.7rem; margin-left:1.6rem;">
+                <div
+                  style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
                   <span id="r2UploadStatusText" style="font-size:0.78rem; font-weight:600; color:#fce7b2;">
                     Select an audio file to upload to Cloudflare R2 automatically.
                   </span>
@@ -935,7 +1024,7 @@
 
             <div style="display:flex; gap:0.75rem; margin-top:0.4rem;">
               <button id="btnApplyCustomTrack" class="btn-primary" style="flex:1;">
-                Save &amp; Play Song
+                Save &amp; Play Mezmur
               </button>
               <button id="btnCancelTrackForm" class="btn-pill" style="padding:0.8rem 1.2rem;">
                 Cancel
@@ -966,11 +1055,11 @@
               crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
           </div>
           <div class="artist-heading">
-            <h1 id="artistAmharic" class="artist-amharic">የሙዚቃ ማጫወቻ</h1>
-            <h2 id="artistEnglish" class="artist-english">ETHIO LYRICS PLAYER</h2>
+            <h1 id="artistAmharic" class="artist-amharic">የመዝሙር ማጫወቻ</h1>
+            <h2 id="artistEnglish" class="artist-english">ETHIO LYRICS MEDIA</h2>
           </div>
           <div class="song-title-box">
-            <h1 id="songTitleAmharic" class="song-title-amharic">ሙዚቃ ይምረጡ</h1>
+            <h1 id="songTitleAmharic" class="song-title-amharic">መዝሙር ይምረጡ</h1>
           </div>
         </div>
 
@@ -978,7 +1067,8 @@
         <div class="stage-split">
           <!-- Lyrics Stage Column (holds unmasked cues/actions + masked scroll viewport) -->
           <div class="lyrics-stage-col">
-            <div id="lyricsInstrumentalCue" class="lyrics-instrumental-cue" style="display:none;" title="Skip to next verse">
+            <div id="lyricsInstrumentalCue" class="lyrics-instrumental-cue" style="display:none;"
+              title="Skip to next verse">
               <div class="cue-dots"><span></span><span></span><span></span></div>
               <span id="lyricsCueLabel" class="cue-label">Instrumental</span>
             </div>
@@ -989,8 +1079,13 @@
               <input type="file" id="noLyricsFileInput" accept=".lrc,.txt" style="display:none;">
             </div>
 
-            <button id="btnLyricsResumeSync" class="btn-lyrics-resume-sync" style="display:none;" type="button" aria-label="Jump back to live playing lyric line">
-              <svg id="syncBtnArrow" class="sync-btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><polyline points="19 12 12 19 5 12"/></svg>
+            <button id="btnLyricsResumeSync" class="btn-lyrics-resume-sync" style="display:none;" type="button"
+              aria-label="Jump back to live playing lyric line">
+              <svg id="syncBtnArrow" class="sync-btn-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14" />
+                <polyline points="19 12 12 19 5 12" />
+              </svg>
               <span>Back to Beat</span>
             </button>
           </div>
@@ -1038,7 +1133,7 @@
             <div class="settings-card-body">
               <div id="settingsAuthSignedOut" style="display:flex; flex-direction:column; gap:0.6rem;">
                 <p style="font-size:0.85rem; color:var(--color-text-dim); margin:0;">
-                  Sign in with Google to submit tracks to the global catalog and sync preferences.
+                  Sign in with Google to submit Mezmurs to the public archive and sync preferences.
                 </p>
                 <button id="btnSettingsGoogleSignIn" class="btn-primary"
                   style="display:inline-flex; align-items:center; justify-content:center; gap:0.6rem; width:fit-content; padding:0.65rem 1.4rem;">
@@ -1062,7 +1157,8 @@
                     style="width:42px; height:42px; flex-shrink:0;" crossorigin="anonymous">
                   <div class="settings-row-text">
                     <div id="settingsUserName" style="font-weight:600; font-size:1rem; color:#fff;">User</div>
-                    <div id="settingsUserEmail" style="font-size:0.8rem; color:var(--color-text-dim); word-break:break-word;">email@example.com
+                    <div id="settingsUserEmail"
+                      style="font-size:0.8rem; color:var(--color-text-dim); word-break:break-word;">email@example.com
                     </div>
                   </div>
                   <button id="btnSettingsSignOut" class="btn-pill" style="margin-left:auto; font-size:0.78rem;">
@@ -1074,7 +1170,8 @@
                 <div class="settings-sync-status-box">
                   <div class="settings-sync-header">
                     <div style="display:flex; align-items:center; gap:0.55rem; min-width:0;">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" style="flex-shrink:0;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"
+                        style="flex-shrink:0;">
                         <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
                       </svg>
                       <span style="font-weight:600; font-size:0.88rem; color:#fff;">Cloud Sync &amp; Backup</span>
@@ -1085,7 +1182,8 @@
                     Favorites, listening history, and theme settings are backed up and synced automatically across
                     mobile, tablet, and PC devices.
                   </p>
-                  <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-top:0.25rem;">
+                  <div
+                    style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; margin-top:0.25rem;">
                     <span id="lastSyncedTimeLabel" style="font-size:0.72rem; color:var(--color-text-dim);">Last synced:
                       Just now</span>
                     <button id="btnManualSyncNow" class="btn-pill"
@@ -1153,11 +1251,13 @@
                   particles.</span>
               </div>
             </div>
-            <div class="settings-card-body" id="settingsPerformanceCard" style="margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:0.65rem;">
+            <div class="settings-card-body" id="settingsPerformanceCard"
+              style="margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:0.65rem;">
               <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Graphics Performance</div>
-                  <div id="perfModeStatusNote" style="font-size:0.75rem; color:var(--color-text-dim);">Detecting hardware capabilities...</div>
+                  <div id="perfModeStatusNote" style="font-size:0.75rem; color:var(--color-text-dim);">Detecting
+                    hardware capabilities...</div>
                 </div>
                 <span class="badge-status-active" id="perfModeResolvedBadge">Auto</span>
               </div>
@@ -1190,7 +1290,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Lyrics View Mode</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Choose between live synced stage or a full-song readable sheet</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Choose between live synced stage or a
+                    full-Mezmur readable sheet</div>
                 </div>
                 <select id="selectLyricsViewMode" class="form-input form-select settings-compact-select">
                   <option value="synced">Synced Stage</option>
@@ -1201,7 +1302,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Lyrics Text Size</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Adjust lyric line size for comfortable reading</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Adjust lyric line size for comfortable
+                    reading</div>
                 </div>
                 <select id="selectLyricsFontSize" class="form-input form-select settings-compact-select">
                   <option value="compact">Compact</option>
@@ -1214,7 +1316,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Active Lyric Bullet Dot</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Show a glowing bullet indicator next to the active line</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Show a glowing bullet indicator next to
+                    the active line</div>
                 </div>
                 <label class="elm-switch" title="Toggle lyric bullet indicator">
                   <input type="checkbox" id="toggleLyricsBullet" checked>
@@ -1225,7 +1328,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Show Lyric Timestamps</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Display [mm:ss] timecodes beside each lyric line</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Display [mm:ss] timecodes beside each
+                    lyric line</div>
                 </div>
                 <label class="elm-switch" title="Toggle lyric timestamps">
                   <input type="checkbox" id="toggleLyricsTimestamps">
@@ -1236,7 +1340,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Play on Lyric Tap</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Automatically start playback when clicking a lyric line while paused</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Automatically start playback when
+                    clicking a lyric line while paused</div>
                 </div>
                 <label class="elm-switch" title="Toggle play on lyric tap">
                   <input type="checkbox" id="togglePlayOnLyricClick" checked>
@@ -1247,7 +1352,8 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Mini-Bar on Browse Tabs</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Keep the player compact on Home, Library &amp; Settings; expand full controls anytime in one tap</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Keep the player compact on Home, Library
+                    &amp; Settings; expand full controls anytime in one tap</div>
                 </div>
                 <label class="elm-switch" title="Toggle mini-bar on browse tabs">
                   <input type="checkbox" id="toggleAutoCollapsePlayer">
@@ -1258,13 +1364,14 @@
               <div class="settings-pref-row">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">Audio Equalizer Preset</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">CORS-safe 5-band tone shaping for local &amp; verified streams</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">CORS-safe 5-band tone shaping for local
+                    &amp; verified streams</div>
                 </div>
                 <select id="selectEqPreset" class="form-input settings-pref-select" title="Audio Equalizer Preset">
                   <option value="flat">Flat (Original)</option>
-                  <option value="tizita">Tizita Warmth</option>
-                  <option value="vocal">Vocal &amp; Lyrics</option>
-                  <option value="bass">Deep Bass</option>
+                  <option value="tizita">Warm Zema / Begena</option>
+                  <option value="vocal">Choir &amp; Lyrics</option>
+                  <option value="bass">Deep Warmth</option>
                   <option value="treble">Crisp Acoustic</option>
                 </select>
               </div>
@@ -1272,7 +1379,8 @@
               <div class="settings-pref-row" style="border-bottom:none; padding-bottom:0;">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem; color:#fff;">LRC Lyrics Studio</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Tap-to-sync timecodes to audio for any song</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Tap-to-sync timecodes to audio for any
+                    Mezmur</div>
                 </div>
                 <button id="btnOpenLrcEditorFromSettings" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Open Editor
@@ -1294,19 +1402,22 @@
             <div class="settings-card-body" style="display:flex; flex-direction:column; gap:0.75rem;">
               <div class="settings-pref-row">
                 <div>
-                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Cached Songs &amp; Uploads</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="storageQuotaLabel">Checking device storage...</div>
+                  <div style="font-weight:600; font-size:0.86rem; color:#fff;">Cached Mezmurs &amp; Uploads</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="storageQuotaLabel">Checking device
+                    storage...</div>
                 </div>
                 <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                   <span class="card-badge card-badge-lrc" id="storageDownloadedCount">0 downloads</span>
                   <span class="card-badge" id="storageCustomCount">0 uploads</span>
                 </div>
               </div>
-              <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
+              <div
+                style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
                 <button id="btnOpenOfflineTabFromSettings" class="btn-pill" style="font-size:0.8rem;" type="button">
-                  Manage Offline Songs
+                  Manage Offline Mezmurs
                 </button>
-                <button id="btnClearOfflineDownloads" class="btn-pill btn-danger-pill" style="font-size:0.8rem;" type="button">
+                <button id="btnClearOfflineDownloads" class="btn-pill btn-danger-pill" style="font-size:0.8rem;"
+                  type="button">
                   Clear Downloaded Cache
                 </button>
               </div>
@@ -1326,14 +1437,15 @@
                   <div style="font-weight:600; font-size:0.86rem;">App Version</div>
                   <div style="font-size:0.75rem; color:var(--color-text-dim);">Release build version</div>
                 </div>
-                <span class="badge-status-active" id="appVersionBadge">v2.9.3</span>
+                <span class="badge-status-active" id="appVersionBadge">v3.0.0</span>
               </div>
 
               <div
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem;">Service Worker Cache</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v50 (Active)</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);" id="swCacheStatusLabel">Cache v51
+                    (Active)</div>
                 </div>
                 <button id="btnCheckForAppUpdate" class="btn-pill" style="font-size:0.8rem;" type="button">
                   Check for Updates
@@ -1344,7 +1456,8 @@
                 style="display:flex; align-items:center; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid rgba(255,255,255,0.06);">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem;">Keyboard Shortcuts</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Quick playback, search &amp; navigation keys</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Quick playback, search &amp; navigation
+                    keys</div>
                 </div>
                 <button id="btnOpenShortcutsHelp" class="btn-pill" style="font-size:0.8rem;" type="button">
                   View Shortcuts (?)
@@ -1355,7 +1468,8 @@
                 style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.6rem; padding:0.55rem 0 0;">
                 <div>
                   <div style="font-weight:600; font-size:0.86rem;">Official TikTok</div>
-                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Daily synchronized lyric drops &amp; sound clips</div>
+                  <div style="font-size:0.75rem; color:var(--color-text-dim);">Daily synchronized lyric drops &amp;
+                    sound clips</div>
                 </div>
                 <a href="https://www.tiktok.com/@Ethio_Lyrics_Media" target="_blank" rel="noopener noreferrer"
                   class="btn-primary"
@@ -1408,26 +1522,26 @@
           </button>
 
           <div id="reactionsDropdown" class="reactions-popover-tray" style="display:none;">
-            <button class="btn-reaction" data-reaction="fire" title="Fire Beat" type="button">
+            <button class="btn-reaction" data-reaction="fire" title="Uplifting Spirit" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1">
                 <path
                   d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
               </svg>
             </button>
-            <button class="btn-reaction" data-reaction="heart" title="Love Song" type="button">
+            <button class="btn-reaction" data-reaction="heart" title="Love Mezmur" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec4899" stroke="#ec4899" stroke-width="1">
                 <path
                   d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
             </button>
-            <button class="btn-reaction" data-reaction="music" title="Groove Vibes" type="button">
+            <button class="btn-reaction" data-reaction="music" title="Sacred Zema" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2.2">
                 <path d="M9 18V5l12-2v13" />
                 <circle cx="6" cy="18" r="3" />
                 <circle cx="18" cy="16" r="3" />
               </svg>
             </button>
-            <button class="btn-reaction" data-reaction="sparkle" title="Cheers" type="button">
+            <button class="btn-reaction" data-reaction="sparkle" title="Amen &amp; Blessing" type="button">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2">
                 <path
                   d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
@@ -1474,7 +1588,7 @@
         </div>
         <!-- Left Track Info (Clicking opens Lyrics) -->
         <div class="track-pill-info" id="dockTrackInfo" title="Click to view Synced Lyrics">
-          <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork" title="View Song Details">
+          <div id="playerMiniArtWrap" class="track-mini-art-wrap has-default-artwork" title="View Mezmur Details">
             <div class="elm-default-artwork elm-default-artwork--mini" aria-hidden="true">
               <elm-logo variant="icon" animated class="elm-default-artwork-logo"></elm-logo>
             </div>
@@ -1482,8 +1596,8 @@
               crossorigin="anonymous" onerror="this.parentElement.classList.add('has-default-artwork')">
           </div>
           <div class="track-text-meta">
-            <div id="playerMiniTitle" class="track-mini-title">No Track Loaded</div>
-            <div id="playerMiniArtist" class="track-mini-artist">Select a track to begin</div>
+            <div id="playerMiniTitle" class="track-mini-title">No Mezmur Loaded</div>
+            <div id="playerMiniArtist" class="track-mini-artist">Select a Mezmur to begin</div>
           </div>
           <div class="dock-track-quick-actions" onclick="event.stopPropagation();">
             <button id="btnDockFavorite" class="btn-fav-toggle btn-dock-fav" title="Toggle Favorite" type="button">
@@ -1623,12 +1737,15 @@
               </svg>
             </button>
             <div id="volumePopupTray" class="volume-popup-tray">
-              <button id="btnTrayMute" class="btn-tray-mute" title="Mute / Unmute" type="button" aria-label="Mute or Unmute">
+              <button id="btnTrayMute" class="btn-tray-mute" title="Mute / Unmute" type="button"
+                aria-label="Mute or Unmute">
                 <svg id="trayMuteIconHigh" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
                 </svg>
-                <svg id="trayMuteIconMuted" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                <svg id="trayMuteIconMuted" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
+                  style="display:none;">
+                  <path
+                    d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
                 </svg>
               </button>
               <input type="range" id="volumeSlider" class="volume-slider-range" min="0" max="1" step="0.01" value="0.8"
@@ -1638,19 +1755,23 @@
           </div>
 
           <!-- Mobile Mini Play/Pause button (Visible when dock is collapsed) -->
-          <button id="btnDockMiniPlay" class="ctrl-btn btn-dock-mini-play" title="Play or Pause" type="button" style="display:none;" aria-label="Play or Pause">
+          <button id="btnDockMiniPlay" class="ctrl-btn btn-dock-mini-play" title="Play or Pause" type="button"
+            style="display:none;" aria-label="Play or Pause">
             <svg id="dockMiniPlayIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="6 3 20 12 6 21 6 3" />
             </svg>
-            <svg id="dockMiniPauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+            <svg id="dockMiniPauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"
+              style="display:none;">
               <rect x="6" y="4" width="4" height="16" />
               <rect x="14" y="4" width="4" height="16" />
             </svg>
           </button>
 
           <!-- Mobile Dock Collapse/Expand Toggle Button -->
-          <button id="btnDockCollapse" class="ctrl-btn btn-dock-collapse" title="Collapse / Expand Player" type="button" aria-label="Toggle Player Size">
-            <svg class="dock-collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <button id="btnDockCollapse" class="ctrl-btn btn-dock-collapse" title="Collapse / Expand Player" type="button"
+            aria-label="Toggle Player Size">
+            <svg class="dock-collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </button>
@@ -1750,13 +1871,14 @@
             <elm-logo variant="icon" class="modal-header-elm-icon"></elm-logo>
             <div>
               <h2 style="font-size:1.15rem; margin:0; font-weight:700;">Listen Together</h2>
-              <div style="font-size:0.75rem; color:#93c5fd;">Real-Time Synced Ethiopian Music &amp; Lyrics</div>
+              <div style="font-size:0.75rem; color:#93c5fd;">Real-Time Synced Mezmur &amp; Lyrics Fellowship</div>
             </div>
           </div>
           <button class="modal-close-btn" data-close="listenTogetherModal">&times;</button>
         </div>
 
-        <div class="modal-body" style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:calc(85vh - 75px);">
+        <div class="modal-body"
+          style="padding:1.3rem; display:flex; flex-direction:column; gap:1.2rem; overflow-y:auto; -webkit-overflow-scrolling:touch; max-height:calc(85vh - 75px);">
 
           <!-- Sync Mode Switcher: Cloud vs Local (Offline) -->
           <div id="syncModeSelectorBar" class="sync-mode-selector-bar">
@@ -1804,10 +1926,11 @@
           <div id="p2pLobbyView" style="display:none; flex-direction:column; gap:0.9rem;">
             <!-- Host Phone Card -->
             <div class="room-action-card">
-              <div class="room-action-icon-wrap" style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.35);">
+              <div class="room-action-icon-wrap"
+                style="background:rgba(16,185,129,0.15); border-color:rgba(16,185,129,0.35);">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                  <line x1="12" y1="18" x2="12.01" y2="18"/>
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                  <line x1="12" y1="18" x2="12.01" y2="18" />
                 </svg>
               </div>
               <div style="flex:1;">
@@ -1816,17 +1939,20 @@
                   Turn on hotspot. Up to 8 listeners can join and stream your songs in sync!
                 </div>
               </div>
-              <button id="btnStartP2pHost" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap; background:#10b981; border-color:#059669;" type="button">
+              <button id="btnStartP2pHost" class="btn-primary"
+                style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap; background:#10b981; border-color:#059669;"
+                type="button">
                 Host P2P
               </button>
             </div>
 
             <!-- Join Friend Phone Card -->
             <div class="room-action-card">
-              <div class="room-action-icon-wrap" style="background:rgba(96,165,250,0.15); border-color:rgba(96,165,250,0.35);">
+              <div class="room-action-icon-wrap"
+                style="background:rgba(96,165,250,0.15); border-color:rgba(96,165,250,0.35);">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
-                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
                 </svg>
               </div>
               <div style="flex:1;">
@@ -1835,7 +1961,8 @@
                   Connect to a friend's hotspot, scan their QR code, and listen together in sync.
                 </div>
               </div>
-              <button id="btnScanJoinP2p" class="btn-primary" style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
+              <button id="btnScanJoinP2p" class="btn-primary"
+                style="padding:0.55rem 1rem; font-size:0.82rem; white-space:nowrap;" type="button">
                 Scan to Join
               </button>
             </div>
@@ -1907,7 +2034,7 @@
             <div
               style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0.8rem; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid rgba(255,255,255,0.06);">
               <div style="font-size:0.8rem; color:var(--color-text-dim);">
-                Your Name: <strong id="currentParticipantNameLabel" style="color:#fff;">Music Lover</strong>
+                Your Name: <strong id="currentParticipantNameLabel" style="color:#fff;">Fellowship Listener</strong>
               </div>
               <button id="btnEditParticipantName" class="btn-pill" style="font-size:0.72rem; padding:0.25rem 0.6rem;"
                 type="button">Change</button>
@@ -1927,7 +2054,8 @@
                 <h3 id="activeRoomCodeTitle"
                   style="font-size:1.4rem; font-weight:800; letter-spacing:0.06em; color:#fff; margin:0.4rem 0 0.1rem 0;">
                   ETHIO-XXXX</h3>
-                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Session Host
+                <div id="activeRoomRoleText" style="font-size:0.78rem; color:var(--color-gold);">You are the Session
+                  Host
                 </div>
               </div>
               <button id="btnShareInviteLinkModal" class="btn-pill"
@@ -1948,7 +2076,8 @@
             <!-- Local Wi-Fi Pairing Card (QR Code & Quick Join) -->
             <div id="localRoomPairingCard" class="local-pairing-card" style="display:none;">
               <div class="local-pairing-header">
-                <div style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
+                <div
+                  style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e5b95a" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" />
                     <rect x="14" y="3" width="7" height="7" />
@@ -1957,24 +2086,28 @@
                   </svg>
                   <span>Scan to Join on Wi-Fi / Hotspot</span>
                 </div>
-                <button type="button" id="btnToggleQrCode" class="btn-pill btn-sm" style="font-size:0.7rem; padding:0.2rem 0.55rem;">Hide QR</button>
+                <button type="button" id="btnToggleQrCode" class="btn-pill btn-sm"
+                  style="font-size:0.7rem; padding:0.2rem 0.55rem;">Hide QR</button>
               </div>
               <div id="localQrContainer" class="local-qr-wrapper"></div>
               <div id="localQrUrlLabel" class="local-qr-url">http://192.168.1.15:3000/?join=ETHIO-XXXX</div>
-              <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Point any phone camera at this QR code to join in sync without internet!</div>
+              <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Point any phone camera at
+                this QR code to join in sync without internet!</div>
             </div>
 
             <!-- P2P Connected Phones Card (Star Mesh: Up to 8 Phones) -->
             <div id="p2pPeersManagerCard" class="local-pairing-card" style="display:none;">
               <div class="local-pairing-header">
-                <div style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
+                <div
+                  style="font-weight:700; font-size:0.85rem; color:#fff; display:flex; align-items:center; gap:0.4rem;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
                   </svg>
                   <span id="p2pPeersCountTitle">Connected Phones (0 / 8)</span>
                 </div>
-                <button type="button" id="btnAddP2pFriend" class="btn-pill btn-sm" style="font-size:0.75rem; padding:0.25rem 0.6rem; color:#6ee7b7; border-color:rgba(16,185,129,0.35);">
+                <button type="button" id="btnAddP2pFriend" class="btn-pill btn-sm"
+                  style="font-size:0.75rem; padding:0.25rem 0.6rem; color:#6ee7b7; border-color:rgba(16,185,129,0.35);">
                   + Pair Phone
                 </button>
               </div>
@@ -2057,14 +2190,15 @@
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
             </svg>
             <h3 id="p2pCameraTitle" style="font-size:1.05rem; margin:0; font-weight:700;">Scan QR Code</h3>
           </div>
           <button class="modal-close-btn" id="btnCloseP2pCamera">&times;</button>
         </div>
-        <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:1rem; align-items:center;">
+        <div class="modal-body"
+          style="padding:1.2rem; display:flex; flex-direction:column; gap:1rem; align-items:center;">
           <div class="p2p-scanner-box">
             <video id="p2pScannerVideo" class="p2p-scanner-video" playsinline autoplay muted></video>
             <div class="p2p-scanner-laser"></div>
@@ -2075,9 +2209,12 @@
           </div>
           <!-- Manual Code Fallback -->
           <div style="width:100%; display:flex; flex-direction:column; gap:0.4rem;">
-            <div style="font-size:0.72rem; color:var(--color-text-muted); text-align:center;">Or paste pairing code below:</div>
-            <textarea id="p2pManualCodeInput" class="form-input" rows="2" placeholder="Paste code here..." style="font-family:monospace; font-size:0.75rem; width:100%; border-radius:8px;"></textarea>
-            <button type="button" id="btnSubmitP2pManualCode" class="btn-primary" style="padding:0.45rem; font-size:0.8rem;">Submit Pairing Code</button>
+            <div style="font-size:0.72rem; color:var(--color-text-muted); text-align:center;">Or paste pairing code
+              below:</div>
+            <textarea id="p2pManualCodeInput" class="form-input" rows="2" placeholder="Paste code here..."
+              style="font-family:monospace; font-size:0.75rem; width:100%; border-radius:8px;"></textarea>
+            <button type="button" id="btnSubmitP2pManualCode" class="btn-primary"
+              style="padding:0.45rem; font-size:0.8rem;">Submit Pairing Code</button>
           </div>
         </div>
       </div>
@@ -2090,22 +2227,32 @@
           <h3 id="p2pPairingModalTitle" style="font-size:1.05rem; margin:0; font-weight:700;">Pair Phone</h3>
           <button class="modal-close-btn" id="btnCloseP2pPairingModal">&times;</button>
         </div>
-        <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:0.85rem; align-items:center;">
+        <div class="modal-body"
+          style="padding:1.2rem; display:flex; flex-direction:column; gap:0.85rem; align-items:center;">
           <div id="p2pPairingQrContainer" class="local-qr-wrapper"></div>
           <div id="p2pPairingStepText" style="font-size:0.78rem; color:#fff; text-align:center; font-weight:600;">
             Friend: scan this QR code with their phone
           </div>
-          <button type="button" id="btnP2pCopyCode" class="btn-pill btn-sm" style="font-size:0.75rem; padding:0.3rem 0.75rem; color:var(--color-gold); border-color:var(--color-gold);">📋 Copy Invite Code</button>
-          <button type="button" id="btnP2pScanFriendAnswer" class="btn-primary" style="width:100%; padding:0.6rem; font-size:0.85rem; margin-top:0.4rem;">
+          <button type="button" id="btnP2pCopyCode" class="btn-pill btn-sm"
+            style="font-size:0.75rem; padding:0.3rem 0.75rem; color:var(--color-gold); border-color:var(--color-gold);">📋
+            Copy Invite Code</button>
+          <button type="button" id="btnP2pScanFriendAnswer" class="btn-primary"
+            style="width:100%; padding:0.6rem; font-size:0.85rem; margin-top:0.4rem;">
             📸 Next: Scan Friend's Answer QR
           </button>
           <!-- Host Direct Answer Paste Fallback -->
-          <div id="p2pHostPasteAnswerBox" style="width:100%; display:none; flex-direction:column; gap:0.4rem; margin-top:0.4rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.08);">
-            <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Or paste friend's answer code directly:</div>
-            <textarea id="p2pHostAnswerInput" class="form-input" rows="2" placeholder="Paste friend's answer code here..." style="font-family:monospace; font-size:0.72rem; width:100%; border-radius:8px;"></textarea>
-            <button type="button" id="btnP2pSubmitHostAnswer" class="btn-primary" style="padding:0.45rem; font-size:0.8rem;">Connect via Code</button>
+          <div id="p2pHostPasteAnswerBox"
+            style="width:100%; display:none; flex-direction:column; gap:0.4rem; margin-top:0.4rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="font-size:0.72rem; color:var(--color-text-dim); text-align:center;">Or paste friend's answer
+              code directly:</div>
+            <textarea id="p2pHostAnswerInput" class="form-input" rows="2"
+              placeholder="Paste friend's answer code here..."
+              style="font-family:monospace; font-size:0.72rem; width:100%; border-radius:8px;"></textarea>
+            <button type="button" id="btnP2pSubmitHostAnswer" class="btn-primary"
+              style="padding:0.45rem; font-size:0.8rem;">Connect via Code</button>
           </div>
-          <button type="button" id="btnToggleHostPasteBox" class="btn-pill btn-sm" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--color-text-dim); background:transparent; border:none; cursor:pointer;">
+          <button type="button" id="btnToggleHostPasteBox" class="btn-pill btn-sm"
+            style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--color-text-dim); background:transparent; border:none; cursor:pointer;">
             Enter answer code manually ▾
           </button>
         </div>
@@ -2124,8 +2271,8 @@
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <div>
-              <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Song Details</h2>
-              <div style="font-size:0.75rem; color:var(--color-gold);">Track Metadata &amp; Lyric Preview</div>
+              <h2 style="font-size:1.1rem; margin:0; font-weight:700;">Mezmur Details</h2>
+              <div style="font-size:0.75rem; color:var(--color-gold);">Spiritual Metadata &amp; Lyric Preview</div>
             </div>
           </div>
           <button class="modal-close-btn" data-close="songDetailsModal">&times;</button>
@@ -2147,17 +2294,26 @@
               </button>
             </div>
             <div class="song-details-info">
-              <h3 id="detailModalTitle" class="song-details-title">Song Title</h3>
-              <button type="button" id="detailModalArtist" class="song-details-artist detail-clickable-link" title="View Artist">Artist Name</button>
+              <h3 id="detailModalTitle" class="song-details-title">Mezmur Title</h3>
+              <button type="button" id="detailModalArtist" class="song-details-artist detail-clickable-link"
+                title="View Zemari / Choir">Zemari Name</button>
               <div id="detailModalArtistEn" class="song-details-artist-en" style="display:none;"></div>
-              <button type="button" id="detailModalAlbum" class="song-details-sub detail-clickable-link" title="View Album">Album • 2024</button>
+              <button type="button" id="detailModalAlbum" class="song-details-sub detail-clickable-link"
+                title="View Collection">Collection • 2024</button>
               <div class="song-details-chip-row">
                 <span id="detailModalGenreChip" class="detail-badge detail-badge-genre" style="display:none;"></span>
+                <span id="detailModalSeasonChip" class="detail-badge detail-badge-season" style="display:none;"></span>
+                <span id="detailModalZemaChip" class="detail-badge detail-badge-zema" style="display:none;"></span>
+                <span id="detailModalLangChip" class="detail-badge detail-badge-lang" style="display:none;"></span>
+                <span id="detailModalVocalChip" class="detail-badge detail-badge-vocal" style="display:none;"></span>
                 <span id="detailModalLrcChip" class="detail-badge detail-badge-lrc">Synced Lyrics</span>
-                <span id="detailModalOfflineChip" class="detail-badge detail-badge-offline">Cloud Catalog</span>
+                <span id="detailModalOfflineChip" class="detail-badge detail-badge-offline">Cloud Archive</span>
               </div>
             </div>
           </div>
+
+          <!-- Rich Mezmur Liturgical & Contextual Details -->
+          <div id="detailModalMetaGrid" class="song-details-meta-grid" style="display:none;"></div>
 
           <!-- Lyrics Preview Section -->
           <div class="song-details-lyrics-box">
@@ -2235,9 +2391,18 @@
               </svg>
               <span id="detailSaveLabel">Download</span>
             </button>
+            <a id="btnDetailExternalLink" class="btn-pill" href="#" target="_blank" rel="noopener noreferrer"
+              style="display:none; justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem; grid-column: span 2; text-decoration:none;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              <span id="detailExternalLinkLabel">Listen Online (YouTube / Spotify / Web)</span>
+            </a>
             <button id="btnDetailEditSong" class="btn-pill btn-suggest-edit"
               style="justify-content:center; gap:0.45rem; font-size:0.85rem; padding:0.6rem 0.9rem; grid-column: span 2;"
-              title="Suggest edits or synchronized lyrics for this song">
+              title="Suggest edits, hymn metadata, or synchronized lyrics">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -2252,49 +2417,68 @@
     <!-- Modal: Full-Size Artwork Lightbox -->
     <div id="artworkLightboxModal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Album Artwork">
       <div class="artwork-lightbox-content">
-        <button id="btnCloseArtworkLightbox" class="artwork-lightbox-close" type="button" aria-label="Close Artwork">&times;</button>
-        <img id="artworkLightboxImg" src="brand/elm-default-cover.svg" alt="Album Artwork" class="artwork-lightbox-img" crossorigin="anonymous">
+        <button id="btnCloseArtworkLightbox" class="artwork-lightbox-close" type="button"
+          aria-label="Close Artwork">&times;</button>
+        <img id="artworkLightboxImg" src="brand/elm-default-cover.svg" alt="Album Artwork" class="artwork-lightbox-img"
+          crossorigin="anonymous">
         <div id="artworkLightboxCaption" class="artwork-lightbox-caption"></div>
       </div>
     </div>
 
     <!-- Modal: Suggest Track Changes & Lyrics Review -->
     <div id="editSongReviewModal" class="modal-overlay">
-      <div class="modal-card edit-review-modal-card" style="max-width: 580px; width: 94%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-card edit-review-modal-card"
+        style="max-width: 580px; width: 94%; max-height: 90vh; display: flex; flex-direction: column;">
         <div class="modal-header">
           <div style="display:flex; align-items:center; gap:0.65rem;">
-            <div style="width:34px; height:34px; border-radius:10px; background:rgba(229,185,90,0.15); display:flex; align-items:center; justify-content:center; color:var(--color-gold);">
+            <div
+              style="width:34px; height:34px; border-radius:10px; background:rgba(229,185,90,0.15); display:flex; align-items:center; justify-content:center; color:var(--color-gold);">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 20h9" />
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
             </div>
             <div>
-              <h2 style="font-size:1.15rem; margin:0; font-weight:700; color:#fff;">Suggest Song Edits &amp; Lyrics</h2>
-              <div style="font-size:0.75rem; color:var(--color-gold);">Community Contribution • Sent to Admin Review</div>
+              <h2 style="font-size:1.15rem; margin:0; font-weight:700; color:#fff;">Suggest Mezmur Edits &amp; Lyrics
+              </h2>
+              <div style="font-size:0.75rem; color:var(--color-gold);">Community Contribution • Sent to Admin Review
+              </div>
             </div>
           </div>
           <button class="modal-close-btn" data-close="editSongReviewModal">&times;</button>
         </div>
-        
-        <div class="modal-body" style="padding:1.25rem 1.4rem; overflow-y:auto; display:flex; flex-direction:column; gap:1.1rem; flex:1;">
+
+        <div class="modal-body"
+          style="padding:1.25rem 1.4rem; overflow-y:auto; display:flex; flex-direction:column; gap:1.1rem; flex:1;">
           <!-- Informational Notice -->
-          <div style="background:rgba(229,185,90,0.08); border:1px solid rgba(229,185,90,0.25); border-radius:12px; padding:0.75rem 1rem; display:flex; gap:0.75rem; align-items:flex-start;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2" style="flex-shrink:0; margin-top:2px;">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          <div
+            style="background:rgba(229,185,90,0.08); border:1px solid rgba(229,185,90,0.25); border-radius:12px; padding:0.75rem 1rem; display:flex; gap:0.75rem; align-items:flex-start;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2"
+              style="flex-shrink:0; margin-top:2px;">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
             <div style="font-size:0.8rem; color:#f3f4f6; line-height:1.45;">
-              Help improve Ethiopian music data! You can correct track titles, add English transliterations, specify the correct release year/album, or add synchronized Amharic lyrics. Your contribution will be reviewed by admins and published for all users.
+              Help enrich Ethiopian Mezmur data! Correct titles, add English transliterations, add liturgical seasons,
+              Zema modes, scripture references (ጥቅስ), or synchronized lyrics. Your contribution will be reviewed by
+              admins for the community archive.
             </div>
           </div>
 
-          <!-- Target Song Preview -->
-          <div style="display:flex; align-items:center; gap:0.85rem; padding:0.65rem 0.85rem; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
-            <img id="editReviewCurrentArt" src="brand/elm-default-cover.svg" style="width:48px; height:48px; border-radius:8px; object-fit:cover;" alt="Current Artwork">
+          <!-- Target Mezmur Preview -->
+          <div
+            style="display:flex; align-items:center; gap:0.85rem; padding:0.65rem 0.85rem; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.08);">
+            <img id="editReviewCurrentArt" src="brand/elm-default-cover.svg"
+              style="width:48px; height:48px; border-radius:8px; object-fit:cover;" alt="Current Artwork">
             <div style="flex:1; min-width:0;">
-              <div style="font-size:0.72rem; text-transform:uppercase; color:var(--color-text-dim); letter-spacing:0.04em;">Editing Catalog Track</div>
-              <div id="editReviewCurrentTitle" style="font-weight:700; font-size:0.95rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Song Title</div>
-              <div id="editReviewCurrentArtist" style="font-size:0.78rem; color:var(--color-gold);">Artist Name</div>
+              <div
+                style="font-size:0.72rem; text-transform:uppercase; color:var(--color-text-dim); letter-spacing:0.04em;">
+                Editing Catalog Mezmur</div>
+              <div id="editReviewCurrentTitle"
+                style="font-weight:700; font-size:0.95rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                Mezmur Title</div>
+              <div id="editReviewCurrentArtist" style="font-size:0.78rem; color:var(--color-gold);">Zemari Name</div>
             </div>
           </div>
 
@@ -2302,54 +2486,68 @@
             <!-- Titles Row -->
             <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
-                <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Song Title (ርዕስ) *</label>
-                <input type="text" id="inputEditReviewTitle" class="form-input" required placeholder="e.g. ወለታ (Weleta)">
+                <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Mezmur Title (ርዕስ)
+                  *</label>
+                <input type="text" id="inputEditReviewTitle" class="form-input" required
+                  placeholder="e.g. ይትባረክ እግዚአብሔር">
               </div>
               <div class="form-group" style="margin:0;">
-                <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">English Transliteration</label>
-                <input type="text" id="inputEditReviewTitleEn" class="form-input" placeholder="e.g. Weleta">
+                <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">English
+                  Transliteration</label>
+                <input type="text" id="inputEditReviewTitleEn" class="form-input" placeholder="e.g. Yitbarek Egziabher">
               </div>
             </div>
 
-            <!-- Artist Picker (Existing or New) -->
+            <!-- Zemari Picker (Existing or New) -->
             <div class="form-group" style="margin:0;">
-              <label for="selectEditReviewArtist" style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Artist *</label>
+              <label for="selectEditReviewArtist"
+                style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Zemari / Choir *</label>
               <select id="selectEditReviewArtist" class="form-input form-select">
-                <option value="">-- Select Existing Artist --</option>
-                <option value="__new__">+ Add New Artist...</option>
+                <option value="">-- Select Existing Zemari / Choir --</option>
+                <option value="__new__">+ Add New Zemari / Choir...</option>
               </select>
-              <div id="editReviewNewArtistWrap" class="edit-review-grid-2col" style="display:none; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.55rem;">
-                <input type="text" id="inputEditReviewArtist" class="form-input" placeholder="Artist Name (አርቲስት) *">
-                <input type="text" id="inputEditReviewArtistEn" class="form-input" placeholder="Artist (English, Optional)">
+              <div id="editReviewNewArtistWrap" class="edit-review-grid-2col"
+                style="display:none; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.55rem;">
+                <input type="text" id="inputEditReviewArtist" class="form-input"
+                  placeholder="Zemari / Choir Name (ዘማሪ) *">
+                <input type="text" id="inputEditReviewArtistEn" class="form-input"
+                  placeholder="Zemari (English, Optional)">
               </div>
             </div>
 
-            <!-- Album Picker (For Selected Artist) & Genre -->
+            <!-- Collection Picker (For Selected Zemari) & Mezmur Category -->
             <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
-                <label for="selectEditReviewAlbum" style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Album (For Selected Artist)</label>
+                <label for="selectEditReviewAlbum"
+                  style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Collection / Album</label>
                 <select id="selectEditReviewAlbum" class="form-input form-select">
-                  <option value="Single">Single (No Album)</option>
-                  <option value="__new__">+ Add New Album...</option>
+                  <option value="Single">Single (Standalone Mezmur)</option>
+                  <option value="__new__">+ Add New Collection...</option>
                 </select>
                 <div id="editReviewNewAlbumWrap" style="display:none; margin-top:0.5rem;">
-                  <input type="text" id="inputEditReviewAlbum" class="form-input" placeholder="New Album Title">
+                  <input type="text" id="inputEditReviewAlbum" class="form-input" placeholder="New Collection Title">
                 </div>
               </div>
               <div class="form-group" style="margin:0;">
-                <label for="selectEditReviewGenre" style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Genre / Style</label>
+                <label for="selectEditReviewGenre"
+                  style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Mezmur Category (የመዝሙር
+                  ዓይነት)</label>
                 <select id="selectEditReviewGenre" class="form-input form-select">
-                  <option value="">Auto-detect / Unspecified</option>
-                  <option value="Tizita">Tizita</option>
-                  <option value="Ethio-Pop">Ethio-Pop</option>
-                  <option value="Bati">Bati</option>
-                  <option value="Ambassel">Ambassel</option>
-                  <option value="Anchihoye">Anchihoye</option>
-                  <option value="Eskista">Eskista</option>
-                  <option value="Ethio-Jazz">Ethio-Jazz</option>
-                  <option value="Reggae">Reggae</option>
-                  <option value="Spiritual / Gospel">Spiritual / Gospel</option>
-                  <option value="Traditional">Traditional</option>
+                  <option value="">Unspecified / Auto-detect</option>
+                  <option value="Misgana (Praise & Thanksgiving)">Misgana (Praise &amp; Thanksgiving)</option>
+                  <option value="Tselot & Limena (Prayer & Supplication)">Tselot &amp; Limena (Prayer &amp;
+                    Supplication)</option>
+                  <option value="Nisiha (Repentance & Mercy)">Nisiha (Repentance &amp; Mercy)</option>
+                  <option value="Be'alat (Feast & Holiday)">Be'alat (Feast &amp; Holiday)</option>
+                  <option value="Mariam (Kidist Dingil)">Mariam (Kidist Dingil)</option>
+                  <option value="Medhane Alem & Meskel">Medhane Alem &amp; Meskel</option>
+                  <option value="Qiddusan & Melaekt (Saints & Angels)">Qiddusan &amp; Melaekt (Saints &amp; Angels)
+                  </option>
+                  <option value="Werib & Mahlet (Liturgical Chant)">Werib &amp; Mahlet (Liturgical Chant)</option>
+                  <option value="Kidassie & Zema (Liturgy)">Kidassie &amp; Zema (Liturgy)</option>
+                  <option value="Wedding / Serg (የሠርግ)">Wedding / Serg (የሠርግ)</option>
+                  <option value="Sunday School / Kids (የሕጻናት)">Sunday School / Kids (የሕጻናት)</option>
+                  <option value="Instrumental / Begena">Instrumental / Begena</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -2358,54 +2556,216 @@
             <!-- Year & Track # Row -->
             <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
               <div class="form-group" style="margin:0;">
-                <label for="inputEditReviewYear" style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Release Year</label>
-                <input type="text" id="inputEditReviewYear" class="form-input" placeholder="e.g. 2014 or 2022">
+                <label for="inputEditReviewYear"
+                  style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Release Year</label>
+                <input type="text" id="inputEditReviewYear" class="form-input" placeholder="e.g. 2016 E.C. / 2024">
               </div>
               <div class="form-group" style="margin:0;">
-                <label for="inputEditReviewTrackNumber" style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Track # in Album</label>
-                <input type="number" id="inputEditReviewTrackNumber" class="form-input" min="1" max="99" placeholder="e.g. 1">
+                <label for="inputEditReviewTrackNumber"
+                  style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Track # in Collection</label>
+                <input type="number" id="inputEditReviewTrackNumber" class="form-input" min="1" max="99"
+                  placeholder="e.g. 1">
+              </div>
+            </div>
+
+            <!-- Spiritual & Liturgical Mezmur Metadata -->
+            <div class="mezmur-meta-panel mezmur-meta-panel--compact">
+              <div class="mezmur-meta-panel-header">
+                <div class="mezmur-meta-panel-title">Spiritual &amp; Liturgical Context</div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewSeason"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Liturgical Season (ወቅት /
+                    ጾም)</label>
+                  <select id="selectEditReviewSeason" class="form-input form-select">
+                    <option value="">Anytime / Unspecified</option>
+                    <option value="Year-Round (ዘወትር)">Year-Round (ዘወትር)</option>
+                    <option value="Abiy Tsom / Great Lent (ዐቢይ ጾም)">Abiy Tsom / Great Lent (ዐቢይ ጾም)</option>
+                    <option value="Himamat / Holy Week (ሕማማት)">Himamat / Holy Week (ሕማማት)</option>
+                    <option value="Tinsae / Easter (ትንሣኤ)">Tinsae / Easter (ትንሣኤ)</option>
+                    <option value="Zemene Tsige (ዘመነ ጽጌ)">Zemene Tsige (ዘመነ ጽጌ)</option>
+                    <option value="Kiremt (ክረምት)">Kiremt (ክረምት)</option>
+                    <option value="Filseta (ፍልሰታ)">Filseta (ፍልሰታ)</option>
+                    <option value="Meskel (መስቀል)">Meskel (መስቀል)</option>
+                    <option value="Gena / Lideta (ገና)">Gena / Lideta (ገና)</option>
+                    <option value="Timket (ጥምቀት)">Timket (ጥምቀት)</option>
+                    <option value="Enkutatash (ዘመን መለወጫ)">Enkutatash (ዘመን መለወጫ)</option>
+                    <option value="Tsome Nebiyat (Advent)">Tsome Nebiyat (Advent)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewFeast"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Saint / Feast
+                    (መታሰቢያ)</label>
+                  <input type="text" id="inputEditReviewFeast" class="form-input" list="feastSuggestionsList"
+                    placeholder="e.g. Kidus Michael">
+                </div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewZema"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Zema / Qenet Mode</label>
+                  <select id="selectEditReviewZema" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Ge'ez (ግዕዝ)">Ge'ez (ግዕዝ)</option>
+                    <option value="Ezel (ዕዝል)">Ezel (ዕዝል)</option>
+                    <option value="Araray (አራራይ)">Araray (አራራይ)</option>
+                    <option value="Begena / Traditional">Begena / Traditional</option>
+                    <option value="Tizita">Tizita</option>
+                    <option value="Bati">Bati</option>
+                    <option value="Ambassel">Ambassel</option>
+                    <option value="Anchihoye">Anchihoye</option>
+                    <option value="Modern Choir / Studio">Modern Choir / Studio</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewVocal"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Vocal / Ensemble</label>
+                  <select id="selectEditReviewVocal" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Solo Zemari (ነጠላ ዘማሪ)">Solo Zemari (ነጠላ ዘማሪ)</option>
+                    <option value="Choir / Zemariyan (መዘምራን)">Choir / Zemariyan (መዘምራን)</option>
+                    <option value="Duet / Group">Duet / Group</option>
+                    <option value="Male Vocal">Male Vocal</option>
+                    <option value="Female Vocal">Female Vocal</option>
+                    <option value="Congregational / A Cappella">Congregational / A Cappella</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewLanguage"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Language (ቋንቋ)</label>
+                  <select id="selectEditReviewLanguage" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Amharic (አማርኛ)">Amharic (አማርኛ)</option>
+                    <option value="Ge'ez (ግዕዝ)">Ge'ez (ግዕዝ)</option>
+                    <option value="Amharic & Ge'ez">Amharic &amp; Ge'ez</option>
+                    <option value="Afaan Oromo">Afaan Oromo</option>
+                    <option value="Tigrigna (ትግርኛ)">Tigrigna (ትግርኛ)</option>
+                    <option value="Other Ethiopian Regional">Other Ethiopian Regional</option>
+                    <option value="Multilingual / English">Multilingual / English</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewMood"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Devotional Mood</label>
+                  <select id="selectEditReviewMood" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Reverent & Contemplative (ተመስጦ)">Reverent &amp; Contemplative (ተመስጦ)</option>
+                    <option value="Joyful & Festive (ደስታና ምስጋና)">Joyful &amp; Festive (ደስታና ምስጋና)</option>
+                    <option value="Sorrowful & Lenten (ሐዘንና ንስሐ)">Sorrowful &amp; Lenten (ሐዘንና ንስሐ)</option>
+                    <option value="Comforting & Peaceful (መጽናናት)">Comforting &amp; Peaceful (መጽናናት)</option>
+                    <option value="Solemn Intercession (ምልጃ)">Solemn Intercession (ምልጃ)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="selectEditReviewEra"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Tradition / Era</label>
+                  <select id="selectEditReviewEra" class="form-input form-select">
+                    <option value="">Unspecified</option>
+                    <option value="Classical / Traditional (ቀደምት)">Classical / Traditional (ቀደምት)</option>
+                    <option value="Contemporary (ዘመናዊ)">Contemporary (ዘመናዊ)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewComposer"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Composer / Source</label>
+                  <input type="text" id="inputEditReviewComposer" class="form-input"
+                    placeholder="e.g. St. Yared / Choir">
+                </div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewScripture"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Scripture (ጥቅስ)</label>
+                  <input type="text" id="inputEditReviewScripture" class="form-input" placeholder="e.g. መዝ ፳፫">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewDebir"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Church / Debir
+                    (ደብር)</label>
+                  <input type="text" id="inputEditReviewDebir" class="form-input" placeholder="e.g. Kidist Silassie">
+                </div>
+              </div>
+
+              <div class="edit-review-grid-2col" style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem;">
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewExternalUrl"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Listen Link (YouTube /
+                    Spotify)</label>
+                  <input type="url" id="inputEditReviewExternalUrl" class="form-input"
+                    placeholder="https://youtube.com/...">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label for="inputEditReviewTags"
+                    style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Themes / Keywords</label>
+                  <input type="text" id="inputEditReviewTags" class="form-input" placeholder="mercy, cross, praise">
+                </div>
               </div>
             </div>
 
             <!-- Cover Artwork URL -->
             <div class="form-group" style="margin:0;">
-              <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Cover Artwork Image URL</label>
-              <input type="url" id="inputEditReviewCover" class="form-input" placeholder="https://... (direct image link or leave existing)">
+              <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Cover Artwork Image
+                URL</label>
+              <input type="url" id="inputEditReviewCover" class="form-input"
+                placeholder="https://... (direct image link or leave existing)">
             </div>
 
             <!-- Synchronized LRC Lyrics -->
             <div class="form-group" style="margin:0;">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.35rem;">
-                <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim); display:flex; align-items:center; gap:0.4rem;">
+                <label
+                  style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim); display:flex; align-items:center; gap:0.4rem;">
                   <span>Synchronized LRC Lyrics</span>
-                  <span style="font-size:0.68rem; color:var(--color-gold); background:rgba(229,185,90,0.15); padding:0.1rem 0.4rem; border-radius:4px;">Recommended</span>
+                  <span
+                    style="font-size:0.68rem; color:var(--color-gold); background:rgba(229,185,90,0.15); padding:0.1rem 0.4rem; border-radius:4px;">Recommended</span>
                 </label>
                 <div style="display:flex; gap:0.4rem;">
-                  <label for="inputEditReviewLrcFile" class="btn-pill btn-xs" style="font-size:0.72rem; padding:0.2rem 0.55rem; cursor:pointer;">
+                  <label for="inputEditReviewLrcFile" class="btn-pill btn-xs"
+                    style="font-size:0.72rem; padding:0.2rem 0.55rem; cursor:pointer;">
                     Upload .lrc
                   </label>
                   <input type="file" id="inputEditReviewLrcFile" accept=".lrc,.txt" style="display:none;">
-                  <button type="button" id="btnEditReviewOpenSyncStudio" class="btn-pill btn-xs" style="font-size:0.72rem; padding:0.2rem 0.55rem;">
+                  <button type="button" id="btnEditReviewOpenSyncStudio" class="btn-pill btn-xs"
+                    style="font-size:0.72rem; padding:0.2rem 0.55rem;">
                     Sync Studio 🎙️
                   </button>
                 </div>
               </div>
-              <textarea id="inputEditReviewLrc" class="form-input" rows="7" placeholder="[00:12.50]የዘፈኑ ግጥም እዚህ ይፃፋል...&#10;[00:18.20]ሁለተኛ ስንኝ በጊዜ ማስተካከያ...&#10;Paste .lrc format lyrics with [mm:ss.xx] timestamps" style="font-family:ui-monospace, monospace; font-size:0.8rem; line-height:1.5; resize:vertical;"></textarea>
+              <textarea id="inputEditReviewLrc" class="form-input" rows="7"
+                placeholder="[00:12.50]የመዝሙሩ ግጥም እዚህ ይፃፋል...&#10;[00:18.20]ሁለተኛ ስንኝ በጊዜ ማስተካከያ...&#10;Paste .lrc format lyrics with [mm:ss.xx] timestamps"
+                style="font-family:ui-monospace, monospace; font-size:0.8rem; line-height:1.5; resize:vertical;"></textarea>
             </div>
 
             <!-- Contributor Note -->
             <div class="form-group" style="margin:0;">
-              <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Note for Reviewer (Optional)</label>
-              <input type="text" id="inputEditReviewNote" class="form-input" placeholder="e.g. Fixed Amharic spelling, added 1994 release year, and synced lyrics">
+              <label style="font-size:0.78rem; font-weight:600; color:var(--color-text-dim);">Note for Reviewer
+                (Optional)</label>
+              <input type="text" id="inputEditReviewNote" class="form-input"
+                placeholder="e.g. Fixed Amharic spelling, added Lenten season, and synced lyrics">
             </div>
 
-            <div id="editReviewErrorMsg" style="display:none; color:#fca5a5; font-size:0.8rem; padding:0.5rem 0.75rem; background:rgba(239,68,68,0.15); border-radius:8px;"></div>
+            <div id="editReviewErrorMsg"
+              style="display:none; color:#fca5a5; font-size:0.8rem; padding:0.5rem 0.75rem; background:rgba(239,68,68,0.15); border-radius:8px;">
+            </div>
           </form>
         </div>
 
-        <div class="modal-footer" style="padding:0.9rem 1.4rem; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.25);">
+        <div class="modal-footer"
+          style="padding:0.9rem 1.4rem; display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.25);">
           <button type="button" id="btnCancelEditReview" class="btn-pill" style="font-size:0.82rem;">Cancel</button>
-          <button type="button" id="btnSubmitEditReview" class="btn-primary" style="font-size:0.85rem; padding:0.55rem 1.25rem; font-weight:700;">
+          <button type="button" id="btnSubmitEditReview" class="btn-primary"
+            style="font-size:0.85rem; padding:0.55rem 1.25rem; font-weight:700;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -2440,16 +2800,20 @@
             <label>Playlist Cover <span class="optional-badge">(Upload or Choose Preset)</span></label>
             <div class="cover-picker-container">
               <div class="cover-preview-box" id="playlistCoverPreviewBox" title="Click to upload playlist cover">
-                <img id="playlistCoverPreviewImg" src="brand/elm-default-cover.svg" alt="Playlist Cover" class="cover-preview-img" crossorigin="anonymous">
+                <img id="playlistCoverPreviewImg" src="brand/elm-default-cover.svg" alt="Playlist Cover"
+                  class="cover-preview-img" crossorigin="anonymous">
                 <div class="cover-preview-overlay"><span>Change</span></div>
               </div>
               <div class="cover-picker-info">
                 <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
-                  <button type="button" id="btnUploadPlaylistCover" class="btn-pill" style="font-size:0.75rem;">Upload Image</button>
-                  <button type="button" id="btnResetPlaylistCover" class="btn-pill" style="font-size:0.75rem; color:#ff7b7b;">Clear</button>
+                  <button type="button" id="btnUploadPlaylistCover" class="btn-pill" style="font-size:0.75rem;">Upload
+                    Image</button>
+                  <button type="button" id="btnResetPlaylistCover" class="btn-pill"
+                    style="font-size:0.75rem; color:#ff7b7b;">Clear</button>
                   <input type="file" id="inputPlaylistCoverFile" accept="image/*" style="display:none;">
                 </div>
-                <div style="font-size:0.74rem; color:var(--color-text-dim); margin-top:0.35rem;">Or select from website artwork below:</div>
+                <div style="font-size:0.74rem; color:var(--color-text-dim); margin-top:0.35rem;">Or select from website
+                  artwork below:</div>
               </div>
             </div>
             <div id="playlistPresetGallery" class="playlist-preset-gallery"></div>
@@ -2457,18 +2821,20 @@
 
           <div class="form-group">
             <label for="inputPlaylistTitle">Playlist Name <span class="required-badge">* Required</span></label>
-            <input type="text" id="inputPlaylistTitle" class="form-input" placeholder="e.g. My Tizita Favorites"
-              required maxlength="50">
+            <input type="text" id="inputPlaylistTitle" class="form-input"
+              placeholder="e.g. Abiy Tsom &amp; Nisiha Mezmurs" required maxlength="50">
           </div>
           <div class="form-group">
             <label for="inputPlaylistDesc">Description <span class="optional-badge">(Optional)</span></label>
             <textarea id="inputPlaylistDesc" class="form-input" rows="2"
-              placeholder="Give your playlist a vibe or notes..." maxlength="140" style="resize:none;"></textarea>
+              placeholder="Give your collection a prayer theme or notes..." maxlength="140"
+              style="resize:none;"></textarea>
           </div>
           <div style="display:flex; justify-content:flex-end; gap:0.65rem; margin-top:0.4rem;">
             <button type="button" class="btn-pill" data-close="createPlaylistModal"
               style="padding:0.55rem 1rem;">Cancel</button>
-            <button type="submit" id="btnSubmitCreatePlaylist" class="btn-primary" style="padding:0.55rem 1.3rem; font-weight:600;">Create</button>
+            <button type="submit" id="btnSubmitCreatePlaylist" class="btn-primary"
+              style="padding:0.55rem 1.3rem; font-weight:600;">Create</button>
           </div>
         </form>
       </div>
@@ -2494,10 +2860,10 @@
             <div style="flex:1; min-width:0;">
               <div id="addToPlaylistTitle"
                 style="font-weight:700; font-size:0.92rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                Song Title</div>
+                Mezmur Title</div>
               <div id="addToPlaylistArtist"
                 style="font-size:0.78rem; color:var(--color-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                Artist</div>
+                Zemari</div>
             </div>
           </div>
 
@@ -2550,8 +2916,8 @@
             <div style="flex:1; min-width:0;">
               <div id="queueNowPlayingTitle"
                 style="font-weight:700; font-size:0.9rem; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                No Track Playing</div>
-              <div id="queueNowPlayingArtist" style="font-size:0.78rem; color:var(--color-text-dim);">Select a song to
+                No Mezmur Playing</div>
+              <div id="queueNowPlayingArtist" style="font-size:0.78rem; color:var(--color-text-dim);">Select a Mezmur to
                 start listening</div>
             </div>
             <div class="queue-equalizer-bars">
@@ -2562,7 +2928,7 @@
           <!-- Upcoming Queue List -->
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem;">
             <div class="queue-section-label" style="margin:0;">Next in Queue</div>
-            <span id="queueUpcomingCount" style="font-size:0.72rem; color:var(--color-text-dim);">0 tracks</span>
+            <span id="queueUpcomingCount" style="font-size:0.72rem; color:var(--color-text-dim);">0 Mezmurs</span>
           </div>
           <div id="queueUpcomingList" class="queue-tracks-list"></div>
         </div>
@@ -2582,20 +2948,20 @@
           <button class="modal-close-btn" data-close="sleepTimerModal">&times;</button>
         </div>
         <div class="modal-body" style="padding:1.2rem; display:flex; flex-direction:column; gap:0.75rem;">
-          <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0 0 0.4rem 0;">Music will automatically fade
+          <p style="font-size:0.82rem; color:var(--color-text-dim); margin:0 0 0.4rem 0;">Audio will automatically fade
             out and pause after the chosen duration.</p>
           <button class="btn-timer-option" data-timer="15" type="button">15 Minutes</button>
           <button class="btn-timer-option" data-timer="30" type="button">30 Minutes</button>
           <button class="btn-timer-option" data-timer="45" type="button">45 Minutes</button>
           <button class="btn-timer-option" data-timer="60" type="button">1 Hour</button>
-          <button class="btn-timer-option" data-timer="end_of_track" type="button">End of Current Song</button>
+          <button class="btn-timer-option" data-timer="end_of_track" type="button">End of Current Mezmur</button>
           <button id="btnTurnOffSleepTimer" class="btn-timer-option btn-timer-off"
             style="display:none; color:#f87171; border-color:rgba(239,68,68,0.3);" type="button">Turn Off Timer</button>
         </div>
       </div>
     </div>
 
-    <!-- 5. Add Songs to Playlist Modal (Catalog Picker) -->
+    <!-- 5. Add Mezmurs to Playlist Modal (Catalog Picker) -->
     <div id="addTracksToPlaylistPickerModal" class="modal-overlay">
       <div class="modal-card"
         style="max-width: 540px; width: 92%; max-height:85vh; display:flex; flex-direction:column;">
@@ -2604,13 +2970,13 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" stroke-width="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add Songs to Playlist</h3>
+            <h3 style="margin:0; font-size:1.15rem; font-weight:700;">Add Mezmurs to Playlist</h3>
           </div>
           <button class="modal-close-btn" data-close="addTracksToPlaylistPickerModal">&times;</button>
         </div>
         <div style="padding:0.75rem 1.25rem 0 1.25rem;">
           <input type="text" id="inputPlaylistSongSearch" class="form-input"
-            placeholder="Search song title or artist...">
+            placeholder="Search Mezmur title or Zemari...">
         </div>
         <div id="playlistSongPickerList" class="modal-body"
           style="padding:1rem 1.25rem; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem;"></div>
@@ -2627,13 +2993,15 @@
             <path d="m21 21-4.3-4.3"></path>
           </svg>
           <input type="text" id="inputCommandSearch" class="command-search-input"
-            placeholder="Search Amharic/English song, artist, album, or lyric line..." autocomplete="off">
-          <button id="btnClearCommandSearch" class="btn-clear-search" style="display:none; position:static;" type="button" aria-label="Clear search">&times;</button>
+            placeholder="Search Mezmur, Zemari, season, saint, debir, or lyric line..." autocomplete="off">
+          <button id="btnClearCommandSearch" class="btn-clear-search" style="display:none; position:static;"
+            type="button" aria-label="Clear search">&times;</button>
           <button class="modal-close-btn" data-close="globalSearchModal" aria-label="Close search">&times;</button>
         </div>
         <div id="commandSearchResults" class="command-search-results">
           <div class="command-search-empty">
-            Type to search titles (Amharic or English), artists, albums, or synced lyric lines. Press <kbd>Esc</kbd> to close.
+            Type to search Mezmurs (Amharic, Ge'ez or English), Zemariyan, seasons, saints, or synced lyric lines. Press
+            <kbd>Esc</kbd> to close.
           </div>
         </div>
       </div>

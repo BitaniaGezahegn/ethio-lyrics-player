@@ -1,13 +1,13 @@
 /**
- * RecommendationEngine - Intelligent Ethio-Music Discovery & Recommendation System
- * 
+ * RecommendationEngine - Intelligent Ethiopian Mezmur Discovery & Recommendation System
+ *
  * Features:
- * 1. Multi-factor user affinity scoring (plays, favorites, full listens, recent context)
- * 2. Time-of-day contextual vibes (Morning Uplift, Afternoon Rhythms, Evening Tizita, Late Night Soul)
- * 3. Ethiopian music categorization (Tizita/Vintage Golden Era, Modern Addis Pop, Synced Lyrics Showcase)
- * 4. Context-aware "Because you listened to [Artist]" recommendation seeds
- * 5. Quick Resume / Jump Back In shelf generation
- * 6. Iconic Ethiopian artist clustering and discovery
+ * 1. Multi-factor affinity scoring (Zemari affinity, hymnCategory, liturgicalSeason, zemaMode, vocalStyle, tags, LRC richness)
+ * 2. Time-of-day devotional context (Morning Praise, Midday Reflection, Evening Vespers, Night Vigil)
+ * 3. Liturgical & Zema classification (Misgana, Nisiha, Mariam, Begena, Ge'ez, Ezel, Araray)
+ * 4. Context-aware "Related Mezmurs / Because You Listened" similarity matching
+ * 5. Quick Resume / Continue Listening shelf generation
+ * 6. Zemari & Choir discovery grouping
  */
 
 export class RecommendationEngine {
@@ -25,51 +25,51 @@ export class RecommendationEngine {
   }
 
   /**
-   * Determine time-of-day greeting and Ethiopian musical mood
+   * Determine time-of-day devotional greeting and Mezmur context
    */
   static getGreetingData(userName = '') {
     const now = new Date();
     const hour = now.getHours();
-    const displayName = userName && userName !== 'Music Lover' ? userName : '';
+    const displayName = userName && userName !== 'Music Lover' && userName !== 'Beloved Listener' ? userName : '';
 
     if (hour >= 5 && hour < 12) {
       return {
         period: 'morning',
         greetingAm: 'እንደምን አደሩ',
-        greetingEn: displayName ? `Good morning, ${displayName}` : 'Good morning',
-        moodTag: 'Morning Harmony 🌅',
-        moodTagAm: 'የጥዋት ዜማ',
-        moodSubtitle: 'Fresh, spiritual, and inspiring Ethiopian melodies to start your day',
+        greetingEn: displayName ? `Blessed morning, ${displayName}` : 'Blessed morning',
+        moodTag: 'Morning Praise',
+        moodTagAm: 'የማለዳ ምስጋና',
+        moodSubtitle: 'Thanksgiving and morning Mezmurs to lift your spirit at dawn',
         accentColor: '#f59e0b'
       };
     } else if (hour >= 12 && hour < 17) {
       return {
         period: 'afternoon',
         greetingAm: 'እንደምን ዋሉ',
-        greetingEn: displayName ? `Good afternoon, ${displayName}` : 'Good afternoon',
-        moodTag: 'Addis Groove ☀️',
-        moodTagAm: 'የቀትር ምት',
-        moodSubtitle: 'Upbeat rhythms, contemporary hits, and vibrant Ethiopian grooves',
+        greetingEn: displayName ? `Blessed afternoon, ${displayName}` : 'Blessed afternoon',
+        moodTag: 'Midday Praise',
+        moodTagAm: 'የቀትር ውዳሴ',
+        moodSubtitle: 'Joyful choir hymns and synchronized spiritual reflections',
         accentColor: '#3b82f6'
       };
     } else if (hour >= 17 && hour < 22) {
       return {
         period: 'evening',
         greetingAm: 'እንደምን አመሹ',
-        greetingEn: displayName ? `Good evening, ${displayName}` : 'Good evening',
-        moodTag: 'Nightfall Tizita 🌆',
-        moodTagAm: 'የምሽት ትዝታ',
-        moodSubtitle: 'Mellow soul, acoustic memories, and deep synchronized lyrics',
+        greetingEn: displayName ? `Blessed evening, ${displayName}` : 'Blessed evening',
+        moodTag: 'Evening Vespers',
+        moodTagAm: 'የሠርክ ጸሎት',
+        moodSubtitle: 'Contemplative evening Mezmurs, Begena hymns, and quiet prayer',
         accentColor: '#ec4899'
       };
     } else {
       return {
         period: 'night',
         greetingAm: 'ደህና እደሩ',
-        greetingEn: displayName ? `Late Night Vibes, ${displayName}` : 'Late Night Vibes',
-        moodTag: 'Midnight Tizita 🌙',
-        moodTagAm: 'የለሊት ዝማሬ',
-        moodSubtitle: 'Introspective melodies, vintage nostalgia, and soothing ballads',
+        greetingEn: displayName ? `Peaceful Night, ${displayName}` : 'Peaceful Night',
+        moodTag: 'Night Vigil',
+        moodTagAm: 'የሌሊት ዝማሬ',
+        moodSubtitle: 'Soothing night-watch Mezmurs, repentance hymns, and peaceful zema',
         accentColor: '#8b5cf6'
       };
     }
@@ -119,7 +119,53 @@ export class RecommendationEngine {
   }
 
   /**
-   * Multi-factor scoring recommendation engine ("Made For You / Smart Mix")
+   * Accumulate affinity profiles across rich hymn metadata from recently played, favorites, and current Mezmur
+   */
+  static _buildUserAffinityProfile(allTracks, { favorites = [], recentlyPlayed = [], currentTrack = null } = {}) {
+    const trackMap = this._buildTrackIndex(allTracks);
+    const artistScores = {};
+    const categoryScores = {};
+    const seasonScores = {};
+    const zemaScores = {};
+    const vocalScores = {};
+    const tagScores = {};
+
+    const bump = (map, key, weight) => {
+      const k = String(key || '').trim().toLowerCase();
+      if (!k) return;
+      map[k] = (map[k] || 0) + weight;
+    };
+
+    const applyTrack = (tr, weight) => {
+      if (!tr) return;
+      if (tr.artist) bump(artistScores, tr.artist, weight);
+      bump(categoryScores, tr.hymnCategory || tr.genre, weight);
+      bump(seasonScores, tr.liturgicalSeason, weight);
+      bump(zemaScores, tr.zemaMode, weight);
+      bump(vocalScores, tr.vocalStyle, weight * 0.7);
+      const tags = Array.isArray(tr.tags)
+        ? tr.tags
+        : String(tr.tags || '').split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
+      tags.forEach(tag => bump(tagScores, tag, weight * 0.6));
+    };
+
+    (recentlyPlayed || []).forEach((id, idx) => {
+      const tr = trackMap.get(id);
+      const recencyMultiplier = Math.max(1, 5 - idx * 0.5);
+      applyTrack(tr, 3 * recencyMultiplier);
+    });
+
+    (favorites || []).forEach(id => {
+      applyTrack(trackMap.get(id), 6);
+    });
+
+    if (currentTrack) applyTrack(currentTrack, 4);
+
+    return { artistScores, categoryScores, seasonScores, zemaScores, vocalScores, tagScores };
+  }
+
+  /**
+   * Multi-factor scoring recommendation engine ("Chosen For You")
    */
   static getPersonalizedRecommendations(allTracks, {
     favorites = [],
@@ -130,117 +176,107 @@ export class RecommendationEngine {
   } = {}) {
     if (!allTracks || allTracks.length === 0) return [];
 
-    const trackMap = this._buildTrackIndex(allTracks);
     const favSet = new Set(favorites || []);
     const recentSet = new Set(recentlyPlayed || []);
     const recentList = recentlyPlayed || [];
 
-    // Calculate artist frequency weights in O(R + F)
-    const artistScores = {};
-    recentList.forEach((id, idx) => {
-      const tr = trackMap.get(id);
-      if (tr && tr.artist) {
-        const recencyMultiplier = Math.max(1, 5 - idx * 0.5);
-        artistScores[tr.artist] = (artistScores[tr.artist] || 0) + (3 * recencyMultiplier);
-      }
-    });
-
-    favorites.forEach(id => {
-      const tr = trackMap.get(id);
-      if (tr && tr.artist) {
-        artistScores[tr.artist] = (artistScores[tr.artist] || 0) + 6;
-      }
-    });
-
-    if (currentTrack && currentTrack.artist) {
-      artistScores[currentTrack.artist] = (artistScores[currentTrack.artist] || 0) + 4;
-    }
+    const {
+      artistScores,
+      categoryScores,
+      seasonScores,
+      zemaScores,
+      vocalScores,
+      tagScores
+    } = this._buildUserAffinityProfile(allTracks, { favorites, recentlyPlayed, currentTrack });
 
     const hour = new Date().getHours();
-    const isLateOrEvening = hour >= 18 || hour < 6;
+    const isEveningOrNight = hour >= 18 || hour < 6;
 
-    // Score and filter each track
+    // Score and filter each Mezmur
     const scored = allTracks.map(track => {
       let score = 0;
       const meta = this.parseFallbackMetadata(track);
-      const artistName = meta.artist;
+      const artistName = (meta.artist || '').toLowerCase();
 
-      // 1. Synchronized Lyrics Richness (+14 pts) - Flagship experience!
+      // 1. Synchronized Lyrics Richness (+14 pts)
       if (track.lrc && typeof track.lrc === 'string' && track.lrc.length > 25) {
         score += 14;
-        if (track.lrc.length > 150) score += 4; // Extensive full lyrics
+        if (track.lrc.length > 150) score += 4;
       }
 
-      // 2. Artist Affinity (works even with fallback parsed artist name!)
+      // 2. Zemari / Choir Affinity
       if (artistName && artistScores[artistName]) {
-        score += Math.min(22, artistScores[artistName]);
+        score += Math.min(20, artistScores[artistName]);
       }
 
-      // 3. User Engagement (Favorites)
-      if (favSet.has(track.id)) {
-        score += 10;
+      // 3. Hymn Category, Liturgical Season, Zema Mode & Vocal Style Affinity
+      const catKey = String(track.hymnCategory || track.genre || '').trim().toLowerCase();
+      if (catKey && categoryScores[catKey]) {
+        score += Math.min(18, categoryScores[catKey] * 1.1);
+      }
+      const seasonKey = String(track.liturgicalSeason || '').trim().toLowerCase();
+      if (seasonKey && seasonScores[seasonKey] && !seasonKey.includes('year-round')) {
+        score += Math.min(14, seasonScores[seasonKey]);
+      }
+      const zemaKey = String(track.zemaMode || '').trim().toLowerCase();
+      if (zemaKey && zemaScores[zemaKey]) {
+        score += Math.min(10, zemaScores[zemaKey] * 0.9);
+      }
+      const vocalKey = String(track.vocalStyle || '').trim().toLowerCase();
+      if (vocalKey && vocalScores[vocalKey]) {
+        score += Math.min(8, vocalScores[vocalKey]);
+      }
+      const trackTags = Array.isArray(track.tags) ? track.tags : [];
+      for (const tg of trackTags) {
+        const k = String(tg || '').trim().toLowerCase();
+        if (k && tagScores[k]) {
+          score += Math.min(8, tagScores[k] * 0.5);
+          break;
+        }
       }
 
-      // 4. Offline downloaded track ready for playback
-      if (track.isDownloaded || track.audioBlob) {
-        score += 5;
-      }
+      // 4. User Engagement (Favorites & Offline Downloads)
+      if (favSet.has(track.id)) score += 10;
+      if (track.isDownloaded || track.audioBlob) score += 5;
 
       // 5. Authentic Ethiopic Fidel presence bonus
-      if (meta.hasEthiopic) {
-        score += 3;
-      }
+      if (meta.hasEthiopic) score += 3;
 
-      // 6. Diversity / Anti-Fatigue: Slight reduction if it was the EXACT last played track
+      // 6. Anti-Fatigue: Slight reduction if currently playing or last played
       if (currentTrack && currentTrack.id === track.id) {
         score -= 8;
       } else if (recentList.length > 0 && recentList[0] === track.id) {
         score -= 4;
       }
 
-      // 7. Time of Day & Ethiopian Musical Scale/Vibe Match
-      const isClassic = (track.year && parseInt(track.year) < 2010) || 
-                        meta.vibe === 'tizita' ||
-                        (track.album && /tizita|classic|vintage|memories|ትዝታ/i.test(track.album)) ||
-                        (track.title && /tizita|ትዝታ/i.test(track.title));
-
-      if (isLateOrEvening) {
-        if (isClassic || meta.vibe === 'tizita' || meta.vibe === 'bati' || meta.vibe === 'anchihoye') {
-          score += 7; // Evening & night bonus for Tizita / Bati / Soul
+      // 7. Devotional Time-of-Day Alignment
+      const combinedCtx = `${catKey} ${zemaKey} ${String(track.devotionalMood || '').toLowerCase()} ${meta.vibe}`;
+      if (isEveningOrNight) {
+        if (/nisiha|tselot|begena|reverent|sorrow|comfort|solemn|ge'ez|ezel|tizita|night|vespers/.test(combinedCtx)) {
+          score += 7;
         }
       } else {
-        if (meta.vibe === 'eskista' || meta.vibe === 'gurage' || meta.vibe === 'pop' || meta.vibe === 'reggae') {
-          score += 6; // Daytime energetic groove bonus
+        if (/misgana|joyful|be'alat|choir|tinsae|araray|festive|morning/.test(combinedCtx)) {
+          score += 6;
         }
       }
 
-      // 8. Cold-Start Novelty Exploration (Multi-Armed Bandit)
-      if (!recentSet.has(track.id) && !favSet.has(track.id)) {
-        score += 3.5;
-      }
-
-      // 9. Subtle dynamic jitter (±2.5) to keep discovery fresh each time
-      const jitter = (Math.random() * 5) - 2.5;
-      score += jitter;
+      // 8. Cold-Start Exploration & Gentle Refresh Jitter
+      if (!recentSet.has(track.id) && !favSet.has(track.id)) score += 3.5;
+      score += (Math.random() * 5) - 2.5;
 
       return { track, score };
     });
 
-    // Apply active vibe filtering if specified
+    // Optional category/era filter compatibility
     let filtered = scored;
     if (activeVibe === 'lrc') {
       filtered = filtered.filter(item => item.track.lrc && item.track.lrc.length > 15);
     } else if (activeVibe === 'classic') {
       filtered = filtered.filter(item => {
         const t = item.track;
-        return (t.year && parseInt(t.year) < 2010) ||
-               (t.album && /tizita|classic|vintage|oldies|ትዝታ/i.test(t.album)) ||
-               (t.title && /tizita|ትዝታ/i.test(t.title));
-      });
-    } else if (activeVibe === 'pop') {
-      filtered = filtered.filter(item => {
-        const t = item.track;
-        return (!t.year || parseInt(t.year) >= 2010);
+        return (t.era && /classical|traditional/i.test(t.era)) ||
+          (t.year && parseInt(t.year, 10) < 2010);
       });
     } else if (activeVibe === 'favorites') {
       filtered = filtered.filter(item => favSet.has(item.track.id));
@@ -253,59 +289,63 @@ export class RecommendationEngine {
   }
 
   /**
-   * "Because You Listened To [Artist / Song]" Seed Shelf
-   * Identifies the strongest listening anchor and finds complementary cuts
+   * "Because You Listened To [Zemari]" Seed Shelf
+   * Matches shared Zemari, hymn category, liturgical season, feast, or Zema mode
    */
   static getBecauseYouListenedShelf(allTracks, { recentlyPlayed = [], favorites = [], currentTrack = null } = {}) {
     if (!allTracks || allTracks.length < 2) return null;
     const trackMap = this._buildTrackIndex(allTracks);
 
-    // Pick seed track or artist
     let seedTrack = currentTrack;
-    if (!seedTrack && recentlyPlayed.length > 0) {
-      seedTrack = trackMap.get(recentlyPlayed[0]);
-    }
-    if (!seedTrack && favorites.length > 0) {
-      seedTrack = trackMap.get(favorites[0]);
-    }
-    if (!seedTrack) {
-      seedTrack = allTracks[0];
-    }
-
+    if (!seedTrack && recentlyPlayed.length > 0) seedTrack = trackMap.get(recentlyPlayed[0]);
+    if (!seedTrack && favorites.length > 0) seedTrack = trackMap.get(favorites[0]);
+    if (!seedTrack) seedTrack = allTracks[0];
     if (!seedTrack) return null;
 
     const seedArtist = seedTrack.artist;
     const seedId = seedTrack.id;
+    const seedCat = (seedTrack.hymnCategory || seedTrack.genre || '').toLowerCase();
+    const seedSeason = (seedTrack.liturgicalSeason || '').toLowerCase();
+    const seedZema = (seedTrack.zemaMode || '').toLowerCase();
 
-    // Match tracks by same artist or similar era
-    let matches = allTracks.filter(t => t.id !== seedId && t.artist === seedArtist);
+    const ranked = allTracks
+      .filter(t => t.id !== seedId)
+      .map(t => {
+        let sim = 0;
+        if (seedArtist && t.artist === seedArtist) sim += 30;
+        const cat = (t.hymnCategory || t.genre || '').toLowerCase();
+        if (seedCat && cat && cat === seedCat) sim += 20;
+        const season = (t.liturgicalSeason || '').toLowerCase();
+        if (seedSeason && season && season === seedSeason && !season.includes('year-round')) sim += 16;
+        const zema = (t.zemaMode || '').toLowerCase();
+        if (seedZema && zema && zema === seedZema) sim += 12;
+        if (seedTrack.feastOrDedication && t.feastOrDedication &&
+          t.feastOrDedication.toLowerCase() === seedTrack.feastOrDedication.toLowerCase()) {
+          sim += 18;
+        }
+        return { t, sim };
+      })
+      .filter(item => item.sim > 0)
+      .sort((a, b) => b.sim - a.sim)
+      .map(item => item.t);
 
-    // If same artist has few songs, supplement with complementary tracks
-    if (matches.length < 4) {
-      const era = seedTrack.year ? parseInt(seedTrack.year) : 2020;
-      const isVintage = era < 2010;
-      const complementary = allTracks.filter(t => {
-        if (t.id === seedId || matches.includes(t)) return false;
-        const tEra = t.year ? parseInt(t.year) : 2020;
-        return isVintage ? tEra < 2010 : tEra >= 2010;
-      });
-      matches = [...matches, ...complementary];
-    }
+    if (ranked.length === 0) return null;
 
-    if (matches.length === 0) return null;
-
+    const subtitleDetail = seedTrack.hymnCategory || seedTrack.zemaMode || seedTrack.liturgicalSeason;
     return {
       seedTrack,
       seedArtist,
       title: `Because You Listened To ${seedArtist}`,
       titleAm: `${seedArtist}ን ስላደመጡ የተመረጡ`,
-      subtitle: `Similar Ethiopian melodies and vocal vibes inspired by "${seedTrack.title}"`,
-      tracks: matches.slice(0, 8)
+      subtitle: subtitleDetail
+        ? `Mezmurs sharing this ${subtitleDetail} theme and spiritual tone`
+        : `More Mezmurs in a similar devotional spirit to "${seedTrack.title}"`,
+      tracks: ranked.slice(0, 8)
     };
   }
 
   /**
-   * Showcase of tracks with rich, verified synchronized Amharic lyrics
+   * Showcase of Mezmurs with rich synchronized lyrics
    */
   static getLyricsStageShowcase(allTracks, limit = 8) {
     if (!allTracks) return [];
@@ -319,7 +359,7 @@ export class RecommendationEngine {
    * Parse fallback metadata from title, filename, or raw string when tags are missing
    */
   static parseFallbackMetadata(track) {
-    if (!track) return { title: 'Untitled', artist: 'Unknown Artist', hasEthiopic: false, vibe: 'general' };
+    if (!track) return { title: 'Untitled', artist: 'Unknown Zemari', hasEthiopic: false, vibe: 'general' };
 
     const cached = this._metaCache.get(track);
     if (cached && cached._title === track.title && cached._artist === track.artist && cached._lrcLen === (track.lrc ? track.lrc.length : 0)) {
@@ -329,8 +369,7 @@ export class RecommendationEngine {
     let title = (track.title || '').trim();
     let artist = (track.artist || '').trim();
 
-    // If artist is unknown or missing, try splitting title pattern "Artist - Song"
-    if ((!artist || artist.toLowerCase() === 'unknown artist') && title) {
+    if ((!artist || artist.toLowerCase() === 'unknown artist' || artist.toLowerCase() === 'unknown zemari') && title) {
       if (title.includes(' - ')) {
         const parts = title.split(' - ');
         artist = parts[0].trim();
@@ -348,18 +387,14 @@ export class RecommendationEngine {
       }
     }
 
-    // Clean up audio file extensions from title
     title = title.replace(/\.(mp3|m4a|wav|aac|flac|ogg)$/i, '').trim();
 
-    // Check for Ethiopic Fidel characters (\u1200-\u137F)
     const hasEthiopic = /[\u1200-\u137F]/.test(title + ' ' + artist + ' ' + (track.lrc || ''));
-
-    // Detect Ethiopian traditional scales & regional rhythms
     const vibe = this.detectEthioVibe(track, title);
 
     const result = {
-      title: title || 'Untitled Track',
-      artist: artist || 'Ethiopian Artist',
+      title: title || 'Untitled Mezmur',
+      artist: artist || 'Mezmur Zemari',
       hasEthiopic,
       vibe
     };
@@ -376,27 +411,26 @@ export class RecommendationEngine {
   }
 
   /**
-   * Detect Ethiopian musical scale / style from available text clues or LRC structure
+   * Detect Mezmur liturgical/musical context from text and metadata clues
    */
   static detectEthioVibe(track, cleanTitle = '') {
-    const combined = `${cleanTitle} ${track.title || ''} ${track.artist || ''} ${track.album || ''}`.toLowerCase();
+    const combined = `${cleanTitle} ${track.title || ''} ${track.artist || ''} ${track.album || ''} ${track.hymnCategory || track.genre || ''} ${track.zemaMode || ''} ${track.liturgicalSeason || ''}`.toLowerCase();
 
+    if (/misgana|praise|ምስጋና|ውዳሴ/i.test(combined)) return 'misgana';
+    if (/nisiha|repent|ንስሐ|ይቅርታ/i.test(combined)) return 'nisiha';
+    if (/mariam|dingil|ማርያም|ድንግል|ኪዳነ/i.test(combined)) return 'mariam';
+    if (/begena|በገና/i.test(combined)) return 'begena';
+    if (/ge'ez|geez|ግዕዝ|mahlet|werib/i.test(combined)) return 'geez';
+    if (/ezel|ዕዝል/i.test(combined)) return 'ezel';
+    if (/araray|አራራይ/i.test(combined)) return 'araray';
     if (/tizita|tezita|ትዝታ/i.test(combined)) return 'tizita';
     if (/bati|ባቲ/i.test(combined)) return 'bati';
     if (/ambassel|ambasel|አምባሰል/i.test(combined)) return 'ambassel';
-    if (/anchihoye|anchi hoye|አንቺሆዬ/i.test(combined)) return 'anchihoye';
-    if (/eskista|iskista|እስክስታ/i.test(combined)) return 'eskista';
-    if (/gurage|guragigna|ጉራጌ/i.test(combined)) return 'gurage';
-    if (/oromo|oromiffa|oromiyaa|ኦሮሞ/i.test(combined)) return 'oromo';
-    if (/wollo|manzuma|ወሎ/i.test(combined)) return 'wollo';
-    if (/tigrigna|tigray|ትግርኛ/i.test(combined)) return 'tigrigna';
-    if (/jazz|mulatu|instrumental/i.test(combined)) return 'ethiojazz';
-    if (/reggae|teddy afro|ዳውን/i.test(combined)) return 'reggae';
+    if (/anchihoye|አንቺሆዬ/i.test(combined)) return 'anchihoye';
+    if (/oromo|oromiffa|ኦሮሞ/i.test(combined)) return 'oromo';
+    if (/tigrigna|ትግርኛ/i.test(combined)) return 'tigrigna';
 
-    // Acoustic / duration structural clue: Longer tracks (> 5 mins) are typically nostalgic Tizita ballads
-    if (track.duration && track.duration > 320) return 'tizita';
-    if (track.duration && track.duration < 210) return 'pop';
-
+    if (track.duration && track.duration > 320) return 'contemplative';
     return 'general';
   }
 

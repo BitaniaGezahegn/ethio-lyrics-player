@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ethio-lyrics-cache-v50';
+const CACHE_NAME = 'ethio-lyrics-cache-v51';
 
 const STATIC_ASSETS = [
   './',
@@ -108,7 +108,7 @@ self.addEventListener('fetch', (event) => {
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
             }
           })
-          .catch(() => {});
+          .catch(() => { });
         return cachedResponse;
       }
       return fetch(event.request).catch(() => {

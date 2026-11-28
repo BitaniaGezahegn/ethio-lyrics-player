@@ -4,30 +4,30 @@
  */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
-import { 
-  getAuth, 
-  signInWithPopup, 
-  signInWithRedirect, 
+import {
+  getAuth,
+  signInWithPopup,
+  signInWithRedirect,
   getRedirectResult,
-  GoogleAuthProvider, 
-  signOut, 
-  onAuthStateChanged 
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged
 } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import { 
+import {
   initializeFirestore,
-  getFirestore, 
-  collection, 
-  getDocs, 
+  getFirestore,
+  collection,
+  getDocs,
   getDoc,
-  doc, 
-  setDoc, 
+  doc,
+  setDoc,
   updateDoc,
-  addDoc, 
-  deleteDoc, 
-  query, 
+  addDoc,
+  deleteDoc,
+  query,
   where,
   limit,
-  orderBy, 
+  orderBy,
   serverTimestamp,
   onSnapshot,
   arrayUnion,
@@ -88,7 +88,7 @@ export const FirebaseService = {
   onAuthChanged(callback) {
     if (!auth) {
       callback(null, false);
-      return () => {};
+      return () => { };
     }
     return onAuthStateChanged(auth, (user) => {
       const admin = this.isAdmin(user);
@@ -171,7 +171,7 @@ export const FirebaseService = {
 
       xhr.onload = () => {
         let parsed = null;
-        try { parsed = JSON.parse(xhr.responseText || '{}'); } catch (e) {}
+        try { parsed = JSON.parse(xhr.responseText || '{}'); } catch (e) { }
         if (xhr.status >= 200 && xhr.status < 300 && parsed && parsed.url) {
           if (typeof onProgress === 'function') onProgress(100);
           resolve(parsed.url);
@@ -331,11 +331,12 @@ export const FirebaseService = {
     const trackId = trackData.id || `pub_${Date.now()}`;
     const docRef = doc(db, 'public_tracks', trackId);
 
-    const artist = trackData.artist || 'Unknown Artist';
+    const artist = trackData.artist || 'Unknown Zemari';
     const artistEn = trackData.artistEn || artist;
     const album = trackData.album || 'Single';
     const artistId = trackData.artistId || makeArtistId(artist, artistEn);
     const albumId = trackData.albumId || makeAlbumId(artistId, album);
+    const hymnCategory = trackData.hymnCategory || trackData.genre || '';
 
     const payload = {
       title: trackData.title || 'Untitled',
@@ -345,7 +346,20 @@ export const FirebaseService = {
       artistId,
       album,
       albumId,
-      genre: trackData.genre || '',
+      genre: trackData.genre || hymnCategory || '',
+      hymnCategory,
+      liturgicalSeason: trackData.liturgicalSeason || '',
+      feastOrDedication: trackData.feastOrDedication || '',
+      zemaMode: trackData.zemaMode || '',
+      vocalStyle: trackData.vocalStyle || '',
+      language: trackData.language || '',
+      devotionalMood: trackData.devotionalMood || '',
+      era: trackData.era || '',
+      composer: trackData.composer || '',
+      scriptureReference: trackData.scriptureReference || '',
+      churchDebir: trackData.churchDebir || '',
+      externalUrl: trackData.externalUrl || '',
+      tags: Array.isArray(trackData.tags) ? trackData.tags : [],
       trackNumber: trackData.trackNumber ? Number(trackData.trackNumber) : null,
       year: trackData.year || new Date().getFullYear().toString(),
       cover: trackData.cover || 'brand/elm-default-cover.svg',
@@ -418,11 +432,12 @@ export const FirebaseService = {
     const colRef = collection(db, 'submissions');
     const user = this.getCurrentUser();
 
-    const artist = submission.artist || 'Unknown Artist';
+    const artist = submission.artist || 'Unknown Zemari';
     const artistEn = submission.artistEn || artist;
     const album = submission.album || 'Single';
     const artistId = submission.artistId || makeArtistId(artist, artistEn);
     const albumId = submission.albumId || makeAlbumId(artistId, album);
+    const hymnCategory = submission.hymnCategory || submission.genre || '';
 
     const payload = {
       type: submission.type || (submission.targetTrackId ? 'metadata_edit' : 'new_song'),
@@ -436,7 +451,20 @@ export const FirebaseService = {
       artistId,
       album,
       albumId,
-      genre: submission.genre || '',
+      genre: submission.genre || hymnCategory || '',
+      hymnCategory,
+      liturgicalSeason: submission.liturgicalSeason || '',
+      feastOrDedication: submission.feastOrDedication || '',
+      zemaMode: submission.zemaMode || '',
+      vocalStyle: submission.vocalStyle || '',
+      language: submission.language || '',
+      devotionalMood: submission.devotionalMood || '',
+      era: submission.era || '',
+      composer: submission.composer || '',
+      scriptureReference: submission.scriptureReference || '',
+      churchDebir: submission.churchDebir || '',
+      externalUrl: submission.externalUrl || '',
+      tags: Array.isArray(submission.tags) ? submission.tags : [],
       trackNumber: submission.trackNumber ? Number(submission.trackNumber) : null,
       year: submission.year || new Date().getFullYear().toString(),
       cover: submission.cover || 'brand/elm-default-cover.svg',
@@ -483,12 +511,33 @@ export const FirebaseService = {
     const targetId = submission.targetTrackId || submission.originalTrackId;
     if (submission.type === 'metadata_edit' && targetId) {
       const docRef = doc(db, 'public_tracks', targetId);
+      const hymnCategory = submission.hymnCategory || submission.genre || '';
+      const artistId = submission.artistId || makeArtistId(submission.artist, submission.artistEn || '');
+      const album = submission.album || 'Single';
+      const albumId = submission.albumId || makeAlbumId(artistId, album);
       const updateData = {
         title: submission.title,
         titleEn: submission.titleEn || submission.title,
         artist: submission.artist,
         artistEn: submission.artistEn || submission.artist,
-        album: submission.album || 'Single',
+        artistId,
+        album,
+        albumId,
+        genre: submission.genre || hymnCategory || '',
+        hymnCategory,
+        liturgicalSeason: submission.liturgicalSeason || '',
+        feastOrDedication: submission.feastOrDedication || '',
+        zemaMode: submission.zemaMode || '',
+        vocalStyle: submission.vocalStyle || '',
+        language: submission.language || '',
+        devotionalMood: submission.devotionalMood || '',
+        era: submission.era || '',
+        composer: submission.composer || '',
+        scriptureReference: submission.scriptureReference || '',
+        churchDebir: submission.churchDebir || '',
+        externalUrl: submission.externalUrl || '',
+        tags: Array.isArray(submission.tags) ? submission.tags : [],
+        trackNumber: submission.trackNumber ? Number(submission.trackNumber) : null,
         year: submission.year || '2024',
         lrc: submission.lrc || '',
         updatedAt: serverTimestamp()
@@ -514,7 +563,20 @@ export const FirebaseService = {
       artistId: submission.artistId || '',
       album: submission.album || 'Single',
       albumId: submission.albumId || '',
-      genre: submission.genre || '',
+      genre: submission.genre || submission.hymnCategory || '',
+      hymnCategory: submission.hymnCategory || submission.genre || '',
+      liturgicalSeason: submission.liturgicalSeason || '',
+      feastOrDedication: submission.feastOrDedication || '',
+      zemaMode: submission.zemaMode || '',
+      vocalStyle: submission.vocalStyle || '',
+      language: submission.language || '',
+      devotionalMood: submission.devotionalMood || '',
+      era: submission.era || '',
+      composer: submission.composer || '',
+      scriptureReference: submission.scriptureReference || '',
+      churchDebir: submission.churchDebir || '',
+      externalUrl: submission.externalUrl || '',
+      tags: Array.isArray(submission.tags) ? submission.tags : [],
       trackNumber: submission.trackNumber || null,
       year: submission.year || '2024',
       cover: submission.cover || 'brand/elm-default-cover.svg',
@@ -541,7 +603,7 @@ export const FirebaseService = {
       try {
         const snap = await getDoc(doc(db, 'submissions', submissionId));
         if (snap.exists()) subObj = snap.data();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (subObj) {
@@ -599,7 +661,7 @@ export const FirebaseService = {
   },
 
   subscribeUserSync(userId, callback) {
-    if (!db || !userId) return () => {};
+    if (!db || !userId) return () => { };
     try {
       const docRef = doc(db, 'user_sync', userId);
       return onSnapshot(docRef, (docSnap) => {
@@ -611,7 +673,7 @@ export const FirebaseService = {
       });
     } catch (e) {
       console.warn('subscribeUserSync error:', e);
-      return () => {};
+      return () => { };
     }
   },
 
@@ -624,7 +686,7 @@ export const FirebaseService = {
         let clientId = sessionStorage.getItem('ethio_clock_client_id');
         if (!clientId) {
           clientId = 'clk_' + Math.random().toString(36).slice(2, 11);
-          try { sessionStorage.setItem('ethio_clock_client_id', clientId); } catch (e) {}
+          try { sessionStorage.setItem('ethio_clock_client_id', clientId); } catch (e) { }
         }
         const ref = doc(db, 'clock_sync', clientId);
         const results = [];
@@ -855,7 +917,7 @@ export const FirebaseService = {
   },
 
   subscribeParticipants(roomCode, callback) {
-    if (!db || !roomCode) return () => {};
+    if (!db || !roomCode) return () => { };
     try {
       const cleanCode = roomCode.trim().toUpperCase();
       const colRef = collection(db, 'listen_rooms', cleanCode, 'participants');
@@ -868,7 +930,7 @@ export const FirebaseService = {
       });
     } catch (e) {
       console.warn('subscribeParticipants setup error:', e);
-      return () => {};
+      return () => { };
     }
   },
 
@@ -923,7 +985,7 @@ export const FirebaseService = {
     try {
       const cleanCode = roomCode.trim().toUpperCase();
       const pRef = doc(db, 'listen_rooms', cleanCode, 'participants', participantId);
-      await deleteDoc(pRef).catch(() => {});
+      await deleteDoc(pRef).catch(() => { });
 
       const roomRef = doc(db, 'listen_rooms', cleanCode);
       const roomSnap = await getDoc(roomRef);
@@ -968,7 +1030,7 @@ export const FirebaseService = {
   },
 
   subscribeReactions(roomCode, joinTimestamp, callback) {
-    if (!db || !roomCode) return () => {};
+    if (!db || !roomCode) return () => { };
     try {
       const cleanCode = roomCode.trim().toUpperCase();
       const colRef = collection(db, 'listen_rooms', cleanCode, 'reactions');
@@ -985,12 +1047,12 @@ export const FirebaseService = {
       });
     } catch (e) {
       console.warn('subscribeReactions setup error:', e);
-      return () => {};
+      return () => { };
     }
   },
 
   subscribeListenRoom(roomCode, callback) {
-    if (!db || !roomCode) return () => {};
+    if (!db || !roomCode) return () => { };
     try {
       const cleanCode = roomCode.trim().toUpperCase();
       const docRef = doc(db, 'listen_rooms', cleanCode);
@@ -1005,7 +1067,7 @@ export const FirebaseService = {
       });
     } catch (e) {
       console.warn('subscribeListenRoom error:', e);
-      return () => {};
+      return () => { };
     }
   }
 };

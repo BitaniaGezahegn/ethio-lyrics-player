@@ -135,15 +135,15 @@ class TrackActionMenuManager {
 
     items.push(
       { id: 'open-lyrics', label: 'Open Lyrics Stage', icon: 'lyrics' },
-      { id: 'song-details', label: 'Song Details & Credits', icon: 'info' }
+      { id: 'song-details', label: 'Mezmur Details & Credits', icon: 'info' }
     );
 
     if (canEdit) {
-      items.push({ id: 'edit-song', label: 'Suggest Song Edit', icon: 'edit' });
+      items.push({ id: 'edit-song', label: 'Suggest Mezmur Edit', icon: 'edit' });
     }
 
     if (canDelete) {
-      items.push({ id: 'delete-track', label: 'Delete Track', icon: 'trash', danger: true });
+      items.push({ id: 'delete-track', label: 'Delete Mezmur', icon: 'trash', danger: true });
     }
 
     this._menu.innerHTML = `
@@ -151,7 +151,7 @@ class TrackActionMenuManager {
         <img class="track-menu-cover" src="${escapeHtml(coverUrl)}" alt="" onerror="this.src='brand/elm-default-cover.svg'">
         <div class="track-menu-meta">
           <div class="track-menu-title">${escapeHtml(track.title || 'Untitled')}</div>
-          <div class="track-menu-artist">${escapeHtml(track.artist || 'Unknown Artist')}</div>
+          <div class="track-menu-artist">${escapeHtml(track.artist || 'Unknown Zemari')}</div>
         </div>
         <button type="button" class="track-menu-close" aria-label="Close menu">&times;</button>
       </div>

@@ -271,7 +271,7 @@ class LyricShareCardManager {
 
     ctx.fillStyle = 'rgba(226, 232, 240, 0.78)';
     ctx.font = '500 30px "Noto Sans Ethiopic", "Segoe UI", sans-serif';
-    ctx.fillText(this._truncateText(ctx, this._track?.artist || 'Unknown Artist', 640), 320, 212);
+    ctx.fillText(this._truncateText(ctx, this._track?.artist || 'Unknown Zemari', 640), 320, 212);
 
     // Divider line
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';

@@ -5,9 +5,9 @@
  */
 export const EQ_PRESETS = {
   flat: { label: 'Flat (Original)', gains: [0, 0, 0, 0, 0] },
-  tizita: { label: 'Tizita Warmth', gains: [2.5, 1.5, 2.5, 1.0, -0.5] },
-  vocal: { label: 'Vocal & Lyrics', gains: [-2, 1, 4, 3, 1] },
-  bass: { label: 'Deep Bass', gains: [5.5, 3.0, 0, 0, 1.0] },
+  tizita: { label: 'Warm Zema / Begena', gains: [2.5, 1.5, 2.5, 1.0, -0.5] },
+  vocal: { label: 'Choir & Lyrics', gains: [-2, 1, 4, 3, 1] },
+  bass: { label: 'Deep Warmth', gains: [5.5, 3.0, 0, 0, 1.0] },
   treble: { label: 'Crisp Acoustic', gains: [0, 0, 1.5, 3.0, 4.5] }
 };
 
@@ -29,7 +29,7 @@ export class AudioEqualizer {
     try {
       const saved = localStorage.getItem('ethio_audio_eq_preset');
       if (saved && EQ_PRESETS[saved]) this.preset = saved;
-    } catch {}
+    } catch { }
     return this.preset;
   }
 
@@ -37,7 +37,7 @@ export class AudioEqualizer {
     const key = EQ_PRESETS[presetId] ? presetId : 'flat';
     this.preset = key;
     if (persist) {
-      try { localStorage.setItem('ethio_audio_eq_preset', key); } catch {}
+      try { localStorage.setItem('ethio_audio_eq_preset', key); } catch { }
     }
     this._applyGains();
     return key;
@@ -48,7 +48,7 @@ export class AudioEqualizer {
     this.filters.forEach((filter, idx) => {
       try {
         filter.gain.value = gains[idx] || 0;
-      } catch {}
+      } catch { }
     });
   }
 
@@ -65,7 +65,7 @@ export class AudioEqualizer {
     if (!audioEl || typeof window === 'undefined') return false;
     if (this.attachedElement === audioEl && this.sourceNode) {
       if (this.audioCtx && this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume().catch(() => {});
+        this.audioCtx.resume().catch(() => { });
       }
       return true;
     }
@@ -80,7 +80,7 @@ export class AudioEqualizer {
         this.audioCtx = new AudioCtx();
       }
       if (this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume().catch(() => {});
+        this.audioCtx.resume().catch(() => { });
       }
 
       this.sourceNode = this.audioCtx.createMediaElementSource(audioEl);

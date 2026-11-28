@@ -9,7 +9,7 @@ import { FirebaseService, ADMIN_EMAIL, R2_PUBLIC_BASE } from './firebase-service
 import { LocalSyncService } from './local-sync-service.js';
 import { GuestSyncEngine, HostBroadcaster, SYNC_CONFIG } from './party-sync.js';
 import { RecommendationEngine } from './recommendation-engine.js';
-import { CatalogSchema, makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
+import { CatalogSchema, makeArtistId, makeAlbumId, isSingleAlbumName, normalizeTags, normalizeExternalUrl } from './catalog-schema.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
 import { AppDialog } from './components/app-dialog.js';
 import { CustomDropdown } from './components/custom-dropdown.js';
@@ -84,7 +84,7 @@ class LyricsApp {
       if (urlParams.get('mode') === 'local' || (!isNativeWebView && isLanHost)) {
         this.syncMode = 'local';
       }
-    } catch (e) {}
+    } catch (e) { }
     this.activeRoom = null;
     this.isRoomHost = false;
     this.roomUnsubscribe = null;
@@ -161,8 +161,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.9.3';
-    this.cacheVersion = 'v50';
+    this.appVersion = 'v3.0.0';
+    this.cacheVersion = 'v51';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -435,53 +435,51 @@ class LyricsApp {
     this.p2pHostAnswerInput = document.getElementById('p2pHostAnswerInput');
     this.btnP2pSubmitHostAnswer = document.getElementById('btnP2pSubmitHostAnswer');
 
-    // Hero Spotlight Section
+    // Decluttered Home Elements
     this.appSplashScreen = document.getElementById('appSplashScreen');
-    this.heroCard = document.getElementById('heroCard');
-    this.heroArtworkBox = document.getElementById('heroArtworkBox');
-    this.heroArtworkImg = document.getElementById('heroArtworkImg');
-    this.btnHeroPlayBadge = document.getElementById('btnHeroPlayBadge');
-    this.heroTitle = document.getElementById('heroTitle');
-    this.heroArtist = document.getElementById('heroArtist');
-    this.heroPlayLabel = document.getElementById('heroPlayLabel');
-    this.btnHeroPlay = document.getElementById('btnHeroPlay');
-    this.btnHeroOpenLyrics = document.getElementById('btnHeroOpenLyrics');
-    this.btnHeroDetails = document.getElementById('btnHeroDetails');
-    this.btnHeroFavorite = document.getElementById('btnHeroFavorite');
+    this.heroCard = null;
+    this.heroArtworkBox = null;
+    this.heroArtworkImg = null;
+    this.btnHeroPlayBadge = null;
+    this.heroTitle = null;
+    this.heroArtist = null;
+    this.heroPlayLabel = null;
+    this.btnHeroPlay = null;
+    this.btnHeroOpenLyrics = null;
+    this.btnHeroDetails = null;
+    this.btnHeroFavorite = null;
 
-    // Home Discovery Grids, Shelves & Filters
+    // Home Discovery Grids & Shelves
     this.dnaStatTotal = document.getElementById('dnaStatTotal');
     this.dnaStatLrc = document.getElementById('dnaStatLrc');
     this.dnaStatFavs = document.getElementById('dnaStatFavs');
-    this.heroDurationBadge = document.getElementById('heroDurationBadge');
-    this.heroLrcBadge = document.getElementById('heroLrcBadge');
+    this.heroDurationBadge = null;
+    this.heroLrcBadge = null;
 
     this.selectHomeFilter = null;
     this.inputHomeSearch = null;
     this.btnClearHomeSearch = null;
     this.sectionJumpBackIn = document.getElementById('sectionJumpBackIn');
     this.gridJumpBackIn = document.getElementById('gridJumpBackIn');
-    this.btnViewMoreJumpBackIn = document.getElementById('btnViewMoreJumpBackIn');
     this.sectionRecommendations = document.getElementById('sectionRecommendations');
     this.gridSuggestions = document.getElementById('gridSuggestions');
     this.btnShuffleRecommended = document.getElementById('btnShuffleRecommended');
-    this.btnViewMoreSuggestions = document.getElementById('btnViewMoreSuggestions');
     this.sectionBecauseYouListened = document.getElementById('sectionBecauseYouListened');
     this.becauseTitleText = document.getElementById('becauseTitleText');
     this.becauseSubtitleText = document.getElementById('becauseSubtitleText');
     this.gridBecauseYouListened = document.getElementById('gridBecauseYouListened');
     this.btnPlayBecauseShelf = document.getElementById('btnPlayBecauseShelf');
-    this.btnViewMoreBecause = document.getElementById('btnViewMoreBecause');
-    this.sectionLyricsShowcase = document.getElementById('sectionLyricsShowcase');
-    this.gridLyricsShowcase = document.getElementById('gridLyricsShowcase');
-    this.btnPlayLyricsShowcase = document.getElementById('btnPlayLyricsShowcase');
-    this.btnViewMoreLyricsShowcase = document.getElementById('btnViewMoreLyricsShowcase');
+    this.sectionLyricsShowcase = null;
+    this.gridLyricsShowcase = null;
+    this.btnPlayLyricsShowcase = null;
+    this.btnViewMoreLyricsShowcase = null;
     this.sectionIconicArtists = document.getElementById('sectionIconicArtists');
     this.rowIconicArtists = document.getElementById('rowIconicArtists');
+    this.btnViewAllZemariyan = document.getElementById('btnViewAllZemariyan');
     this.sectionGlobalCatalog = document.getElementById('sectionGlobalCatalog');
     this.gridGlobalCatalog = document.getElementById('gridGlobalCatalog');
     this.btnViewMoreGlobalCatalog = document.getElementById('btnViewMoreGlobalCatalog');
-    this.selectCatalogSort = document.getElementById('selectCatalogSort');
+    this.selectCatalogSort = null;
     this.catalogCounterSubtitle = document.getElementById('catalogCounterSubtitle');
     this.catalogSortOption = 'newest';
     this.btnOpenGlobalSearch = document.getElementById('btnOpenGlobalSearch');
@@ -748,6 +746,18 @@ class LyricsApp {
     this.selectCustomGenre = document.getElementById('selectCustomGenre');
     this.inputCustomYear = document.getElementById('inputCustomYear');
     this.inputCustomTrackNumber = document.getElementById('inputCustomTrackNumber');
+    this.selectCustomSeason = document.getElementById('selectCustomSeason');
+    this.inputCustomFeast = document.getElementById('inputCustomFeast');
+    this.selectCustomZema = document.getElementById('selectCustomZema');
+    this.selectCustomVocal = document.getElementById('selectCustomVocal');
+    this.selectCustomLanguage = document.getElementById('selectCustomLanguage');
+    this.selectCustomMood = document.getElementById('selectCustomMood');
+    this.selectCustomEra = document.getElementById('selectCustomEra');
+    this.inputCustomComposer = document.getElementById('inputCustomComposer');
+    this.inputCustomScripture = document.getElementById('inputCustomScripture');
+    this.inputCustomDebir = document.getElementById('inputCustomDebir');
+    this.inputCustomExternalUrl = document.getElementById('inputCustomExternalUrl');
+    this.inputCustomTags = document.getElementById('inputCustomTags');
     this.inputCustomLrc = document.getElementById('inputCustomLrc');
     this.btnApplyCustomTrack = document.getElementById('btnApplyCustomTrack');
 
@@ -767,7 +777,7 @@ class LyricsApp {
     this.adminSubmissionsList = document.getElementById('adminSubmissionsList');
     this.adminSubmissionsBadge = document.getElementById('adminSubmissionsBadge');
 
-    // Song Details Modal Elements
+    // Mezmur Details Modal Elements
     this.songDetailsModal = document.getElementById('songDetailsModal');
     this.detailModalCover = document.getElementById('detailModalCover');
     this.detailModalTitle = document.getElementById('detailModalTitle');
@@ -775,8 +785,13 @@ class LyricsApp {
     this.detailModalArtistEn = document.getElementById('detailModalArtistEn');
     this.detailModalAlbum = document.getElementById('detailModalAlbum');
     this.detailModalGenreChip = document.getElementById('detailModalGenreChip');
+    this.detailModalSeasonChip = document.getElementById('detailModalSeasonChip');
+    this.detailModalZemaChip = document.getElementById('detailModalZemaChip');
+    this.detailModalLangChip = document.getElementById('detailModalLangChip');
+    this.detailModalVocalChip = document.getElementById('detailModalVocalChip');
     this.detailModalLrcChip = document.getElementById('detailModalLrcChip');
     this.detailModalOfflineChip = document.getElementById('detailModalOfflineChip');
+    this.detailModalMetaGrid = document.getElementById('detailModalMetaGrid');
     this.detailModalLyricsSnippet = document.getElementById('detailModalLyricsSnippet');
     this.btnDetailModalPlay = document.getElementById('btnDetailModalPlay');
     this.artworkLightboxModal = document.getElementById('artworkLightboxModal');
@@ -792,6 +807,8 @@ class LyricsApp {
     this.detailFavLabel = document.getElementById('detailFavLabel');
     this.btnDetailSaveOffline = document.getElementById('btnDetailSaveOffline');
     this.detailSaveLabel = document.getElementById('detailSaveLabel');
+    this.btnDetailExternalLink = document.getElementById('btnDetailExternalLink');
+    this.detailExternalLinkLabel = document.getElementById('detailExternalLinkLabel');
     this.btnDetailOpenLyricsEditor = document.getElementById('btnDetailOpenLyricsEditor');
     this.btnDetailEditSong = document.getElementById('btnDetailEditSong');
 
@@ -810,6 +827,18 @@ class LyricsApp {
     this.selectEditReviewGenre = document.getElementById('selectEditReviewGenre');
     this.inputEditReviewYear = document.getElementById('inputEditReviewYear');
     this.inputEditReviewTrackNumber = document.getElementById('inputEditReviewTrackNumber');
+    this.selectEditReviewSeason = document.getElementById('selectEditReviewSeason');
+    this.inputEditReviewFeast = document.getElementById('inputEditReviewFeast');
+    this.selectEditReviewZema = document.getElementById('selectEditReviewZema');
+    this.selectEditReviewVocal = document.getElementById('selectEditReviewVocal');
+    this.selectEditReviewLanguage = document.getElementById('selectEditReviewLanguage');
+    this.selectEditReviewMood = document.getElementById('selectEditReviewMood');
+    this.selectEditReviewEra = document.getElementById('selectEditReviewEra');
+    this.inputEditReviewComposer = document.getElementById('inputEditReviewComposer');
+    this.inputEditReviewScripture = document.getElementById('inputEditReviewScripture');
+    this.inputEditReviewDebir = document.getElementById('inputEditReviewDebir');
+    this.inputEditReviewExternalUrl = document.getElementById('inputEditReviewExternalUrl');
+    this.inputEditReviewTags = document.getElementById('inputEditReviewTags');
     this.inputEditReviewCover = document.getElementById('inputEditReviewCover');
     this.inputEditReviewLrc = document.getElementById('inputEditReviewLrc');
     this.inputEditReviewLrcFile = document.getElementById('inputEditReviewLrcFile');
@@ -1194,22 +1223,6 @@ class LyricsApp {
         this.player.togglePlay();
       });
     }
-    if (this.btnHeroOpenLyrics) {
-      this.btnHeroOpenLyrics.addEventListener('click', () => this.switchTab('lyrics'));
-    }
-    if (this.btnHeroDetails) {
-      this.btnHeroDetails.addEventListener('click', () => {
-        const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-        if (track) this.openSongDetails(track);
-      });
-    }
-    if (this.btnHeroFavorite) {
-      this.btnHeroFavorite.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-        if (track) this.toggleTrackFavorite(track.id);
-      });
-    }
     if (this.btnDockFavorite) {
       this.btnDockFavorite.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1278,7 +1291,7 @@ class LyricsApp {
               }
             }
           }
-          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.3'})!`);
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v3.0.0'})!`);
         } catch (err) {
           console.warn('Update check failed:', err);
           this.showToast('Unable to check for updates right now.');
@@ -1306,56 +1319,6 @@ class LyricsApp {
       });
     }
 
-    // Hero Spotlight Controls
-    const handleHeroPlay = async () => {
-      const spotlightTrack = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
-      if (!spotlightTrack) return;
-      if (this.currentTrack && this.currentTrack.id === spotlightTrack.id) {
-        this.player.togglePlay();
-      } else {
-        const pool = [...this.publicTracks, ...this.tracks];
-        this.setQueue(pool, pool.findIndex(t => t.id === spotlightTrack.id));
-        await this.loadTrack(spotlightTrack, true);
-      }
-      this.updateHeroState();
-    };
-
-    if (this.btnHeroPlay) this.btnHeroPlay.addEventListener('click', handleHeroPlay);
-    if (this.btnHeroPlayBadge) this.btnHeroPlayBadge.addEventListener('click', handleHeroPlay);
-
-    // Home Filter Select (2-column compact filter picker)
-    if (this.selectHomeFilter) {
-      this.selectHomeFilter.addEventListener('change', (e) => {
-        this.activeFilter = e.target.value || 'all';
-        this.renderHomePage();
-      });
-    }
-
-    // Search Input with Debounce & Clear Button
-    if (this.inputHomeSearch) {
-      let homeSearchTimer = null;
-      this.inputHomeSearch.addEventListener('input', (e) => {
-        const nextQuery = e.target.value.trim();
-        if (this.btnClearHomeSearch) {
-          this.btnClearHomeSearch.style.display = nextQuery ? 'inline-flex' : 'none';
-        }
-        if (homeSearchTimer) clearTimeout(homeSearchTimer);
-        homeSearchTimer = setTimeout(() => {
-          this.searchQuery = nextQuery;
-          this.renderHomePage();
-        }, 140);
-      });
-    }
-
-    if (this.btnClearHomeSearch) {
-      this.btnClearHomeSearch.addEventListener('click', () => {
-        if (this.inputHomeSearch) this.inputHomeSearch.value = '';
-        this.searchQuery = '';
-        this.btnClearHomeSearch.style.display = 'none';
-        this.renderHomePage();
-      });
-    }
-
     // Performance Mode Switcher (Auto / High Quality / Lite)
     if (this.perfModeGroup) {
       this.perfModeGroup.addEventListener('click', (e) => {
@@ -1366,7 +1329,7 @@ class LyricsApp {
       });
     }
 
-    // Shelf Actions: Shuffle Recommended Mix
+    // Shelf Actions: Shuffle Recommended Mezmurs
     if (this.btnShuffleRecommended) {
       this.btnShuffleRecommended.addEventListener('click', async () => {
         const allTracks = [...this.publicTracks, ...this.tracks];
@@ -1381,12 +1344,12 @@ class LyricsApp {
           const shuffled = [...mix].sort(() => Math.random() - 0.5);
           this.setQueue(shuffled, 0);
           await this.loadTrack(shuffled[0], true);
-          this.showToast('Shuffling Recommended Mix ✨');
+          this.showToast('Shuffling Chosen Mezmurs ✨');
         }
       });
     }
 
-    // Shelf Actions: Play Because You Listened Shelf
+    // Shelf Actions: Play Related Mezmurs Shelf
     if (this.btnPlayBecauseShelf) {
       this.btnPlayBecauseShelf.addEventListener('click', async () => {
         const allTracks = [...this.publicTracks, ...this.tracks];
@@ -1398,36 +1361,8 @@ class LyricsApp {
         if (shelf && shelf.tracks.length > 0) {
           this.setQueue(shelf.tracks, 0);
           await this.loadTrack(shelf.tracks[0], true);
-          this.showToast(`Playing tracks inspired by ${shelf.seedArtist} 🎵`);
+          this.showToast(`Playing Mezmurs inspired by ${shelf.seedArtist}`);
         }
-      });
-    }
-
-    // Shelf Actions: Play Lyrics Stage Showcase Shelf
-    if (this.btnPlayLyricsShowcase) {
-      this.btnPlayLyricsShowcase.addEventListener('click', async () => {
-        const allTracks = [...this.publicTracks, ...this.tracks];
-        const showcase = RecommendationEngine.getLyricsStageShowcase(allTracks, 10);
-        if (showcase.length > 0) {
-          this.setQueue(showcase, 0);
-          await this.loadTrack(showcase[0], true);
-          this.showToast('Playing Synced Lyrics Showcase 📜');
-        }
-      });
-    }
-
-    // Homepage Shelf "View All" / "Show Less" toggles
-    const shelfToggles = [
-      [this.btnViewMoreJumpBackIn, this.gridJumpBackIn],
-      [this.btnViewMoreSuggestions, this.gridSuggestions],
-      [this.btnViewMoreBecause, this.gridBecauseYouListened],
-      [this.btnViewMoreLyricsShowcase, this.gridLyricsShowcase]
-    ];
-    for (const [btn, grid] of shelfToggles) {
-      if (!btn || !grid) continue;
-      btn.addEventListener('click', () => {
-        const expanded = grid.classList.toggle('is-expanded');
-        btn.textContent = expanded ? 'Show Less' : 'View All';
       });
     }
 
@@ -1435,6 +1370,13 @@ class LyricsApp {
       this.btnViewMoreGlobalCatalog.addEventListener('click', () => {
         this.switchTab('library');
         this.switchLibraryTab('global');
+      });
+    }
+
+    if (this.btnViewAllZemariyan) {
+      this.btnViewAllZemariyan.addEventListener('click', () => {
+        this.switchTab('library');
+        this.switchLibraryTab('artists');
       });
     }
 
@@ -2078,7 +2020,7 @@ class LyricsApp {
           if (this.scrubberTrack.setPointerCapture) {
             this.scrubberTrack.setPointerCapture(e.pointerId);
           }
-        } catch (err) {}
+        } catch (err) { }
         previewScrubAt(e.clientX);
       });
 
@@ -2107,7 +2049,7 @@ class LyricsApp {
           }
         } else {
           if (document.exitFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
-            document.exitFullscreen().catch(() => {});
+            document.exitFullscreen().catch(() => { });
           } else if (document.webkitExitFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
             document.webkitExitFullscreen();
           }
@@ -2420,7 +2362,7 @@ class LyricsApp {
     }
     if (this.btnEditParticipantName) {
       this.btnEditParticipantName.addEventListener('click', async () => {
-        const cur = this.myParticipant ? this.myParticipant.name : 'Music Lover';
+        const cur = this.myParticipant ? this.myParticipant.name : 'Fellowship Listener';
         const entered = await AppDialog.prompt({
           title: 'Display Name',
           message: 'Choose how your name appears to friends in Listen Together rooms:',
@@ -2961,8 +2903,8 @@ class LyricsApp {
       this.heroPlayLabel.textContent = isPlaying ? 'Pause Track' : 'Play Track';
     }
     if (this.btnHeroPlayBadge) {
-      this.btnHeroPlayBadge.innerHTML = isPlaying 
-        ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' 
+      this.btnHeroPlayBadge.innerHTML = isPlaying
+        ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
         : '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
     }
     if (spotlightTrack) {
@@ -2995,7 +2937,6 @@ class LyricsApp {
 
     if (this.gridGlobalCatalog) this.gridGlobalCatalog.innerHTML = buildCards(4);
     if (this.gridSuggestions) this.gridSuggestions.innerHTML = buildCards(4);
-    if (this.gridLyricsShowcase) this.gridLyricsShowcase.innerHTML = buildCards(4);
   }
 
   _getUniqueTrackPool() {
@@ -3218,14 +3159,14 @@ class LyricsApp {
     const iconicArtists = RecommendationEngine.getIconicArtists(uniquePool);
     this.renderIconicArtistsRow(iconicArtists);
 
-    // 5. Smart Recommendations Shelf ("Made For You")
+    // 5. Personalized Chosen For You Shelf
     const recs = RecommendationEngine.getPersonalizedRecommendations(uniquePool, {
       currentTrack: this.currentTrack,
       recentlyPlayed: this.recentlyPlayed || [],
       favorites: this.favorites || [],
       limit: 8
     });
-    this.renderMusicGrid(this.gridSuggestions, recs, 'No personalized recommendations available yet. Play a song or like your favorites to tune your recommendations!');
+    this.renderMusicGrid(this.gridSuggestions, recs, 'Play a Mezmur or mark favorites to personalize your picks.');
 
     // 6. Context-Aware "Because You Listened To" Shelf
     const becauseShelf = RecommendationEngine.getBecauseYouListenedShelf(uniquePool, {
@@ -3237,21 +3178,17 @@ class LyricsApp {
       if (becauseShelf && becauseShelf.tracks && becauseShelf.tracks.length > 0 && becauseShelf.seedArtist) {
         this.sectionBecauseYouListened.style.display = 'flex';
         if (this.becauseTitleText) this.becauseTitleText.textContent = becauseShelf.title || `Because You Listened To ${becauseShelf.seedArtist}`;
-        if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = becauseShelf.subtitle || `Handpicked gems inspired by ${becauseShelf.seedArtist}`;
-        this.renderMusicGrid(this.gridBecauseYouListened, becauseShelf.tracks, 'No similar tracks found.');
+        if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = becauseShelf.subtitle || `Related Mezmurs inspired by ${becauseShelf.seedArtist}`;
+        this.renderMusicGrid(this.gridBecauseYouListened, becauseShelf.tracks, 'No related Mezmurs found.');
       } else {
         this.sectionBecauseYouListened.style.display = 'none';
       }
     }
 
-    // 7. Verified Synced Lyrics Showcase Shelf
-    const showcaseTracks = RecommendationEngine.getLyricsStageShowcase(uniquePool, 8);
-    this.renderMusicGrid(this.gridLyricsShowcase, showcaseTracks, 'No synced lyrics tracks available.');
-
-    // Dynamic Filter Chips strictly matching existing catalog songs
+    // Dynamic Filter Chips reset cleanly
     this.renderHomeFilterChips(uniquePool);
 
-    // 8. New Drops Shelf (curated preview on Home; full catalog lives in Library -> Songs)
+    // 7. Recently Added Shelf (curated preview on Home; full archive lives in Library -> Mezmurs)
     let catalogTracks = this.activeFilter === 'offline' ? [...this.tracks] : [...this.publicTracks];
 
     if (this.searchQuery) {
@@ -3308,13 +3245,13 @@ class LyricsApp {
 
     if (this.catalogCounterSubtitle) {
       if (this.activeFilter === 'all' && !this.searchQuery && catalogTracks.length > homePreviewTracks.length) {
-        this.catalogCounterSubtitle.textContent = `Showing ${homePreviewTracks.length} of ${catalogTracks.length} songs • Tap Browse All for the full catalog`;
+        this.catalogCounterSubtitle.textContent = `Showing ${homePreviewTracks.length} of ${catalogTracks.length} Mezmurs • Tap Browse All for the full archive`;
       } else {
-        this.catalogCounterSubtitle.textContent = `${homePreviewTracks.length} track${homePreviewTracks.length === 1 ? '' : 's'} sorted ${sortMode === 'oldest' ? 'chronologically (oldest first)' : sortMode === 'newest' ? 'chronologically (newest first)' : `by ${sortMode}`}`;
+        this.catalogCounterSubtitle.textContent = `${homePreviewTracks.length} ${homePreviewTracks.length === 1 ? 'Mezmur' : 'Mezmurs'} in the cloud archive`;
       }
     }
 
-    this.renderMusicGrid(this.gridGlobalCatalog, homePreviewTracks, 'No tracks found matching your criteria.');
+    this.renderMusicGrid(this.gridGlobalCatalog, homePreviewTracks, 'No Mezmurs found yet.');
   }
 
   _getTrackTimestamp(track) {
@@ -3379,9 +3316,9 @@ class LyricsApp {
           <div class="jump-card-artist" title="${safeArtist}">${safeArtist}</div>
         </div>
         <button class="jump-card-play-btn" data-play-track-id="${safeId}" title="${isPlaying ? 'Pause' : 'Play'}" type="button">
-          ${isPlaying 
-            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
-            : '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}
+          ${isPlaying
+          ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+          : '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>'}
         </button>
       `;
 
@@ -3416,7 +3353,7 @@ class LyricsApp {
 
     const frag = document.createDocumentFragment();
     artists.forEach(artist => {
-      const safeName = escapeHtml(artist.name || 'Ethiopian Artist');
+      const safeName = escapeHtml(artist.name || 'Mezmur Zemari');
       const safeCover = sanitizeUrl(artist.cover);
       const card = document.createElement('div');
       card.className = 'artist-circle-card';
@@ -3425,7 +3362,7 @@ class LyricsApp {
           <img src="${safeCover}" alt="${safeName}" class="artist-circle-art" loading="lazy" decoding="async" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
         </div>
         <div class="artist-circle-name" title="${safeName}">${safeName}</div>
-        <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}</div>
+        <div class="artist-circle-tracks artist-circle-badge">${artist.trackCount} ${artist.trackCount === 1 ? 'Mezmur' : 'Mezmurs'}</div>
       `;
 
       card.addEventListener('click', () => {
@@ -3577,8 +3514,8 @@ class LyricsApp {
             </button>
           </div>
           ${lyricMatch
-            ? `<div class="card-lyric-match" title="Matched lyric line">♪ "${escapeHtml(lyricMatch.text)}"</div>`
-            : `<div class="card-subtle-meta">${escapeHtml(metaBits.join(' • ') || 'Audio')}</div>`}
+          ? `<div class="card-lyric-match" title="Matched lyric line">♪ "${escapeHtml(lyricMatch.text)}"</div>`
+          : `<div class="card-subtle-meta">${escapeHtml(metaBits.join(' • ') || 'Audio')}</div>`}
         </div>
       `;
 
@@ -3738,22 +3675,21 @@ class LyricsApp {
 
     PaletteExtractor.applyToElement(this.appEl, PaletteExtractor.getDefaultPalette());
 
-    if (this.artistAmharic) this.artistAmharic.textContent = 'የሙዚቃ ማጫወቻ';
+    if (this.artistAmharic) this.artistAmharic.textContent = 'የመዝሙር ማጫወቻ';
     if (this.artistEnglish) {
-      this.artistEnglish.textContent = 'ELM • ETHIO LYRICS MEDIA';
+      this.artistEnglish.textContent = 'ETHIO LYRICS MEDIA';
       this.artistEnglish.style.display = 'block';
     }
-    if (this.songTitleAmharic) this.songTitleAmharic.textContent = 'ሙዚቃ ይምረጡ';
+    if (this.songTitleAmharic) this.songTitleAmharic.textContent = 'መዝሙር ይምረጡ';
     if (this.albumTitle) this.albumTitle.textContent = 'Library';
     if (this.albumYear) this.albumYear.textContent = new Date().getFullYear().toString();
 
-    this._setArtworkFallback(this.heroArtworkBox, this.heroArtworkImg, '');
     this._setArtworkFallback(this.vinylDisc, this.discArtwork, '');
     if (this.kineticSleeveArt) this.kineticSleeveArt.src = 'brand/elm-default-cover.svg';
     if (this.stageMobileCoverImg) this.stageMobileCoverImg.src = 'brand/elm-default-cover.svg';
     this._setArtworkFallback(this.playerMiniArtWrap, this.playerMiniArt, '');
-    if (this.playerMiniTitle) this.playerMiniTitle.textContent = 'No Track Loaded';
-    if (this.playerMiniArtist) this.playerMiniArtist.textContent = 'Select a track to begin';
+    if (this.playerMiniTitle) this.playerMiniTitle.textContent = 'No Mezmur Loaded';
+    if (this.playerMiniArtist) this.playerMiniArtist.textContent = 'Select a Mezmur to begin';
 
     if (this.lyricsScrollWrap) {
       this.lyricsScrollWrap.innerHTML = `
@@ -3761,11 +3697,11 @@ class LyricsApp {
           <div class="no-lyrics-icon">
             <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
           </div>
-          <div class="no-lyrics-title">No Tracks in Library</div>
-          <div class="no-lyrics-subtitle">Select a song from Explore or upload an audio song to start listening with synchronized lyrics.</div>
+          <div class="no-lyrics-title">No Mezmurs in Library</div>
+          <div class="no-lyrics-subtitle">Select a Mezmur from Home or upload an audio Mezmur to start listening with synchronized lyrics.</div>
           <div class="no-lyrics-actions">
             <button id="btnEmptyUploadTrack" class="btn-pill btn-primary-action">
-              <span>Upload Song &amp; Lyrics</span>
+              <span>Upload Mezmur &amp; Lyrics</span>
             </button>
           </div>
         </div>
@@ -4420,10 +4356,10 @@ class LyricsApp {
     if (this.artistBannerSubtitle) {
       this.artistBannerSubtitle.textContent = (artist.nameEn && artist.nameEn !== artist.name)
         ? artist.nameEn
-        : (artist.genres?.join(' • ') || 'Ethiopian Music Artist');
+        : (artist.genres?.join(' • ') || 'Mezmur Zemari / Choir');
     }
     if (this.artistBannerMeta) {
-      this.artistBannerMeta.textContent = `${artist.albumCount} albums • ${artist.trackCount} ${artist.trackCount === 1 ? 'song' : 'songs'}`;
+      this.artistBannerMeta.textContent = `${artist.albumCount} collections • ${artist.trackCount} ${artist.trackCount === 1 ? 'Mezmur' : 'Mezmurs'}`;
     }
 
     this._activeDetailTracks = artist.tracks || [];
@@ -4443,7 +4379,7 @@ class LyricsApp {
               <img src="${sanitizeUrl(alb.cover)}" alt="${escapeHtml(alb.title)}" class="entity-card-art" loading="lazy" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
             </div>
             <div class="entity-card-title">${escapeHtml(alb.title)}</div>
-            <div class="entity-card-sub">${escapeHtml(alb.year || 'Album')} • ${alb.trackCount} ${alb.trackCount === 1 ? 'song' : 'songs'}</div>
+            <div class="entity-card-sub">${escapeHtml(alb.year || 'Collection')} • ${alb.trackCount} ${alb.trackCount === 1 ? 'Mezmur' : 'Mezmurs'}</div>
           `;
           card.addEventListener('click', () => {
             this.switchLibraryTab('albums');
@@ -4639,13 +4575,13 @@ class LyricsApp {
           <button class="btn-pill btn-track-icon btn-track-queue" title="Add to Queue" aria-label="Add to Queue" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="19" y1="15" x2="19" y2="21"/><line x1="16" y1="18" x2="22" y2="18"/></svg>
           </button>
-          <button class="btn-pill btn-track-icon btn-track-info" title="Song Details" aria-label="Song Details" type="button">
+          <button class="btn-pill btn-track-icon btn-track-info" title="Mezmur Details" aria-label="Mezmur Details" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
           <button class="btn-pill btn-track-icon btn-download-offline ${isOfflineReady ? 'downloaded' : ''}" data-id="${safeId}" title="${isOfflineReady ? 'Saved Offline' : 'Download for Offline'}" aria-label="${isOfflineReady ? 'Saved Offline' : 'Download for Offline'}" type="button">
             ${isOfflineReady ? savedIconSvg : downloadIconSvg}
           </button>
-          ${this.isAdmin ? `<button class="btn-pill btn-track-icon btn-delete-public" style="color:#ff6b6b;" title="Delete from Global Catalog" aria-label="Delete from Global Catalog" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+          ${this.isAdmin ? `<button class="btn-pill btn-track-icon btn-delete-public" style="color:#ff6b6b;" title="Delete from Public Archive" aria-label="Delete from Public Archive" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
         </div>
       `;
 
@@ -4829,13 +4765,13 @@ class LyricsApp {
           <button class="btn-pill btn-track-icon btn-track-queue" title="Add to Queue" aria-label="Add to Queue" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="15" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="19" y1="15" x2="19" y2="21"/><line x1="16" y1="18" x2="22" y2="18"/></svg>
           </button>
-          <button class="btn-pill btn-track-icon btn-track-info" title="Song Details" aria-label="Song Details" type="button">
+          <button class="btn-pill btn-track-icon btn-track-info" title="Mezmur Details" aria-label="Mezmur Details" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
-          <button class="btn-pill btn-track-icon btn-edit-custom" title="Edit Metadata & Artwork" aria-label="Edit Song" type="button">
+          <button class="btn-pill btn-track-icon btn-edit-custom" title="Edit Metadata & Artwork" aria-label="Edit Mezmur" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           </button>
-          <button class="btn-pill btn-track-icon btn-delete-custom" style="color:#ff6b6b;" title="Delete Song" aria-label="Delete Song" type="button">
+          <button class="btn-pill btn-track-icon btn-delete-custom" style="color:#ff6b6b;" title="Delete Mezmur" aria-label="Delete Mezmur" type="button">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
@@ -5003,7 +4939,7 @@ class LyricsApp {
 
     if (trackToEdit) {
       this.editingTrackId = trackToEdit.id;
-      if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Edit Song Metadata & Artwork';
+      if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Edit Mezmur Metadata & Artwork';
       if (this.audioRequiredBadge) {
         this.audioRequiredBadge.textContent = '(Optional - keep existing audio)';
         this.audioRequiredBadge.className = 'optional-badge';
@@ -5015,9 +4951,23 @@ class LyricsApp {
       this.populateAlbumPickerForArtist(editArtistId, editAlbumVal, trackToEdit.album || '');
 
       this.inputCustomTitle.value = trackToEdit.title || '';
-      if (this.selectCustomGenre) this.selectCustomGenre.value = trackToEdit.genre || '';
+      if (this.selectCustomGenre) this.selectCustomGenre.value = trackToEdit.hymnCategory || trackToEdit.genre || '';
       this.inputCustomYear.value = trackToEdit.year || '';
       if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = trackToEdit.trackNumber || '';
+      if (this.selectCustomSeason) this.selectCustomSeason.value = trackToEdit.liturgicalSeason || '';
+      if (this.inputCustomFeast) this.inputCustomFeast.value = trackToEdit.feastOrDedication || '';
+      if (this.selectCustomZema) this.selectCustomZema.value = trackToEdit.zemaMode || '';
+      if (this.selectCustomVocal) this.selectCustomVocal.value = trackToEdit.vocalStyle || '';
+      if (this.selectCustomLanguage) this.selectCustomLanguage.value = trackToEdit.language || '';
+      if (this.selectCustomMood) this.selectCustomMood.value = trackToEdit.devotionalMood || '';
+      if (this.selectCustomEra) this.selectCustomEra.value = trackToEdit.era || '';
+      if (this.inputCustomComposer) this.inputCustomComposer.value = trackToEdit.composer || '';
+      if (this.inputCustomScripture) this.inputCustomScripture.value = trackToEdit.scriptureReference || '';
+      if (this.inputCustomDebir) this.inputCustomDebir.value = trackToEdit.churchDebir || '';
+      if (this.inputCustomExternalUrl) this.inputCustomExternalUrl.value = trackToEdit.externalUrl || '';
+      if (this.inputCustomTags) {
+        this.inputCustomTags.value = Array.isArray(trackToEdit.tags) ? trackToEdit.tags.join(', ') : (trackToEdit.tags || '');
+      }
       this.inputCustomLrc.value = trackToEdit.lrc || '';
 
       this.selectedAudioFile = null;
@@ -5041,7 +4991,7 @@ class LyricsApp {
       this.updatePublicSubmitButtonState();
     } else {
       this.editingTrackId = null;
-      if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Upload New Song';
+      if (this.trackFormModeTitle) this.trackFormModeTitle.textContent = 'Upload New Mezmur';
       if (this.audioRequiredBadge) {
         this.audioRequiredBadge.textContent = '* Required';
         this.audioRequiredBadge.className = 'required-badge';
@@ -5053,6 +5003,18 @@ class LyricsApp {
       if (this.selectCustomGenre) this.selectCustomGenre.value = '';
       this.inputCustomYear.value = '';
       if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = '';
+      if (this.selectCustomSeason) this.selectCustomSeason.value = '';
+      if (this.inputCustomFeast) this.inputCustomFeast.value = '';
+      if (this.selectCustomZema) this.selectCustomZema.value = '';
+      if (this.selectCustomVocal) this.selectCustomVocal.value = '';
+      if (this.selectCustomLanguage) this.selectCustomLanguage.value = '';
+      if (this.selectCustomMood) this.selectCustomMood.value = '';
+      if (this.selectCustomEra) this.selectCustomEra.value = '';
+      if (this.inputCustomComposer) this.inputCustomComposer.value = '';
+      if (this.inputCustomScripture) this.inputCustomScripture.value = '';
+      if (this.inputCustomDebir) this.inputCustomDebir.value = '';
+      if (this.inputCustomExternalUrl) this.inputCustomExternalUrl.value = '';
+      if (this.inputCustomTags) this.inputCustomTags.value = '';
       this.inputCustomLrc.value = '';
 
       this.selectedAudioFile = null;
@@ -5082,7 +5044,7 @@ class LyricsApp {
       this.btnApplyCustomTrack.disabled = false;
       this.btnApplyCustomTrack.style.opacity = '1';
       this.btnApplyCustomTrack.style.cursor = 'pointer';
-      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Save Changes' : 'Save & Play Song';
+      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Save Changes' : 'Save & Play Mezmur';
       return;
     }
 
@@ -5099,7 +5061,7 @@ class LyricsApp {
       this.btnApplyCustomTrack.disabled = !audioAvailable;
       this.btnApplyCustomTrack.style.opacity = audioAvailable ? '1' : '0.55';
       this.btnApplyCustomTrack.style.cursor = audioAvailable ? 'pointer' : 'not-allowed';
-      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Update & Publish Song' : 'Publish Song';
+      this.btnApplyCustomTrack.textContent = this.editingTrackId ? 'Update & Publish Mezmur' : 'Publish Mezmur';
       if (!audioAvailable) {
         this.setR2UploadStatus('Select an audio file to upload and publish to the Global Catalog.');
       } else if (!this.uploadedR2AudioUrl) {
@@ -5137,13 +5099,13 @@ class LyricsApp {
     const index = this.catalogIndex || this.rebuildCatalogIndex();
     const artists = index.artists || [];
 
-    this.selectCustomArtist.innerHTML = '<option value="">-- Select Existing Artist --</option>';
+    this.selectCustomArtist.innerHTML = '<option value="">-- Select Existing Zemari / Choir --</option>';
     let matched = false;
     for (const art of artists) {
       if (!art.id || art.id === 'art_unknown') continue;
       const opt = document.createElement('option');
       opt.value = art.id;
-      opt.textContent = `${art.name}${art.nameEn && art.nameEn !== art.name ? ` (${art.nameEn})` : ''} — ${art.trackCount} ${art.trackCount === 1 ? 'song' : 'songs'}`;
+      opt.textContent = `${art.name}${art.nameEn && art.nameEn !== art.name ? ` (${art.nameEn})` : ''} — ${art.trackCount} ${art.trackCount === 1 ? 'Mezmur' : 'Mezmurs'}`;
       if (selectedArtistId && art.id === selectedArtistId) {
         opt.selected = true;
         matched = true;
@@ -5153,7 +5115,7 @@ class LyricsApp {
 
     const newOpt = document.createElement('option');
     newOpt.value = '__new__';
-    newOpt.textContent = '+ Add New Artist...';
+    newOpt.textContent = '+ Add New Zemari / Choir...';
     this.selectCustomArtist.appendChild(newOpt);
 
     if (!matched && fallbackName) {
@@ -5186,12 +5148,12 @@ class LyricsApp {
     const index = this.catalogIndex || this.rebuildCatalogIndex();
     const albums = artistId ? index.getAlbumsByArtist(artistId).filter(a => !a.isSingle) : [];
 
-    this.selectCustomAlbum.innerHTML = '<option value="Single">Single (No Album)</option>';
+    this.selectCustomAlbum.innerHTML = '<option value="Single">Single (Standalone Mezmur)</option>';
     let matched = selectedValue === 'Single' || !selectedValue;
     for (const alb of albums) {
       const opt = document.createElement('option');
       opt.value = alb.id;
-      opt.textContent = `${alb.title}${alb.year ? ` (${alb.year})` : ''} — ${alb.trackCount} ${alb.trackCount === 1 ? 'song' : 'songs'}`;
+      opt.textContent = `${alb.title}${alb.year ? ` (${alb.year})` : ''} — ${alb.trackCount} ${alb.trackCount === 1 ? 'Mezmur' : 'Mezmurs'}`;
       if (selectedValue && (alb.id === selectedValue || alb.title === selectedValue)) {
         opt.selected = true;
         matched = true;
@@ -5201,7 +5163,7 @@ class LyricsApp {
 
     const newOpt = document.createElement('option');
     newOpt.value = '__new__';
-    newOpt.textContent = '+ Add New Album...';
+    newOpt.textContent = '+ Add New Collection...';
     this.selectCustomAlbum.appendChild(newOpt);
 
     if (!matched && fallbackAlbumName && !isSingleAlbumName(fallbackAlbumName)) {
@@ -5249,6 +5211,18 @@ class LyricsApp {
     if (this.selectCustomGenre) this.selectCustomGenre.value = '';
     if (this.inputCustomYear) this.inputCustomYear.value = '';
     if (this.inputCustomTrackNumber) this.inputCustomTrackNumber.value = '';
+    if (this.selectCustomSeason) this.selectCustomSeason.value = '';
+    if (this.inputCustomFeast) this.inputCustomFeast.value = '';
+    if (this.selectCustomZema) this.selectCustomZema.value = '';
+    if (this.selectCustomVocal) this.selectCustomVocal.value = '';
+    if (this.selectCustomLanguage) this.selectCustomLanguage.value = '';
+    if (this.selectCustomMood) this.selectCustomMood.value = '';
+    if (this.selectCustomEra) this.selectCustomEra.value = '';
+    if (this.inputCustomComposer) this.inputCustomComposer.value = '';
+    if (this.inputCustomScripture) this.inputCustomScripture.value = '';
+    if (this.inputCustomDebir) this.inputCustomDebir.value = '';
+    if (this.inputCustomExternalUrl) this.inputCustomExternalUrl.value = '';
+    if (this.inputCustomTags) this.inputCustomTags.value = '';
     if (this.inputCustomLrc) this.inputCustomLrc.value = '';
     this.selectedAudioFile = null;
     this.selectedCoverDataUrl = null;
@@ -5331,13 +5305,29 @@ class LyricsApp {
     const trackNumberRaw = this.inputCustomTrackNumber ? parseInt(this.inputCustomTrackNumber.value, 10) : NaN;
     const trackNumber = Number.isFinite(trackNumberRaw) && trackNumberRaw > 0 ? trackNumberRaw : null;
 
-    return { artist, artistEn, artistId, album, albumId, genre, trackNumber };
+    const hymnMeta = {
+      hymnCategory: genre,
+      liturgicalSeason: this.selectCustomSeason ? this.selectCustomSeason.value.trim() : '',
+      feastOrDedication: this.inputCustomFeast ? this.inputCustomFeast.value.trim() : '',
+      zemaMode: this.selectCustomZema ? this.selectCustomZema.value.trim() : '',
+      vocalStyle: this.selectCustomVocal ? this.selectCustomVocal.value.trim() : '',
+      language: this.selectCustomLanguage ? this.selectCustomLanguage.value.trim() : '',
+      devotionalMood: this.selectCustomMood ? this.selectCustomMood.value.trim() : '',
+      era: this.selectCustomEra ? this.selectCustomEra.value.trim() : '',
+      composer: this.inputCustomComposer ? this.inputCustomComposer.value.trim() : '',
+      scriptureReference: this.inputCustomScripture ? this.inputCustomScripture.value.trim() : '',
+      churchDebir: this.inputCustomDebir ? this.inputCustomDebir.value.trim() : '',
+      externalUrl: normalizeExternalUrl(this.inputCustomExternalUrl ? this.inputCustomExternalUrl.value.trim() : ''),
+      tags: normalizeTags(this.inputCustomTags ? this.inputCustomTags.value : '')
+    };
+
+    return { artist, artistEn, artistId, album, albumId, genre, trackNumber, hymnMeta };
   }
 
   async applyCustomTrack() {
     this.clearFormErrors();
 
-    const { artist, artistEn, artistId, album, albumId, genre, trackNumber } = this._resolveFormArtistAndAlbum();
+    const { artist, artistEn, artistId, album, albumId, genre, trackNumber, hymnMeta } = this._resolveFormArtistAndAlbum();
     const title = this.inputCustomTitle.value.trim();
     const year = this.inputCustomYear.value.trim() || new Date().getFullYear().toString();
     const lrc = this.inputCustomLrc.value.trim() || '';
@@ -5358,7 +5348,7 @@ class LyricsApp {
     }
 
     if (hasError) {
-      this.showFormError('Artist and Song Title are required.');
+      this.showFormError('Zemari / Choir and Mezmur Title are required.');
       if (!artist) {
         if (this.selectCustomArtist && this.selectCustomArtist.value === '__new__' && this.inputCustomArtist) {
           this.inputCustomArtist.focus();
@@ -5418,6 +5408,7 @@ class LyricsApp {
             album,
             albumId,
             genre,
+            ...hymnMeta,
             trackNumber,
             year,
             cover: publicCoverUrl,
@@ -5427,7 +5418,7 @@ class LyricsApp {
             localSourceTrackId: existingTrack ? existingTrack.id : null
           });
 
-          // Remove any local draft copy so the song only appears once in the Global Catalog
+          // Remove any local draft copy so the Mezmur only appears once in the Public Archive
           if (existingTrack) {
             this._migrateTrackIdReferences(existingTrack.id, published.id);
             await Storage.deleteTrack(existingTrack.id);
@@ -5444,7 +5435,7 @@ class LyricsApp {
           this.switchTab('lyrics');
           this.renderHomePage();
           this.populateTracksModal();
-          this.showToast(`Published "${title}" to the Global Catalog!`, 3500);
+          this.showToast(`Published "${title}" to the Public Archive!`, 3500);
           return;
         }
 
@@ -5460,6 +5451,7 @@ class LyricsApp {
           album,
           albumId,
           genre,
+          ...hymnMeta,
           trackNumber,
           year,
           lrc,
@@ -5478,6 +5470,7 @@ class LyricsApp {
           album,
           albumId,
           genre,
+          ...hymnMeta,
           trackNumber,
           year,
           cover: this.selectedCoverDataUrl || 'brand/elm-default-cover.svg',
@@ -5500,6 +5493,7 @@ class LyricsApp {
           album,
           albumId,
           genre,
+          ...hymnMeta,
           trackNumber,
           year,
           cover: publicCoverUrl,
@@ -5516,11 +5510,11 @@ class LyricsApp {
         this.switchTab('lyrics');
         this.renderHomePage();
         this.populateTracksModal();
-        this.showToast(`"${title}" submitted for review! When approved, the global version will replace your local draft.`, 4200);
+        this.showToast(`"${title}" submitted for review! When approved, the archive version replaces your local draft.`, 4200);
         return;
       } catch (err) {
         console.error('Public upload/publish error:', err);
-        this.showFormError(err.message || 'Could not publish/submit track. Please try again.');
+        this.showFormError(err.message || 'Could not publish/submit Mezmur. Please try again.');
         return;
       } finally {
         this.updatePublicSubmitButtonState();
@@ -5546,6 +5540,7 @@ class LyricsApp {
       existingTrack.album = album;
       existingTrack.albumId = albumId;
       existingTrack.genre = genre;
+      Object.assign(existingTrack, hymnMeta);
       existingTrack.trackNumber = trackNumber;
       existingTrack.year = year;
       existingTrack.lrc = lrc;
@@ -5583,6 +5578,7 @@ class LyricsApp {
       album: album,
       albumId: albumId,
       genre: genre,
+      ...hymnMeta,
       trackNumber: trackNumber,
       year: year,
       cover: coverArt || 'brand/elm-default-cover.svg',
@@ -5870,7 +5866,7 @@ class LyricsApp {
       list.forEach(sub => {
         const isMetadataEdit = sub.type === 'metadata_edit';
         const safeSubTitle = escapeHtml(sub.title || 'Untitled');
-        const safeSubArtist = escapeHtml(sub.artist || 'Unknown Artist');
+        const safeSubArtist = escapeHtml(sub.artist || 'Unknown Zemari');
         const safeOrigTitle = escapeHtml(sub.originalTitle || '');
         const safeOrigArtist = escapeHtml(sub.originalArtist || '');
         const safeSubAlbum = escapeHtml(sub.album || 'Single');
@@ -5881,6 +5877,15 @@ class LyricsApp {
         const safeAudioFileName = escapeHtml(sub.audioFileName || 'Local File');
         const safeAudioInputVal = escapeHtml(sub.audioUrl && !isMetadataEdit ? sub.audioUrl : (isMetadataEdit ? '' : `${R2_PUBLIC_BASE}/`));
         const safeSubId = escapeHtml(sub.id);
+        const extraMetaBits = [
+          sub.hymnCategory || sub.genre,
+          sub.liturgicalSeason,
+          sub.feastOrDedication,
+          sub.zemaMode,
+          sub.language,
+          sub.churchDebir ? `ደብር: ${sub.churchDebir}` : '',
+          sub.scriptureReference ? `ጥቅስ: ${sub.scriptureReference}` : ''
+        ].filter(Boolean).map(v => escapeHtml(v));
 
         const item = document.createElement('div');
         item.className = 'admin-submission-item';
@@ -5889,13 +5894,14 @@ class LyricsApp {
             <img src="${safeSubCover}" class="submission-thumb" alt="${safeSubTitle}" crossorigin="anonymous" onerror="this.src='brand/elm-default-cover.svg'">
             <div style="flex:1; min-width:0;">
               <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:2px;">
-                ${isMetadataEdit ? '<span style="background:rgba(229,185,90,0.2); color:var(--color-gold); font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700; border:1px solid rgba(229,185,90,0.4);">COMMUNITY EDIT</span>' : '<span style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700;">NEW TRACK</span>'}
+                ${isMetadataEdit ? '<span style="background:rgba(229,185,90,0.2); color:var(--color-gold); font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700; border:1px solid rgba(229,185,90,0.4);">COMMUNITY EDIT</span>' : '<span style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.68rem; padding:0.12rem 0.45rem; border-radius:4px; font-weight:700;">NEW MEZMUR</span>'}
                 <span style="font-weight:700; font-size:0.95rem; color:#fff;">${safeSubTitle} - ${safeSubArtist}</span>
               </div>
               <div style="font-size:0.75rem; color:var(--color-text-dim);">
                 ${isMetadataEdit && safeOrigTitle ? `Original: <span style="color:#d1d5db;">${safeOrigTitle} (${safeOrigArtist})</span> • ` : ''}
-                Album: ${safeSubAlbum} (${safeSubYear}) • By: <b style="color:#fce7b2;">${safeSubEmail}</b>
+                Collection: ${safeSubAlbum} (${safeSubYear}) • By: <b style="color:#fce7b2;">${safeSubEmail}</b>
               </div>
+              ${extraMetaBits.length > 0 ? `<div style="font-size:0.72rem; color:#d1d5db; margin-top:3px;">${extraMetaBits.join(' • ')}</div>` : ''}
               ${safeSubNote ? `<div style="font-size:0.73rem; color:#fce7b2; background:rgba(255,255,255,0.04); padding:0.3rem 0.55rem; border-radius:6px; margin-top:4px; border-left:2px solid var(--color-gold);"><b>Contributor Note:</b> ${safeSubNote}</div>` : ''}
               <div style="font-size:0.72rem; color:var(--color-accent); margin-top:3px;">
                 ${sub.lrc ? '✓ Timed LRC Lyrics Included' : 'No Lyrics'} • Audio: ${isMetadataEdit ? 'Retains Original Audio Stream' : (sub.audioUrl ? 'Direct Link' : safeAudioFileName)}
@@ -6005,7 +6011,7 @@ class LyricsApp {
     try {
       const saved = localStorage.getItem('ethio_lyrics_bullet_enabled');
       if (saved !== null) bulletOn = saved === '1';
-    } catch (e) {}
+    } catch (e) { }
     this.applyLyricsBulletSetting(bulletOn, false);
     if (this.toggleLyricsBullet) {
       this.toggleLyricsBullet.checked = bulletOn;
@@ -6019,7 +6025,7 @@ class LyricsApp {
     try {
       const raw = localStorage.getItem('ethio_lyrics_view_mode');
       if (raw === 'sheet' || raw === 'synced') savedMode = raw;
-    } catch (e) {}
+    } catch (e) { }
     this.setLyricsViewMode(savedMode, false);
     if (this.selectLyricsViewMode) {
       this.selectLyricsViewMode.value = savedMode;
@@ -6033,7 +6039,7 @@ class LyricsApp {
     try {
       const rawSize = localStorage.getItem('ethio_lyrics_font_size');
       if (['compact', 'standard', 'large', 'xlarge'].includes(rawSize)) savedSize = rawSize;
-    } catch (e) {}
+    } catch (e) { }
     this.setLyricsFontSize(savedSize, false);
     if (this.selectLyricsFontSize) {
       this.selectLyricsFontSize.value = savedSize;
@@ -6046,7 +6052,7 @@ class LyricsApp {
     let showTs = false;
     try {
       showTs = localStorage.getItem('ethio_lyrics_show_ts') === '1';
-    } catch (e) {}
+    } catch (e) { }
     this.applyLyricsTimestampsSetting(showTs, false);
     if (this.toggleLyricsTimestamps) {
       this.toggleLyricsTimestamps.checked = showTs;
@@ -6060,7 +6066,7 @@ class LyricsApp {
     try {
       const savedPlay = localStorage.getItem('ethio_lyrics_play_on_click');
       if (savedPlay !== null) playOnClick = savedPlay === '1';
-    } catch (e) {}
+    } catch (e) { }
     this.applyPlayOnLyricClickSetting(playOnClick, false);
     if (this.togglePlayOnLyricClick) {
       this.togglePlayOnLyricClick.checked = playOnClick;
@@ -6079,7 +6085,7 @@ class LyricsApp {
       this.togglePlayOnLyricClick.checked = this._playOnLyricClick;
     }
     if (persist) {
-      try { localStorage.setItem('ethio_lyrics_play_on_click', this._playOnLyricClick ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_play_on_click', this._playOnLyricClick ? '1' : '0'); } catch (e) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
   }
@@ -6090,7 +6096,7 @@ class LyricsApp {
     this.appEl.classList.toggle('lyrics-bullet-off', !enabled);
     if (this.toggleLyricsBullet) this.toggleLyricsBullet.checked = !!enabled;
     if (persist) {
-      try { localStorage.setItem('ethio_lyrics_bullet_enabled', enabled ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_bullet_enabled', enabled ? '1' : '0'); } catch (e) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
   }
@@ -6106,7 +6112,7 @@ class LyricsApp {
     }
     CustomDropdown.sync(this.selectLyricsViewMode);
     if (persist) {
-      try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
     requestAnimationFrame(() => {
@@ -6126,7 +6132,7 @@ class LyricsApp {
     }
     CustomDropdown.sync(this.selectLyricsFontSize);
     if (persist) {
-      try { localStorage.setItem('ethio_lyrics_font_size', valid); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_font_size', valid); } catch (e) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
     requestAnimationFrame(() => {
@@ -6143,7 +6149,7 @@ class LyricsApp {
       this.toggleLyricsTimestamps.checked = !!show;
     }
     if (persist) {
-      try { localStorage.setItem('ethio_lyrics_show_ts', show ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_show_ts', show ? '1' : '0'); } catch (e) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
   }
@@ -6170,7 +6176,7 @@ class LyricsApp {
         if (legacy !== null) enabled = legacy === '1';
       }
       localStorage.removeItem('ethio_player_dock_collapsed');
-    } catch (e) {}
+    } catch (e) { }
     this._compactDockEnabled = enabled;
     this._autoCollapseEnabled = enabled;
 
@@ -6191,7 +6197,7 @@ class LyricsApp {
       this.toggleAutoCollapsePlayer.checked = this._compactDockEnabled;
     }
     if (persist) {
-      try { localStorage.setItem('ethio_player_mini_browse', this._compactDockEnabled ? '1' : '0'); } catch (err) {}
+      try { localStorage.setItem('ethio_player_mini_browse', this._compactDockEnabled ? '1' : '0'); } catch (err) { }
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
     this._syncPlayerDockMode();
@@ -6260,7 +6266,7 @@ class LyricsApp {
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         reasons.push('reduced-motion preference');
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       if (typeof navigator !== 'undefined') {
@@ -6271,7 +6277,7 @@ class LyricsApp {
           reasons.push(`${navigator.deviceMemory}GB RAM`);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const canvas = document.createElement('canvas');
@@ -6287,7 +6293,7 @@ class LyricsApp {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return {
       isLite: reasons.length > 0,
@@ -6302,7 +6308,7 @@ class LyricsApp {
       if (raw === 'auto' || raw === 'high' || raw === 'lite') {
         saved = raw;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     this._perfAutoInfo = this._detectAutoPerformanceLite();
     this.perfModeSetting = saved;
@@ -6320,7 +6326,7 @@ class LyricsApp {
           });
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   setPerformanceMode(mode) {
@@ -6328,7 +6334,7 @@ class LyricsApp {
     this.perfModeSetting = mode;
     try {
       localStorage.setItem('ethio_perf_mode', mode);
-    } catch (e) {}
+    } catch (e) { }
     this.applyPerformanceMode();
     const label = this.isPerfLite ? 'Lite (Potato PC)' : 'High Quality';
     this.showToast(`Performance mode: ${mode === 'auto' ? `Auto → ${label}` : label}`);
@@ -6534,27 +6540,27 @@ class LyricsApp {
     if (!remote || typeof remote !== 'object') return;
     if (typeof remote.lyricsBullet === 'boolean') {
       this.applyLyricsBulletSetting(remote.lyricsBullet, false);
-      try { localStorage.setItem('ethio_lyrics_bullet_enabled', remote.lyricsBullet ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_bullet_enabled', remote.lyricsBullet ? '1' : '0'); } catch (e) { }
     }
     if (remote.lyricsViewMode === 'synced' || remote.lyricsViewMode === 'sheet') {
       this.setLyricsViewMode(remote.lyricsViewMode, false);
-      try { localStorage.setItem('ethio_lyrics_view_mode', remote.lyricsViewMode); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_view_mode', remote.lyricsViewMode); } catch (e) { }
     }
     if (['compact', 'standard', 'large', 'xlarge'].includes(remote.lyricsFontSize)) {
       this.setLyricsFontSize(remote.lyricsFontSize, false);
-      try { localStorage.setItem('ethio_lyrics_font_size', remote.lyricsFontSize); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_font_size', remote.lyricsFontSize); } catch (e) { }
     }
     if (typeof remote.lyricsShowTs === 'boolean') {
       this.applyLyricsTimestampsSetting(remote.lyricsShowTs, false);
-      try { localStorage.setItem('ethio_lyrics_show_ts', remote.lyricsShowTs ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_show_ts', remote.lyricsShowTs ? '1' : '0'); } catch (e) { }
     }
     if (typeof remote.lyricsPlayOnClick === 'boolean') {
       this.applyPlayOnLyricClickSetting(remote.lyricsPlayOnClick, false);
-      try { localStorage.setItem('ethio_lyrics_play_on_click', remote.lyricsPlayOnClick ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_lyrics_play_on_click', remote.lyricsPlayOnClick ? '1' : '0'); } catch (e) { }
     }
     if (typeof remote.playerAutoCollapse === 'boolean') {
       this.applyPlayerAutoCollapseSetting(remote.playerAutoCollapse, false);
-      try { localStorage.setItem('ethio_player_mini_browse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_player_mini_browse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) { }
     }
   }
 
@@ -6642,7 +6648,7 @@ class LyricsApp {
     const track = this.currentTrack || (this.publicTracks.length > 0 ? this.publicTracks[0] : (this.tracks.length > 0 ? this.tracks[0] : null));
     const isFav = track ? Storage.isFavorite(track.id) : false;
 
-    [this.btnDockFavorite, this.btnHeroFavorite].forEach(btn => {
+    [this.btnDockFavorite].forEach(btn => {
       if (!btn) return;
       if (isFav) {
         btn.classList.add('is-favorite');
@@ -6685,10 +6691,10 @@ class LyricsApp {
       this.detailModalCover.src = track.cover || 'brand/elm-default-cover.svg';
     }
     if (this.detailModalTitle) {
-      this.detailModalTitle.textContent = track.title || 'Untitled Track';
+      this.detailModalTitle.textContent = track.title || 'Untitled Mezmur';
     }
     if (this.detailModalArtist) {
-      this.detailModalArtist.textContent = track.artist || 'Unknown Artist';
+      this.detailModalArtist.textContent = track.artist || 'Unknown Zemari';
     }
     if (this.detailModalArtistEn) {
       const hasDistinctEn = track.artistEn && track.artistEn.trim().toLowerCase() !== (track.artist || '').trim().toLowerCase();
@@ -6701,22 +6707,72 @@ class LyricsApp {
       }
     }
     if (this.detailModalAlbum) {
-      const trackNumStr = track.trackNumber ? ` • Track #${track.trackNumber}` : '';
+      const trackNumStr = track.trackNumber ? ` • #${track.trackNumber}` : '';
       this.detailModalAlbum.textContent = `${track.album || 'Single'} • ${track.year || '2024'}${trackNumStr}`;
     }
-    if (this.detailModalGenreChip) {
-      if (track.genre) {
-        this.detailModalGenreChip.textContent = track.genre;
-        this.detailModalGenreChip.style.display = 'inline-flex';
+
+    const setDetailChip = (el, val) => {
+      if (!el) return;
+      if (val && String(val).trim()) {
+        el.textContent = String(val).trim();
+        el.style.display = 'inline-flex';
       } else {
-        this.detailModalGenreChip.style.display = 'none';
+        el.style.display = 'none';
+      }
+    };
+    setDetailChip(this.detailModalGenreChip, track.hymnCategory || track.genre);
+    setDetailChip(this.detailModalSeasonChip, track.liturgicalSeason);
+    setDetailChip(this.detailModalZemaChip, track.zemaMode);
+    setDetailChip(this.detailModalLangChip, track.language);
+    setDetailChip(this.detailModalVocalChip, track.vocalStyle);
+
+    if (this.detailModalMetaGrid) {
+      const metaRows = [];
+      if (track.feastOrDedication) metaRows.push(['Saint / Feast', track.feastOrDedication]);
+      if (track.scriptureReference) metaRows.push(['Scripture (ጥቅስ)', track.scriptureReference]);
+      if (track.churchDebir) metaRows.push(['Church / Debir (ደብር)', track.churchDebir]);
+      if (track.composer) metaRows.push(['Composer / Source', track.composer]);
+      if (track.devotionalMood) metaRows.push(['Devotional Mood', track.devotionalMood]);
+      if (track.era) metaRows.push(['Tradition / Era', track.era]);
+      if (Array.isArray(track.tags) && track.tags.length > 0) metaRows.push(['Themes', track.tags.join(', ')]);
+
+      if (metaRows.length > 0) {
+        this.detailModalMetaGrid.innerHTML = metaRows.map(([k, v]) => `
+          <div class="detail-meta-cell">
+            <span class="detail-meta-k">${escapeHtml(k)}</span>
+            <span class="detail-meta-v">${escapeHtml(v)}</span>
+          </div>
+        `).join('');
+        this.detailModalMetaGrid.style.display = 'grid';
+      } else {
+        this.detailModalMetaGrid.innerHTML = '';
+        this.detailModalMetaGrid.style.display = 'none';
+      }
+    }
+
+    if (this.btnDetailExternalLink) {
+      const safeExternal = normalizeExternalUrl(track.externalUrl);
+      if (safeExternal) {
+        this.btnDetailExternalLink.href = safeExternal;
+        this.btnDetailExternalLink.style.display = 'inline-flex';
+        if (this.detailExternalLinkLabel) {
+          let label = 'Listen Online';
+          if (/youtu\.be|youtube\.com/i.test(safeExternal)) label = 'Listen on YouTube';
+          else if (/spotify\.com/i.test(safeExternal)) label = 'Listen on Spotify';
+          else if (/soundcloud\.com/i.test(safeExternal)) label = 'Listen on SoundCloud';
+          else if (/music\.apple\.com/i.test(safeExternal)) label = 'Listen on Apple Music';
+          this.detailExternalLinkLabel.textContent = label;
+        }
+      } else {
+        this.btnDetailExternalLink.removeAttribute('href');
+        this.btnDetailExternalLink.style.display = 'none';
       }
     }
 
     // LRC status & lyrics preview snippet
     const hasLrc = !!(track.lrc && track.lrc.trim());
     if (this.detailModalLrcChip) {
-      this.detailModalLrcChip.textContent = hasLrc ? 'Synced LRC Lyrics' : 'Audio Track';
+      this.detailModalLrcChip.textContent = hasLrc ? 'Synced LRC Lyrics' : 'Mezmur Audio';
       this.detailModalLrcChip.className = `detail-badge ${hasLrc ? 'detail-badge-lrc' : 'detail-badge-offline'}`;
     }
 
@@ -6729,7 +6785,7 @@ class LyricsApp {
           .slice(0, 5);
         this.detailModalLyricsSnippet.textContent = lines.join('\n') || 'No readable lyrics lines.';
       } else {
-        this.detailModalLyricsSnippet.innerHTML = '<span style="color:var(--color-text-dim); font-style:italic;">No synchronized lyrics for this song yet. Tap "Edit LRC" to add lyrics.</span>';
+        this.detailModalLyricsSnippet.innerHTML = '<span style="color:var(--color-text-dim); font-style:italic;">No synchronized lyrics for this Mezmur yet. Tap "Edit LRC" to add lyrics.</span>';
       }
     }
 
@@ -6827,10 +6883,10 @@ class LyricsApp {
       this.editReviewCurrentArt.src = track.cover || 'brand/elm-default-cover.svg';
     }
     if (this.editReviewCurrentTitle) {
-      this.editReviewCurrentTitle.textContent = track.title || 'Untitled Track';
+      this.editReviewCurrentTitle.textContent = track.title || 'Untitled Mezmur';
     }
     if (this.editReviewCurrentArtist) {
-      this.editReviewCurrentArtist.textContent = track.artist || 'Unknown Artist';
+      this.editReviewCurrentArtist.textContent = track.artist || 'Unknown Zemari';
     }
 
     this.rebuildCatalogIndex();
@@ -6844,9 +6900,23 @@ class LyricsApp {
     const albumVal = isSingleAlbumName(track.album) ? 'Single' : (track.albumId || track.album);
     this.populateEditReviewAlbumPicker(artistId, albumVal, track.album || '');
 
-    if (this.selectEditReviewGenre) this.selectEditReviewGenre.value = track.genre || '';
+    if (this.selectEditReviewGenre) this.selectEditReviewGenre.value = track.hymnCategory || track.genre || '';
     if (this.inputEditReviewYear) this.inputEditReviewYear.value = track.year || '';
     if (this.inputEditReviewTrackNumber) this.inputEditReviewTrackNumber.value = track.trackNumber || '';
+    if (this.selectEditReviewSeason) this.selectEditReviewSeason.value = track.liturgicalSeason || '';
+    if (this.inputEditReviewFeast) this.inputEditReviewFeast.value = track.feastOrDedication || '';
+    if (this.selectEditReviewZema) this.selectEditReviewZema.value = track.zemaMode || '';
+    if (this.selectEditReviewVocal) this.selectEditReviewVocal.value = track.vocalStyle || '';
+    if (this.selectEditReviewLanguage) this.selectEditReviewLanguage.value = track.language || '';
+    if (this.selectEditReviewMood) this.selectEditReviewMood.value = track.devotionalMood || '';
+    if (this.selectEditReviewEra) this.selectEditReviewEra.value = track.era || '';
+    if (this.inputEditReviewComposer) this.inputEditReviewComposer.value = track.composer || '';
+    if (this.inputEditReviewScripture) this.inputEditReviewScripture.value = track.scriptureReference || '';
+    if (this.inputEditReviewDebir) this.inputEditReviewDebir.value = track.churchDebir || '';
+    if (this.inputEditReviewExternalUrl) this.inputEditReviewExternalUrl.value = track.externalUrl || '';
+    if (this.inputEditReviewTags) {
+      this.inputEditReviewTags.value = Array.isArray(track.tags) ? track.tags.join(', ') : (track.tags || '');
+    }
     if (this.inputEditReviewCover) this.inputEditReviewCover.value = track.cover || '';
     if (this.inputEditReviewLrc) this.inputEditReviewLrc.value = track.lrc || '';
     if (this.inputEditReviewNote) this.inputEditReviewNote.value = '';
@@ -6863,7 +6933,7 @@ class LyricsApp {
     if (!this.selectEditReviewArtist) return;
     const index = this.catalogIndex || this.rebuildCatalogIndex();
     const artists = index.artists || [];
-    this.selectEditReviewArtist.innerHTML = '<option value="">-- Select Existing Artist --</option>';
+    this.selectEditReviewArtist.innerHTML = '<option value="">-- Select Existing Zemari / Choir --</option>';
     let matched = false;
     for (const art of artists) {
       if (!art.id || art.id === 'art_unknown') continue;
@@ -6878,7 +6948,7 @@ class LyricsApp {
     }
     const newOpt = document.createElement('option');
     newOpt.value = '__new__';
-    newOpt.textContent = '+ Add New Artist...';
+    newOpt.textContent = '+ Add New Zemari / Choir...';
     this.selectEditReviewArtist.appendChild(newOpt);
 
     if (!matched && fallbackName) {
@@ -6907,7 +6977,7 @@ class LyricsApp {
     if (!this.selectEditReviewAlbum) return;
     const index = this.catalogIndex || this.rebuildCatalogIndex();
     const albums = artistId ? index.getAlbumsByArtist(artistId).filter(a => !a.isSingle) : [];
-    this.selectEditReviewAlbum.innerHTML = '<option value="Single">Single (No Album)</option>';
+    this.selectEditReviewAlbum.innerHTML = '<option value="Single">Single (Standalone Mezmur)</option>';
     let matched = selectedValue === 'Single' || !selectedValue;
     for (const alb of albums) {
       const opt = document.createElement('option');
@@ -6921,7 +6991,7 @@ class LyricsApp {
     }
     const newOpt = document.createElement('option');
     newOpt.value = '__new__';
-    newOpt.textContent = '+ Add New Album...';
+    newOpt.textContent = '+ Add New Collection...';
     this.selectEditReviewAlbum.appendChild(newOpt);
 
     if (!matched && fallbackAlbumName && !isSingleAlbumName(fallbackAlbumName)) {
@@ -6977,7 +7047,7 @@ class LyricsApp {
 
     if (!title || !artist) {
       if (this.editReviewErrorMsg) {
-        this.editReviewErrorMsg.textContent = 'Please select or enter both Song Title and Artist Name.';
+        this.editReviewErrorMsg.textContent = 'Please select or enter both Mezmur Title and Zemari / Choir Name.';
         this.editReviewErrorMsg.style.display = 'block';
       }
       return;
@@ -7006,7 +7076,7 @@ class LyricsApp {
       type: 'metadata_edit',
       targetTrackId: this._editingReviewTrack.id,
       originalTitle: this._editingReviewTrack.title || 'Untitled',
-      originalArtist: this._editingReviewTrack.artist || 'Unknown Artist',
+      originalArtist: this._editingReviewTrack.artist || 'Unknown Zemari',
       title: title,
       titleEn: (this.inputEditReviewTitleEn ? this.inputEditReviewTitleEn.value.trim() : '') || title,
       artist: artist,
@@ -7015,6 +7085,19 @@ class LyricsApp {
       album: album,
       albumId: albumId,
       genre: genre,
+      hymnCategory: genre,
+      liturgicalSeason: this.selectEditReviewSeason ? this.selectEditReviewSeason.value.trim() : '',
+      feastOrDedication: this.inputEditReviewFeast ? this.inputEditReviewFeast.value.trim() : '',
+      zemaMode: this.selectEditReviewZema ? this.selectEditReviewZema.value.trim() : '',
+      vocalStyle: this.selectEditReviewVocal ? this.selectEditReviewVocal.value.trim() : '',
+      language: this.selectEditReviewLanguage ? this.selectEditReviewLanguage.value.trim() : '',
+      devotionalMood: this.selectEditReviewMood ? this.selectEditReviewMood.value.trim() : '',
+      era: this.selectEditReviewEra ? this.selectEditReviewEra.value.trim() : '',
+      composer: this.inputEditReviewComposer ? this.inputEditReviewComposer.value.trim() : '',
+      scriptureReference: this.inputEditReviewScripture ? this.inputEditReviewScripture.value.trim() : '',
+      churchDebir: this.inputEditReviewDebir ? this.inputEditReviewDebir.value.trim() : '',
+      externalUrl: normalizeExternalUrl(this.inputEditReviewExternalUrl ? this.inputEditReviewExternalUrl.value.trim() : ''),
+      tags: normalizeTags(this.inputEditReviewTags ? this.inputEditReviewTags.value : ''),
       trackNumber: trackNumber,
       year: this.inputEditReviewYear ? this.inputEditReviewYear.value.trim() : '2024',
       cover: this.inputEditReviewCover ? this.inputEditReviewCover.value.trim() : (this._editingReviewTrack.cover || 'brand/elm-default-cover.svg'),
@@ -7030,7 +7113,7 @@ class LyricsApp {
         this.btnSubmitEditReview.innerHTML = '<span>Submitting to Admin Queue...</span>';
       }
       await FirebaseService.submitForReview(payload);
-      
+
       if (this.editSongReviewModal) this.editSongReviewModal.classList.remove('active');
       this.showToast(`Submitted edits for "${title}" to Admin Review!`, 3400);
       this.checkPendingSubmissionsCount();
@@ -7396,7 +7479,7 @@ class LyricsApp {
 
   closeP2pCameraScanner() {
     if (_cameraScannerModulePromise) {
-      loadCameraScanner().then(CameraScanner => CameraScanner.stop()).catch(() => {});
+      loadCameraScanner().then(CameraScanner => CameraScanner.stop()).catch(() => { });
     }
     if (this.p2pCameraModal) this.p2pCameraModal.classList.remove('active');
     if (this.pendingP2pScanRole === 'host_answer' && !this._isSubmittingAnswer) {
@@ -7863,8 +7946,8 @@ class LyricsApp {
   }
 
   renderParticipantsList(participants) {
-    const list = Array.isArray(participants) && participants.length > 0 
-      ? participants 
+    const list = Array.isArray(participants) && participants.length > 0
+      ? participants
       : (this.activeRoom?.participants || []);
     const pCount = list.length;
 
@@ -8210,7 +8293,7 @@ class LyricsApp {
 
     const reactionEl = document.createElement('div');
     reactionEl.className = 'reaction-floating-item';
-    
+
     let iconSvg = '';
     if (type === 'fire') {
       iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="1"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
@@ -8713,10 +8796,10 @@ class LyricsApp {
     this.playlists = Storage.getPlaylists();
 
     if (this.smartLikedSongsCount) {
-      this.smartLikedSongsCount.textContent = `${this.favorites.length} songs`;
+      this.smartLikedSongsCount.textContent = `${this.favorites.length} ${this.favorites.length === 1 ? 'Mezmur' : 'Mezmurs'}`;
     }
     if (this.smartRecentSongsCount) {
-      this.smartRecentSongsCount.textContent = `${this.recentlyPlayed.length} songs`;
+      this.smartRecentSongsCount.textContent = `${this.recentlyPlayed.length} ${this.recentlyPlayed.length === 1 ? 'Mezmur' : 'Mezmurs'}`;
     }
 
     if (!this.playlistsGrid) return;
@@ -8726,7 +8809,7 @@ class LyricsApp {
       this.playlistsGrid.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 3rem 1.5rem; text-align: center; color: var(--color-text-dim); background: rgba(255,255,255,0.02); border-radius: 18px; border: 1px dashed rgba(255,255,255,0.08);">
           <div style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">No Custom Playlists Yet</div>
-          <p style="font-size: 0.85rem; margin-bottom: 1.2rem;">Create playlists to curate your favorite Ethiopian songs, vibe sessions, or Tizita classics.</p>
+          <p style="font-size: 0.85rem; margin-bottom: 1.2rem;">Create playlists to curate your favorite Ethiopian Mezmurs, fasting sessions, or praise collections.</p>
           <button class="btn-primary" id="btnEmptyCreatePlaylist" style="display:inline-flex; align-items:center; gap:0.5rem; font-size:0.85rem; padding:0.6rem 1.25rem;">
             <span>Create Your First Playlist</span>
           </button>
@@ -8755,7 +8838,7 @@ class LyricsApp {
           </button>
         </div>
         <div class="playlist-card-title" title="${safePlTitle}">${safePlTitle}</div>
-        <div class="playlist-card-sub">${songCount} ${songCount === 1 ? 'song' : 'songs'}</div>
+        <div class="playlist-card-sub">${songCount} ${songCount === 1 ? 'Mezmur' : 'Mezmurs'}</div>
       `;
 
       card.addEventListener('click', () => {
@@ -9222,13 +9305,13 @@ class LyricsApp {
       baseUrl = this.localLanUrl;
     }
     const url = `${baseUrl}${window.location.pathname}?room=${roomCode}&mode=${this.syncMode}`;
-    const trackTitle = (this.activeRoom.currentTrack && this.activeRoom.currentTrack.title) 
-      ? this.activeRoom.currentTrack.title 
-      : 'Ethiopian Music';
-    
+    const trackTitle = (this.activeRoom.currentTrack && this.activeRoom.currentTrack.title)
+      ? this.activeRoom.currentTrack.title
+      : 'Ethiopian Mezmur';
+
     const shareData = {
       title: `Listen with me on ELM (${roomCode})`,
-      text: `🎵 Join my live Ethiopian music session on ELM! We're playing "${trackTitle}". Room: ${roomCode}`,
+      text: `Join my live Mezmur listening session on ELM! We're playing "${trackTitle}". Room: ${roomCode}`,
       url: url
     };
 
