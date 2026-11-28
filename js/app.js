@@ -12,6 +12,7 @@ import { RecommendationEngine } from './recommendation-engine.js';
 import { CatalogSchema, makeArtistId, makeAlbumId, isSingleAlbumName } from './catalog-schema.js';
 import { escapeHtml, sanitizeUrl } from './utils/sanitize.js';
 import { AppDialog } from './components/app-dialog.js';
+import { CustomDropdown } from './components/custom-dropdown.js';
 import { TrackActionMenu } from './components/track-menu.js';
 import { LyricShareCard } from './components/lyric-share-card.js';
 import { searchCatalog } from './utils/search.js';
@@ -150,6 +151,7 @@ class LyricsApp {
     this.initThemeSystem();
     this.initLyricsViewPreferences();
     this.initPerformanceMode();
+    CustomDropdown.enhanceAll();
     this.initAuth();
     this.initEvents();
     this.initPullToRefresh();
@@ -159,8 +161,8 @@ class LyricsApp {
   }
 
   initServiceWorker() {
-    this.appVersion = 'v2.9.1';
-    this.cacheVersion = 'v48';
+    this.appVersion = 'v2.9.2';
+    this.cacheVersion = 'v49';
     // Safety fallback so splash never blocks offline or slow networks
     setTimeout(() => this.dismissSplashScreen(), 3500);
     const isNativeWebView = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -459,7 +461,7 @@ class LyricsApp {
     this.heroDurationBadge = document.getElementById('heroDurationBadge');
     this.heroLrcBadge = document.getElementById('heroLrcBadge');
 
-    this.homeFilterRow = document.getElementById('homeFilterRow');
+    this.selectHomeFilter = document.getElementById('selectHomeFilter');
     this.inputHomeSearch = document.getElementById('inputHomeSearch');
     this.btnClearHomeSearch = document.getElementById('btnClearHomeSearch');
     this.sectionJumpBackIn = document.getElementById('sectionJumpBackIn');
@@ -509,6 +511,7 @@ class LyricsApp {
     this.kineticSleeveArt = document.getElementById('kineticSleeveArt');
     this.stageMobileCoverImg = document.getElementById('stageMobileCoverImg');
     this.btnLyricsResumeSync = document.getElementById('btnLyricsResumeSync');
+    this.syncBtnArrow = document.getElementById('syncBtnArrow');
     this.lyricsInstrumentalCue = document.getElementById('lyricsInstrumentalCue');
     this.lyricsCueLabel = document.getElementById('lyricsCueLabel');
     this.miniPlayerProgressFill = document.getElementById('miniPlayerProgressFill');
@@ -989,14 +992,9 @@ class LyricsApp {
     }
 
     if (tabId === 'lyrics') {
-      if (this.playerBarDock) {
-        this.playerBarDock.classList.remove('is-collapsed');
-      }
+      this._syncPlayerDockMode();
       requestAnimationFrame(() => {
         if (this.lyricsViewport) {
-          if (!this.appEl?.classList.contains('lyrics-mode-sheet')) {
-            this.lyricsViewport.scrollTop = 0;
-          }
           const h = this.lyricsViewport.offsetHeight;
           if (h > 0) this._lyricsViewportHeight = h;
         }
@@ -1004,9 +1002,7 @@ class LyricsApp {
         this.syncLyrics(this.player.currentTime, true);
       });
     } else {
-      if (this.playerBarDock) {
-        this.playerBarDock.classList.toggle('is-collapsed', Boolean(this._compactDockEnabled));
-      }
+      this._syncPlayerDockMode();
       if (tabId === 'settings') {
         this.renderSettingsView();
       }
@@ -1077,6 +1073,7 @@ class LyricsApp {
     if (swCacheStatusLabel) swCacheStatusLabel.textContent = `Cache ${this.cacheVersion} (Active)`;
     if (this.selectEqPreset && this.player?.equalizer) {
       this.selectEqPreset.value = this.player.equalizer.preset || 'flat';
+      CustomDropdown.sync(this.selectEqPreset);
     }
     this._refreshOfflineStorageManager();
   }
@@ -1125,22 +1122,12 @@ class LyricsApp {
       });
     });
 
-    // Restore saved dock collapsed state on mobile
-    try {
-      if (localStorage.getItem('ethio_player_dock_collapsed') === '1' && this.playerBarDock && window.innerWidth <= 820) {
-        this.playerBarDock.classList.add('is-collapsed');
-      }
-    } catch (e) {}
-
-    // Clicking mini-player artwork opens Song Details (unless collapsed on mobile)
+    // Clicking mini-player artwork opens Song Details (or Lyrics on mobile mini-bar)
     if (this.playerMiniArtWrap) {
       this.playerMiniArtWrap.addEventListener('click', (e) => {
-        if (this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed')) {
-          return;
-        }
-        const isMobileMiniBar = typeof window !== 'undefined' && window.innerWidth <= 820 && !this.appEl?.classList.contains('tab-lyrics-active');
-        if (isMobileMiniBar) {
-          return; // Let tap bubble to dockTrackInfo so tapping anywhere on mobile Mini-Player opens Lyrics Stage
+        const isMiniBar = this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed');
+        if (isMiniBar) {
+          return; // Let tap bubble to dockTrackInfo -> opens Lyrics in 1 tap
         }
         if (this.currentTrack) {
           e.stopPropagation();
@@ -1149,25 +1136,27 @@ class LyricsApp {
       });
     }
 
-    // Clicking dock mini-player opens Lyrics Stage (or expands if collapsed on mobile)
+    // Clicking dock track info ALWAYS opens Lyrics Stage in 1 tap/click
     if (this.dockTrackInfo) {
       this.dockTrackInfo.addEventListener('click', () => {
-        if (this.playerBarDock && this.playerBarDock.classList.contains('is-collapsed')) {
-          this.playerBarDock.classList.remove('is-collapsed');
-          try { localStorage.setItem('ethio_player_dock_collapsed', '0'); } catch (err) {}
-          return;
-        }
         this.switchTab('lyrics');
       });
     }
 
-    // Toggle player dock collapsed/expanded on mobile
+    // Toggle player dock between Mini-Bar and Full Controller in 1 tap/click on any tab (Mobile & PC)
     if (this.btnDockCollapse) {
       this.btnDockCollapse.addEventListener('click', (e) => {
         e.stopPropagation();
         if (this.playerBarDock) {
           const isCollapsed = this.playerBarDock.classList.toggle('is-collapsed');
-          try { localStorage.setItem('ethio_player_dock_collapsed', isCollapsed ? '1' : '0'); } catch (err) {}
+          if (this.appEl) this.appEl.classList.toggle('dock-is-mini', isCollapsed);
+          this.btnDockCollapse.title = isCollapsed ? 'Expand Player Controls' : 'Minimize Player';
+          if (this.currentView === 'lyrics') {
+            requestAnimationFrame(() => {
+              this._measureLyricPositions();
+              if (!this._manualScrollActive) this.syncLyrics(this.player.currentTime, true, false);
+            });
+          }
         }
       });
     }
@@ -1263,7 +1252,7 @@ class LyricsApp {
               }
             }
           }
-          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.1'})!`);
+          this.showToast(`✨ You are on the latest version (${this.appVersion || 'v2.9.2'})!`);
         } catch (err) {
           console.warn('Update check failed:', err);
           this.showToast('Unable to check for updates right now.');
@@ -1308,14 +1297,10 @@ class LyricsApp {
     if (this.btnHeroPlay) this.btnHeroPlay.addEventListener('click', handleHeroPlay);
     if (this.btnHeroPlayBadge) this.btnHeroPlayBadge.addEventListener('click', handleHeroPlay);
 
-    // Filter Chips
-    if (this.homeFilterRow) {
-      this.homeFilterRow.addEventListener('click', (e) => {
-        const chip = e.target.closest('.home-filter-chip') || e.target.closest('.filter-chip');
-        if (!chip) return;
-        this.homeFilterRow.querySelectorAll('.home-filter-chip, .filter-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        this.activeFilter = chip.getAttribute('data-filter') || 'all';
+    // Home Filter Select (2-column compact filter picker)
+    if (this.selectHomeFilter) {
+      this.selectHomeFilter.addEventListener('change', (e) => {
+        this.activeFilter = e.target.value || 'all';
         this.renderHomePage();
       });
     }
@@ -1938,7 +1923,12 @@ class LyricsApp {
       this.volumeContainer.addEventListener('mouseenter', () => {
         if (!isTouchVolumeUi()) openVolumeTray();
       });
-      this.volumeContainer.addEventListener('focusin', openVolumeTray);
+      this.volumeContainer.addEventListener('focusin', (e) => {
+        // Only auto-open on keyboard Tab focus, never on pointer tap (which fires focusin right before click)
+        if (e.target && typeof e.target.matches === 'function' && e.target.matches(':focus-visible')) {
+          openVolumeTray();
+        }
+      });
       this.volumeContainer.addEventListener('mouseleave', () => {
         if (!isTouchVolumeUi()) scheduleCloseVolumeTray(950);
       });
@@ -3121,7 +3111,7 @@ class LyricsApp {
     }
 
     const { results, artists, albums } = searchCatalog(uniquePool, query, { limit: 40 });
-    this.sectionHomeSearchResults.style.display = 'block';
+    this.sectionHomeSearchResults.style.display = 'flex';
     if (this.homeSearchTitleText) {
       this.homeSearchTitleText.textContent = `Search Results for "${query}"`;
     }
@@ -3232,7 +3222,7 @@ class LyricsApp {
     });
     if (this.sectionBecauseYouListened) {
       if (becauseShelf && becauseShelf.tracks && becauseShelf.tracks.length > 0 && becauseShelf.seedArtist) {
-        this.sectionBecauseYouListened.style.display = 'block';
+        this.sectionBecauseYouListened.style.display = 'flex';
         if (this.becauseTitleText) this.becauseTitleText.textContent = becauseShelf.title || `Because You Listened To ${becauseShelf.seedArtist}`;
         if (this.becauseSubtitleText) this.becauseSubtitleText.textContent = becauseShelf.subtitle || `Handpicked gems inspired by ${becauseShelf.seedArtist}`;
         this.renderMusicGrid(this.gridBecauseYouListened, becauseShelf.tracks, 'No similar tracks found.');
@@ -3346,7 +3336,7 @@ class LyricsApp {
   }
 
   renderHomeFilterChips(uniquePool = []) {
-    if (!this.homeFilterRow) return;
+    if (!this.selectHomeFilter) return;
     const pool = Array.isArray(uniquePool) ? uniquePool : [];
     const catalog = Array.isArray(this.publicTracks) ? this.publicTracks : [];
     const favIds = this.favorites || [];
@@ -3361,26 +3351,29 @@ class LyricsApp {
     const hasSuggested = pool.length >= 2 && (hasFavs || hasRecent || hasLrc);
 
     const chips = [
-      { id: 'all', label: 'All Music', icon: '' },
-      hasSuggested ? { id: 'suggested', label: 'Made For You', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>' } : null,
-      hasLrc ? { id: 'lrc', label: 'Synced Lyrics', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>' } : null,
-      hasClassic ? { id: 'classic', label: 'Classics', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' } : null,
-      hasPop ? { id: 'pop', label: 'Modern Pop', icon: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>' } : null,
-      hasFavs ? { id: 'favorites', label: 'Favorites', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' } : null,
-      hasRecent ? { id: 'recent', label: 'Recently Played', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' } : null,
-      hasOffline ? { id: 'offline', label: 'Offline Ready', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' } : null
+      { id: 'all', label: 'All Music' },
+      hasSuggested ? { id: 'suggested', label: 'Made For You' } : null,
+      hasLrc ? { id: 'lrc', label: 'Synced Lyrics' } : null,
+      hasClassic ? { id: 'classic', label: 'Classics' } : null,
+      hasPop ? { id: 'pop', label: 'Modern Pop' } : null,
+      hasFavs ? { id: 'favorites', label: 'Favorites' } : null,
+      hasRecent ? { id: 'recent', label: 'Recently Played' } : null,
+      hasOffline ? { id: 'offline', label: 'Offline Ready' } : null
     ].filter(Boolean);
 
     if (!chips.some(c => c.id === this.activeFilter)) {
       this.activeFilter = 'all';
     }
 
-    this.homeFilterRow.innerHTML = chips.map(c => `
-      <button class="filter-chip ${this.activeFilter === c.id ? 'active' : ''}" data-filter="${escapeHtml(c.id)}" type="button">
-        ${c.icon}
-        <span>${escapeHtml(c.label)}</span>
-      </button>
-    `).join('');
+    const sig = chips.map(c => `${c.id}:${c.label}`).join('|');
+    if (this._lastFilterOptionsSig !== sig) {
+      this._lastFilterOptionsSig = sig;
+      this.selectHomeFilter.innerHTML = chips.map(c =>
+        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.label)}</option>`
+      ).join('');
+    }
+    this.selectHomeFilter.value = this.activeFilter;
+    CustomDropdown.sync(this.selectHomeFilter);
   }
 
   renderJumpBackInGrid(jumpTracks) {
@@ -3389,7 +3382,7 @@ class LyricsApp {
       this.sectionJumpBackIn.style.display = 'none';
       return;
     }
-    this.sectionJumpBackIn.style.display = 'block';
+    this.sectionJumpBackIn.style.display = 'flex';
     this.gridJumpBackIn.innerHTML = '';
 
     const frag = document.createDocumentFragment();
@@ -3442,7 +3435,7 @@ class LyricsApp {
       this.sectionIconicArtists.style.display = 'none';
       return;
     }
-    this.sectionIconicArtists.style.display = 'block';
+    this.sectionIconicArtists.style.display = 'flex';
     this.rowIconicArtists.innerHTML = '';
 
     const frag = document.createDocumentFragment();
@@ -3814,80 +3807,91 @@ class LyricsApp {
 
   _bindLyricsManualBrowse() {
     if (!this.lyricsViewport || !this.lyricsScrollWrap) return;
-    let touchStartY = 0;
 
     const enterManualBrowse = () => {
       if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
-      this._manualScrollActive = true;
-      this.lyricsScrollWrap.classList.add('is-manual-browse');
-      if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'inline-flex';
-      if (this._manualScrollAutoResumeTimer) clearTimeout(this._manualScrollAutoResumeTimer);
-      this._manualScrollAutoResumeTimer = setTimeout(() => {
-        this._resumeLyricsAutoSync();
-      }, 8000);
+      if (!this._manualScrollActive) {
+        this._manualScrollActive = true;
+        this.lyricsViewport.classList.add('is-manual-browse');
+        this.lyricsScrollWrap.classList.add('is-manual-browse');
+      }
+      this._updateBrowseCenterHighlight();
     };
 
-    const applyDelta = (deltaY) => {
-      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
-      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+    const onUserScrollIntent = () => {
+      this._programmaticScrollUntil = 0;
       enterManualBrowse();
-      const wrapHeight = this._lyricsViewportHeight || this.lyricsViewport.offsetHeight || 420;
-      const contentH = this.lyricsScrollWrap.scrollHeight || 420;
-      const minY = Math.min(0, wrapHeight - contentH - 80);
-      const maxY = wrapHeight * 0.45;
-      if (!Number.isFinite(this._manualOffsetPx)) {
-        this._manualOffsetPx = this._lastSyncedScrollPx || 0;
-      }
-      this._manualOffsetPx = Math.max(minY, Math.min(maxY, this._manualOffsetPx - deltaY));
-      this.lyricsScrollWrap.style.transform = `translate3d(0, ${this._manualOffsetPx}px, 0)`;
     };
 
-    this.lyricsViewport.addEventListener('wheel', (e) => {
-      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
-      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
-      e.preventDefault();
-      applyDelta(e.deltaY);
-    }, { passive: false });
-
-    this.lyricsViewport.addEventListener('touchstart', (e) => {
-      if (e.touches && e.touches.length === 1) {
-        touchStartY = e.touches[0].clientY;
-      }
+    this.lyricsViewport.addEventListener('wheel', onUserScrollIntent, { passive: true });
+    this.lyricsViewport.addEventListener('touchstart', () => {
+      this._programmaticScrollUntil = 0;
     }, { passive: true });
+    this.lyricsViewport.addEventListener('touchmove', onUserScrollIntent, { passive: true });
 
-    this.lyricsViewport.addEventListener('touchmove', (e) => {
-      if (this.appEl?.classList.contains('lyrics-mode-sheet')) return;
-      if (!e.touches || e.touches.length !== 1 || !this.parsedLyrics || this.parsedLyrics.length === 0) return;
-      const dy = touchStartY - e.touches[0].clientY;
-      touchStartY = e.touches[0].clientY;
-      if (Math.abs(dy) > 2) {
-        applyDelta(dy);
-      }
-    }, { passive: true });
-
+    let browseRaf = null;
     this.lyricsViewport.addEventListener('scroll', () => {
-      if (!this.appEl?.classList.contains('lyrics-mode-sheet')) return;
-      enterManualBrowse();
+      if (performance.now() < (this._programmaticScrollUntil || 0)) return;
+      if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
+      if (browseRaf) cancelAnimationFrame(browseRaf);
+      browseRaf = requestAnimationFrame(() => {
+        enterManualBrowse();
+      });
     }, { passive: true });
+  }
+
+  _updateBrowseCenterHighlight() {
+    if (!this.lyricsViewport || !this.lyricsScrollWrap) return;
+    const lines = this.lyricsScrollWrap.children;
+    if (!lines || lines.length === 0 || !this.parsedLyrics || this.parsedLyrics.length === 0) return;
+
+    const viewportCenterY = this.lyricsViewport.scrollTop + (this.lyricsViewport.clientHeight / 2);
+    let closestIdx = -1;
+    let closestDist = Infinity;
+
+    for (let i = 0; i < lines.length; i++) {
+      const el = lines[i];
+      const pos = this._lyricPositions && this._lyricPositions[i];
+      const center = pos ? (pos.top + pos.height / 2) : (el.offsetTop + (el.offsetHeight || 48) / 2);
+      const dist = Math.abs(center - viewportCenterY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = i;
+      }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const el = lines[i];
+      const isCenter = i === closestIdx;
+      const isNear = Math.abs(i - closestIdx) === 1;
+      el.classList.toggle('is-browse-center', isCenter);
+      el.classList.toggle('is-browse-near', !isCenter && isNear);
+    }
+
+    if (this.btnLyricsResumeSync) {
+      const targetPlayIdx = this.activeLyricIndex >= 0 ? this.activeLyricIndex : 0;
+      const isAwayFromPlaying = this._manualScrollActive && closestIdx >= 0 && Math.abs(closestIdx - targetPlayIdx) >= 1;
+      this.btnLyricsResumeSync.style.display = isAwayFromPlaying ? 'inline-flex' : 'none';
+      if (isAwayFromPlaying) {
+        this.btnLyricsResumeSync.classList.toggle('point-up', targetPlayIdx < closestIdx);
+      }
+    }
   }
 
   _resumeLyricsAutoSync() {
     this._manualScrollActive = false;
-    this._manualOffsetPx = null;
-    if (this._manualScrollAutoResumeTimer) {
-      clearTimeout(this._manualScrollAutoResumeTimer);
-      this._manualScrollAutoResumeTimer = null;
+    if (this.lyricsViewport) this.lyricsViewport.classList.remove('is-manual-browse');
+    if (this.lyricsScrollWrap) {
+      this.lyricsScrollWrap.classList.remove('is-manual-browse');
+      this.lyricsScrollWrap.querySelectorAll('.is-browse-center, .is-browse-near').forEach(el => {
+        el.classList.remove('is-browse-center', 'is-browse-near');
+      });
     }
-    if (this.lyricsScrollWrap) this.lyricsScrollWrap.classList.remove('is-manual-browse');
-    if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'none';
-    if (this.lyricsViewport && this.appEl?.classList.contains('lyrics-mode-sheet')) {
-      const activeEl = this.lyricsScrollWrap?.querySelector('.lyric-line.active');
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    } else {
-      this.syncLyrics(this.player ? this.player.currentTime : 0, true);
+    if (this.btnLyricsResumeSync) {
+      this.btnLyricsResumeSync.style.display = 'none';
+      this.btnLyricsResumeSync.classList.remove('point-up');
     }
+    this.syncLyrics(this.player ? this.player.currentTime : 0, true, true);
   }
 
   _updateInstrumentalCue(currentTime, newIndex) {
@@ -3898,7 +3902,7 @@ class LyricsApp {
     let cueText = '';
     if (newIndex === -1 && this.parsedLyrics[0].time > 2.5) {
       const rem = Math.max(0, Math.ceil(this.parsedLyrics[0].time - currentTime));
-      cueText = rem > 0 ? `Intro • Singing in ${rem}s` : 'Intro';
+      cueText = rem > 0 ? `Intro • Next in ${rem}s` : 'Intro';
     } else if (newIndex >= 0 && newIndex + 1 < this.parsedLyrics.length) {
       const cur = this.parsedLyrics[newIndex];
       const next = this.parsedLyrics[newIndex + 1];
@@ -3906,7 +3910,7 @@ class LyricsApp {
       const elapsed = currentTime - (cur.time || 0);
       const rem = (next.time || 0) - currentTime;
       if (gap >= 8 && elapsed >= 2.5 && rem >= 1.5) {
-        cueText = `Instrumental • Next line in ${Math.ceil(rem)}s`;
+        cueText = `Instrumental • Next in ${Math.ceil(rem)}s`;
       }
     }
 
@@ -3925,7 +3929,11 @@ class LyricsApp {
     this.lyricsScrollWrap.innerHTML = '';
     this.activeLyricIndex = -1;
     this._manualScrollActive = false;
-    this._manualOffsetPx = null;
+    this._programmaticScrollUntil = 0;
+    if (this.lyricsViewport) {
+      this.lyricsViewport.classList.remove('is-manual-browse');
+      this.lyricsViewport.scrollTop = 0;
+    }
     this.lyricsScrollWrap.classList.remove('is-manual-browse');
     if (this.btnLyricsResumeSync) this.btnLyricsResumeSync.style.display = 'none';
     if (this.lyricsInstrumentalCue) this.lyricsInstrumentalCue.style.display = 'none';
@@ -4004,6 +4012,10 @@ class LyricsApp {
     if (this.lyricsViewport && this.lyricsViewport.offsetHeight > 0) {
       this._lyricsViewportHeight = this.lyricsViewport.offsetHeight;
     }
+    const padY = Math.max(120, Math.round((this._lyricsViewportHeight || 420) * 0.44));
+    this.lyricsScrollWrap.style.paddingTop = `${padY}px`;
+    this.lyricsScrollWrap.style.paddingBottom = `${padY}px`;
+
     const positions = new Array(lines.length);
     for (let i = 0; i < lines.length; i++) {
       const el = lines[i];
@@ -4015,7 +4027,7 @@ class LyricsApp {
     this._lyricPositions = positions;
   }
 
-  syncLyrics(currentTime, force = false) {
+  syncLyrics(currentTime, force = false, smoothScroll = true) {
     if (!this.parsedLyrics || this.parsedLyrics.length === 0 || !this.lyricsScrollWrap) {
       if (this.lyricsInstrumentalCue) this.lyricsInstrumentalCue.style.display = 'none';
       return;
@@ -4057,39 +4069,41 @@ class LyricsApp {
           else if (diff === -1) targetClass = 'lyric-line prev near';
           else if (diff === 1) targetClass = 'lyric-line next near';
         }
-        if (el.className !== targetClass) {
-          el.className = targetClass;
+        const preserveBrowse = el.classList.contains('is-browse-center') ? ' is-browse-center' : (el.classList.contains('is-browse-near') ? ' is-browse-near' : '');
+        const fullClass = targetClass + preserveBrowse;
+        if (el.className !== fullClass) {
+          el.className = fullClass;
         }
       }
     });
 
+    if (this._manualScrollActive) {
+      this._updateBrowseCenterHighlight();
+      return;
+    }
+
     if (this._scrollRafId) cancelAnimationFrame(this._scrollRafId);
     this._scrollRafId = requestAnimationFrame(() => {
-      if (!this.lyricsViewport) return;
-      if (this.appEl && this.appEl.classList.contains('lyrics-mode-sheet')) {
-        this.lyricsScrollWrap.style.transform = 'none';
-        return;
-      }
+      if (!this.lyricsViewport || this._manualScrollActive) return;
       if (!this._lyricPositions || this._lyricPositions.length !== lines.length) {
         this._measureLyricPositions();
       }
-      const wrapHeight = this._lyricsViewportHeight || this.lyricsViewport.offsetHeight || 420;
+      const wrapHeight = this._lyricsViewportHeight || this.lyricsViewport.clientHeight || 420;
       const targetIdx = newIndex >= 0 ? newIndex : 0;
       const pos = this._lyricPositions && this._lyricPositions[targetIdx];
       if (!pos || (pos.top === 0 && targetIdx > 0)) {
-        // Fallback measurement if lyrics tab was hidden when rendered
         this._measureLyricPositions();
       }
       const resolvedPos = (this._lyricPositions && this._lyricPositions[targetIdx]) || {
         top: lines[targetIdx] ? lines[targetIdx].offsetTop : 0,
         height: lines[targetIdx] ? (lines[targetIdx].offsetHeight || 48) : 48
       };
-      const extraOffset = newIndex === -1 ? 65 : 0;
-      const targetScroll = (wrapHeight / 2) - resolvedPos.top - (resolvedPos.height / 2) + extraOffset;
-      this._lastSyncedScrollPx = targetScroll;
-      if (!this._manualScrollActive) {
-        this.lyricsScrollWrap.style.transform = `translate3d(0, ${targetScroll}px, 0)`;
-      }
+      const targetTop = Math.max(0, resolvedPos.top - (wrapHeight / 2) + (resolvedPos.height / 2));
+      this._programmaticScrollUntil = performance.now() + (smoothScroll ? 600 : 120);
+      this.lyricsViewport.scrollTo({
+        top: targetTop,
+        behavior: (smoothScroll && !this.isPerfLite) ? 'smooth' : 'auto'
+      });
     });
   }
 
@@ -5063,6 +5077,7 @@ class LyricsApp {
       this.setR2UploadStatus('Audio will upload automatically to Cloudflare R2.');
       this.updatePublicSubmitButtonState();
     }
+    CustomDropdown.syncAll();
   }
 
   updatePublicSubmitButtonState() {
@@ -5606,77 +5621,140 @@ class LyricsApp {
 
   initPullToRefresh() {
     const indicator = document.getElementById('pullToRefreshIndicator');
-    if (!indicator) return;
+    const ptrText = indicator ? indicator.querySelector('.ptr-text') : null;
+    const ptrSpinner = indicator ? indicator.querySelector('.ptr-spinner') : null;
 
-    const ptrText = indicator.querySelector('.ptr-text');
-    const ptrSpinner = indicator.querySelector('.ptr-spinner');
-
+    let startX = 0;
     let startY = 0;
-    let isPulling = false;
+    let gestureMode = null; // null | 'vertical' | 'horizontal'
+    let activeScrollTab = null;
+    let overscrollOffset = 0;
     let isRefreshing = false;
-    const threshold = 65;
+    const threshold = 68;
 
-    const getScrollTop = () => {
-      const activeTab = document.querySelector('.tab-view.active') || document.querySelector('.tab-view[style*="display: flex"]');
-      const tabScroll = activeTab ? activeTab.scrollTop : 0;
-      return Math.max(window.scrollY, tabScroll, document.documentElement.scrollTop, document.body.scrollTop);
+    const getScrollInfo = (tabEl) => {
+      if (!tabEl) return { top: 0, max: 0 };
+      const top = tabEl.scrollTop || 0;
+      const max = Math.max(0, (tabEl.scrollHeight || 0) - (tabEl.clientHeight || 0));
+      return { top, max };
+    };
+
+    const applyTabOffset = (tabEl, px, spring = false) => {
+      if (!tabEl) return;
+      tabEl.classList.toggle('is-overscrolling', !spring && px !== 0);
+      tabEl.classList.toggle('is-overscroll-spring', spring);
+      const val = px === 0 ? '' : `translate3d(0, ${px.toFixed(1)}px, 0)`;
+      for (let i = 0; i < tabEl.children.length; i++) {
+        tabEl.children[i].style.transform = val;
+      }
+    };
+
+    const resetSpring = (tabEl) => {
+      if (!tabEl) return;
+      applyTabOffset(tabEl, 0, true);
+      setTimeout(() => {
+        tabEl.classList.remove('is-overscroll-spring', 'is-overscrolling');
+      }, 400);
+    };
+
+    // Logarithmic rubber-band damping curve for natural elastic resistance
+    const rubberBand = (rawPx, maxPx) => {
+      const sign = rawPx < 0 ? -1 : 1;
+      const abs = Math.abs(rawPx);
+      const damped = maxPx * (1 - Math.exp(-abs / (maxPx * 2.1)));
+      return sign * damped;
     };
 
     window.addEventListener('touchstart', (e) => {
-      if (isRefreshing) return;
-      // Only allow pull-to-refresh on scrollable list tabs (Home or Library), never inside lyrics stage, inputs, or overlays
+      if (isRefreshing || !e.touches || e.touches.length !== 1) return;
       const activeTab = document.querySelector('.tab-view.active');
-      if (!activeTab || (activeTab.id !== 'tabViewHome' && activeTab.id !== 'tabViewLibrary')) {
-        isPulling = false;
+      if (!activeTab || !['tabViewHome', 'tabViewLibrary', 'tabViewSettings'].includes(activeTab.id)) {
+        activeScrollTab = null;
         return;
       }
-      if (e.target.closest('#dockedControlsWrapper, .mobile-bottom-nav, .modal-overlay, input, button, select, textarea, .seek-slider')) {
-        isPulling = false;
+      if (e.target.closest('#dockedControlsWrapper, .mobile-bottom-nav, .modal-overlay, input, button, select, textarea, .scrubber-track, .elm-dropdown-menu')) {
+        activeScrollTab = null;
         return;
       }
 
-      if (getScrollTop() <= 5 && e.touches && e.touches[0]) {
-        startY = e.touches[0].clientY;
-        isPulling = true;
-      } else {
-        isPulling = false;
-      }
+      activeScrollTab = activeTab;
+      activeScrollTab.classList.remove('is-overscroll-spring');
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      gestureMode = null;
+      overscrollOffset = 0;
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-      if (!isPulling || isRefreshing || !e.touches || !e.touches[0]) return;
-      const currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
+      if (!activeScrollTab || isRefreshing || !e.touches || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
 
-      if (deltaY > 0 && getScrollTop() <= 5) {
-        indicator.classList.add('dragging');
-        const pullDistance = Math.min(85, deltaY * 0.45);
-        indicator.style.transform = `translateX(-50%) translateY(${pullDistance - 65}px)`;
-        indicator.style.opacity = Math.min(1, pullDistance / 40);
+      if (!gestureMode) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        gestureMode = Math.abs(dy) > Math.abs(dx) * 1.15 ? 'vertical' : 'horizontal';
+      }
+      if (gestureMode !== 'vertical') return;
 
-        if (pullDistance >= threshold) {
-          if (ptrText) ptrText.textContent = 'Release to refresh';
-          if (ptrSpinner) ptrSpinner.style.transform = 'rotate(180deg)';
-        } else {
-          if (ptrText) ptrText.textContent = 'Pull to refresh';
-          if (ptrSpinner) ptrSpinner.style.transform = `rotate(${(pullDistance / threshold) * 180}deg)`;
+      const { top, max } = getScrollInfo(activeScrollTab);
+      const allowRefresh = activeScrollTab.id === 'tabViewHome' || activeScrollTab.id === 'tabViewLibrary';
+
+      if (dy > 0 && top <= 1) {
+        // Elastic resistance at top of page
+        const resisted = rubberBand(dy * 0.65, 58);
+        overscrollOffset = resisted;
+        if (!this.isPerfLite) applyTabOffset(activeScrollTab, resisted, false);
+
+        if (indicator && allowRefresh) {
+          indicator.classList.add('dragging');
+          const pullDist = Math.min(82, dy * 0.45);
+          indicator.style.transform = `translateX(-50%) translateY(${pullDist - 65}px)`;
+          indicator.style.opacity = Math.min(1, pullDist / 38);
+          if (pullDist >= threshold) {
+            if (ptrText) ptrText.textContent = 'Release to refresh';
+            if (ptrSpinner) ptrSpinner.style.transform = 'rotate(180deg)';
+          } else {
+            if (ptrText) ptrText.textContent = 'Pull to refresh';
+            if (ptrSpinner) ptrSpinner.style.transform = `rotate(${(pullDist / threshold) * 180}deg)`;
+          }
         }
-      } else {
-        indicator.classList.remove('dragging');
-        indicator.style.opacity = '0';
-        indicator.style.transform = 'translateX(-50%) translateY(-65px)';
+      } else if (dy < 0 && top >= max - 1) {
+        // Elastic resistance at bottom end of page
+        const resisted = rubberBand(dy * 0.55, 38);
+        overscrollOffset = resisted;
+        if (!this.isPerfLite) applyTabOffset(activeScrollTab, resisted, false);
+      } else if (overscrollOffset !== 0) {
+        overscrollOffset = 0;
+        applyTabOffset(activeScrollTab, 0, false);
+        if (indicator) {
+          indicator.classList.remove('dragging');
+          indicator.style.opacity = '0';
+          indicator.style.transform = 'translateX(-50%) translateY(-65px)';
+        }
       }
     }, { passive: true });
 
-    window.addEventListener('touchend', async (e) => {
-      if (!isPulling || isRefreshing) return;
-      isPulling = false;
-      indicator.classList.remove('dragging');
-      const touchEndY = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0;
-      const deltaY = touchEndY - startY;
-      const pullDistance = Math.min(85, deltaY * 0.45);
+    const finishTouch = async (e) => {
+      if (!activeScrollTab) return;
+      const tabRef = activeScrollTab;
+      activeScrollTab = null;
 
-      if (pullDistance >= threshold) {
+      if (overscrollOffset !== 0) {
+        resetSpring(tabRef);
+      }
+
+      if (!indicator || isRefreshing) {
+        overscrollOffset = 0;
+        return;
+      }
+
+      indicator.classList.remove('dragging');
+      const touchEndY = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : startY;
+      const deltaY = touchEndY - startY;
+      const allowRefresh = (tabRef.id === 'tabViewHome' || tabRef.id === 'tabViewLibrary') && gestureMode === 'vertical';
+      const pullDist = Math.min(82, deltaY * 0.45);
+
+      if (allowRefresh && overscrollOffset > 0 && pullDist >= threshold) {
         isRefreshing = true;
         indicator.style.transform = 'translateX(-50%) translateY(15px)';
         indicator.style.opacity = '1';
@@ -5705,7 +5783,11 @@ class LyricsApp {
         indicator.style.transform = 'translateX(-50%) translateY(-65px)';
         indicator.style.opacity = '0';
       }
-    });
+      overscrollOffset = 0;
+    };
+
+    window.addEventListener('touchend', finishTouch, { passive: true });
+    window.addEventListener('touchcancel', finishTouch, { passive: true });
   }
 
   async refreshContent() {
@@ -6003,19 +6085,15 @@ class LyricsApp {
     if (this.selectLyricsViewMode && this.selectLyricsViewMode.value !== valid) {
       this.selectLyricsViewMode.value = valid;
     }
+    CustomDropdown.sync(this.selectLyricsViewMode);
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_view_mode', valid); } catch (e) {}
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
-    if (valid === 'sheet') {
-      if (this.lyricsScrollWrap) this.lyricsScrollWrap.style.transform = 'none';
-    } else {
-      if (this.lyricsViewport) this.lyricsViewport.scrollTop = 0;
-      requestAnimationFrame(() => {
-        this._measureLyricPositions();
-        this.syncLyrics(this.player ? this.player.currentTime : 0, true);
-      });
-    }
+    requestAnimationFrame(() => {
+      this._measureLyricPositions();
+      this.syncLyrics(this.player ? this.player.currentTime : 0, true, false);
+    });
   }
 
   setLyricsFontSize(sizeKey, persist = true) {
@@ -6027,15 +6105,14 @@ class LyricsApp {
     if (this.selectLyricsFontSize && this.selectLyricsFontSize.value !== valid) {
       this.selectLyricsFontSize.value = valid;
     }
+    CustomDropdown.sync(this.selectLyricsFontSize);
     if (persist) {
       try { localStorage.setItem('ethio_lyrics_font_size', valid); } catch (e) {}
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
     requestAnimationFrame(() => {
       this._measureLyricPositions();
-      if (!this.appEl?.classList.contains('lyrics-mode-sheet')) {
-        this.syncLyrics(this.player ? this.player.currentTime : 0, true);
-      }
+      this.syncLyrics(this.player ? this.player.currentTime : 0, true, false);
     });
   }
 
@@ -6052,11 +6129,28 @@ class LyricsApp {
     }
   }
 
+  _syncPlayerDockMode() {
+    if (!this.playerBarDock) return;
+    const isBrowseTab = this.currentView !== 'lyrics';
+    const shouldMini = Boolean(this._compactDockEnabled && isBrowseTab);
+    this.playerBarDock.classList.toggle('is-collapsed', shouldMini);
+    if (this.appEl) this.appEl.classList.toggle('dock-is-mini', shouldMini);
+    if (this.btnDockCollapse) {
+      this.btnDockCollapse.title = shouldMini ? 'Expand Player Controls' : 'Minimize Player';
+    }
+  }
+
   initPlayerAutoCollapse() {
-    let enabled = false;
+    let enabled = typeof window !== 'undefined' ? window.innerWidth <= 820 : false;
     try {
-      const saved = localStorage.getItem('ethio_player_compact_dock');
-      if (saved !== null) enabled = saved === '1';
+      const saved = localStorage.getItem('ethio_player_mini_browse');
+      if (saved !== null) {
+        enabled = saved === '1';
+      } else {
+        const legacy = localStorage.getItem('ethio_player_compact_dock');
+        if (legacy !== null) enabled = legacy === '1';
+      }
+      localStorage.removeItem('ethio_player_dock_collapsed');
     } catch (e) {}
     this._compactDockEnabled = enabled;
     this._autoCollapseEnabled = enabled;
@@ -6068,9 +6162,7 @@ class LyricsApp {
       });
     }
 
-    if (this.playerBarDock) {
-      this.playerBarDock.classList.toggle('is-collapsed', Boolean(enabled && this.currentView !== 'lyrics'));
-    }
+    this._syncPlayerDockMode();
   }
 
   applyPlayerAutoCollapseSetting(enabled, persist = true) {
@@ -6080,19 +6172,10 @@ class LyricsApp {
       this.toggleAutoCollapsePlayer.checked = this._compactDockEnabled;
     }
     if (persist) {
-      try { localStorage.setItem('ethio_player_compact_dock', this._compactDockEnabled ? '1' : '0'); } catch (err) {}
+      try { localStorage.setItem('ethio_player_mini_browse', this._compactDockEnabled ? '1' : '0'); } catch (err) {}
       if (this.currentUser) this.pushCloudSyncDebounced();
     }
-    if (this.playerBarDock) {
-      this.playerBarDock.classList.toggle('is-collapsed', Boolean(this._compactDockEnabled && this.currentView !== 'lyrics'));
-    }
-  }
-
-  resetPlayerAutoCollapseTimer() {
-    if (this._autoCollapseTimer) {
-      clearTimeout(this._autoCollapseTimer);
-      this._autoCollapseTimer = null;
-    }
+    this._syncPlayerDockMode();
   }
 
   initThemeSystem() {
@@ -6448,7 +6531,7 @@ class LyricsApp {
     }
     if (typeof remote.playerAutoCollapse === 'boolean') {
       this.applyPlayerAutoCollapseSetting(remote.playerAutoCollapse, false);
-      try { localStorage.setItem('ethio_player_auto_collapse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('ethio_player_mini_browse', remote.playerAutoCollapse ? '1' : '0'); } catch (e) {}
     }
   }
 
@@ -6749,6 +6832,7 @@ class LyricsApp {
     }
 
     this.editSongReviewModal.classList.add('active');
+    CustomDropdown.syncAll();
   }
 
   populateEditReviewArtistPicker(selectedArtistId = '', fallbackName = '', fallbackNameEn = '') {

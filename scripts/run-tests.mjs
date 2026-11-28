@@ -58,6 +58,8 @@ async function run() {
   assert.ok(css.includes('.app-dialog-card'), 'Missing .app-dialog-card CSS rule');
   assert.ok(css.includes('.track-menu-surface'), 'Missing .track-menu-surface CSS rule');
   assert.ok(css.includes('.lyrics-stage-quickbar'), 'Missing .lyrics-stage-quickbar CSS rule');
+  assert.ok(css.includes('.elm-dropdown-menu'), 'Missing .elm-dropdown-menu CSS rule');
+  assert.ok(css.includes('.lyrics-stage-col'), 'Missing .lyrics-stage-col CSS rule');
   assert.ok(css.includes('.lyric-share-card-modal'), 'Missing .lyric-share-card-modal CSS rule');
   assert.ok(css.includes('.playlist-cover-mosaic'), 'Missing .playlist-cover-mosaic CSS rule');
   assert.ok(!fs.existsSync(path.join(ROOT, 'assets/abinet_portrait.jpg')), 'Duplicate abinet_portrait.jpg should be removed');
