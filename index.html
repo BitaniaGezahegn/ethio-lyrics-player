@@ -89,6 +89,7 @@
 
       <!-- Desktop Navigation Tabs (Hidden on Mobile) -->
       <nav class="desktop-nav-tabs">
+        <span class="nav-glass-indicator" aria-hidden="true"></span>
         <button class="nav-tab-btn active" data-tab="home">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -223,27 +224,6 @@
               <span class="dna-stat-val" id="dnaStatFavs">0</span>
               <span class="dna-stat-lbl">Favorites</span>
             </div>
-          </div>
-        </div>
-
-        <!-- 1. 2-Column Search & Filter Bar -->
-        <div class="home-search-filter-container">
-          <div class="home-search-input-wrap">
-            <svg class="home-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <input type="text" id="inputHomeSearch" class="home-search-input"
-              placeholder="Search songs, artists, or lyrics...">
-            <button id="btnClearHomeSearch" class="btn-clear-search" style="display:none;" title="Clear search">&times;</button>
-          </div>
-          <div class="home-filter-select-wrap">
-            <select id="selectHomeFilter" class="home-filter-select" title="Filter Home Catalog" aria-label="Filter music"
-              data-dropdown-align="right"
-              data-dropdown-icon='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>'>
-              <option value="all">All Music</option>
-            </select>
           </div>
         </div>
 
@@ -540,19 +520,6 @@
                 </svg>
                 <span>Saved Offline</span>
               </button>
-            </div>
-
-            <!-- Search Bar in Library (Global & Offline) -->
-            <div class="library-search-bar" id="catalogSearchWrap">
-              <div class="home-search-input-wrap">
-                <svg class="home-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.3-4.3" />
-                </svg>
-                <input type="text" id="inputCatalogSearch" class="home-search-input"
-                  placeholder="Search songs, artists, or albums...">
-              </div>
             </div>
 
             <!-- Global Public Catalog Container -->
@@ -1703,6 +1670,7 @@
 
     <!-- Mobile Bottom Navigation Bar (Fixed at bottom on phones) -->
     <nav class="mobile-bottom-nav">
+      <span class="nav-glass-indicator" aria-hidden="true"></span>
       <button class="bottom-nav-item active" data-tab="home">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">

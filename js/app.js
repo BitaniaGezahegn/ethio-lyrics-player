@@ -461,9 +461,9 @@ class LyricsApp {
     this.heroDurationBadge = document.getElementById('heroDurationBadge');
     this.heroLrcBadge = document.getElementById('heroLrcBadge');
 
-    this.selectHomeFilter = document.getElementById('selectHomeFilter');
-    this.inputHomeSearch = document.getElementById('inputHomeSearch');
-    this.btnClearHomeSearch = document.getElementById('btnClearHomeSearch');
+    this.selectHomeFilter = null;
+    this.inputHomeSearch = null;
+    this.btnClearHomeSearch = null;
     this.sectionJumpBackIn = document.getElementById('sectionJumpBackIn');
     this.gridJumpBackIn = document.getElementById('gridJumpBackIn');
     this.btnViewMoreJumpBackIn = document.getElementById('btnViewMoreJumpBackIn');
@@ -612,7 +612,7 @@ class LyricsApp {
 
     // Playlists & Queue Elements
     this.tabPlaylists = document.getElementById('tabPlaylists');
-    this.catalogSearchWrap = document.getElementById('catalogSearchWrap');
+    this.catalogSearchWrap = null;
     this.playlistsContainer = document.getElementById('playlistsContainer');
     this.playlistsGrid = document.getElementById('playlistsGrid');
     this.btnOpenCreatePlaylistModal = document.getElementById('btnOpenCreatePlaylistModal');
@@ -727,7 +727,7 @@ class LyricsApp {
     this.btnAlbumShuffle = document.getElementById('btnAlbumShuffle');
     this.albumTracksList = document.getElementById('albumTracksList');
     this.localTracksList = document.getElementById('localTracksList');
-    this.inputCatalogSearch = document.getElementById('inputCatalogSearch');
+    this.inputCatalogSearch = null;
 
     // Cover Artwork Form Elements
     this.coverPreviewBox = document.getElementById('coverPreviewBox');
@@ -953,7 +953,7 @@ class LyricsApp {
       this.appEl.classList.toggle('tab-lyrics-active', tabId === 'lyrics');
     }
 
-    // Toggle active class on navigation tabs (desktop and mobile)
+    // Toggle active class on navigation tabs (desktop and mobile) & slide glass indicator
     document.querySelectorAll('.desktop-nav-tabs .nav-tab-btn, .mobile-bottom-nav .bottom-nav-item').forEach(btn => {
       if (btn.getAttribute('data-tab') === tabId) {
         btn.classList.add('active');
@@ -961,6 +961,7 @@ class LyricsApp {
         btn.classList.remove('active');
       }
     });
+    this._updateNavGlassIndicators(false);
 
     // Toggle Tab Views
     const tabMap = {
@@ -1020,6 +1021,31 @@ class LyricsApp {
       const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || (this.appEl && this.appEl.classList.contains('is-fullscreen')));
       this.tiktokWatermark.style.display = (isFs && tabId === 'lyrics') ? 'block' : 'none';
     }
+  }
+
+  _updateNavGlassIndicators(instant = false) {
+    const syncContainer = (navSel, btnSel) => {
+      const nav = document.querySelector(navSel);
+      if (!nav) return;
+      const indicator = nav.querySelector('.nav-glass-indicator');
+      const activeBtn = nav.querySelector(btnSel);
+      if (!indicator || !activeBtn) return;
+      const w = activeBtn.offsetWidth;
+      const x = activeBtn.offsetLeft;
+      if (w <= 0) return;
+      if (instant) indicator.classList.add('is-instant');
+      indicator.style.width = `${w}px`;
+      indicator.style.transform = `translate3d(${x}px, 0, 0)`;
+      indicator.style.opacity = '1';
+      if (instant) {
+        indicator.offsetWidth;
+        indicator.classList.remove('is-instant');
+      }
+    };
+    requestAnimationFrame(() => {
+      syncContainer('.desktop-nav-tabs', '.nav-tab-btn.active');
+      syncContainer('.mobile-bottom-nav', '.bottom-nav-item.active');
+    });
   }
 
   switchView(viewName) {
@@ -1115,6 +1141,10 @@ class LyricsApp {
   }
 
   initEvents() {
+    // Initialize sliding nav glass indicators on load & resize
+    this._updateNavGlassIndicators(true);
+    window.addEventListener('resize', () => this._updateNavGlassIndicators(true), { passive: true });
+
     // Tab Navigation (Desktop & Mobile-First)
     document.querySelectorAll('[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -3336,45 +3366,8 @@ class LyricsApp {
     return /\bpop\b|afropop|ethiopop|modern pop/.test(text);
   }
 
-  renderHomeFilterChips(uniquePool = []) {
-    if (!this.selectHomeFilter) return;
-    const pool = Array.isArray(uniquePool) ? uniquePool : [];
-    const catalog = Array.isArray(this.publicTracks) ? this.publicTracks : [];
-    const favIds = this.favorites || [];
-    const recentIds = this.recentlyPlayed || [];
-
-    const hasLrc = catalog.some(t => t && t.lrc && t.lrc.trim().length > 10);
-    const hasClassic = catalog.some(t => this._matchesClassicTrack(t));
-    const hasPop = catalog.some(t => this._matchesPopTrack(t));
-    const hasFavs = catalog.some(t => favIds.includes(t.id));
-    const hasRecent = catalog.some(t => recentIds.includes(t.id));
-    const hasOffline = Array.isArray(this.tracks) && this.tracks.length > 0;
-    const hasSuggested = pool.length >= 2 && (hasFavs || hasRecent || hasLrc);
-
-    const chips = [
-      { id: 'all', label: 'All Music' },
-      hasSuggested ? { id: 'suggested', label: 'Made For You' } : null,
-      hasLrc ? { id: 'lrc', label: 'Synced Lyrics' } : null,
-      hasClassic ? { id: 'classic', label: 'Classics' } : null,
-      hasPop ? { id: 'pop', label: 'Modern Pop' } : null,
-      hasFavs ? { id: 'favorites', label: 'Favorites' } : null,
-      hasRecent ? { id: 'recent', label: 'Recently Played' } : null,
-      hasOffline ? { id: 'offline', label: 'Offline Ready' } : null
-    ].filter(Boolean);
-
-    if (!chips.some(c => c.id === this.activeFilter)) {
-      this.activeFilter = 'all';
-    }
-
-    const sig = chips.map(c => `${c.id}:${c.label}`).join('|');
-    if (this._lastFilterOptionsSig !== sig) {
-      this._lastFilterOptionsSig = sig;
-      this.selectHomeFilter.innerHTML = chips.map(c =>
-        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.label)}</option>`
-      ).join('');
-    }
-    this.selectHomeFilter.value = this.activeFilter;
-    CustomDropdown.sync(this.selectHomeFilter);
+  renderHomeFilterChips() {
+    this.activeFilter = 'all';
   }
 
   renderJumpBackInGrid(jumpTracks) {
@@ -3830,12 +3823,14 @@ class LyricsApp {
     }, { passive: true });
     this.lyricsViewport.addEventListener('touchmove', onUserScrollIntent, { passive: true });
 
-    let browseRaf = null;
+    this._browseScrollRaf = null;
     this.lyricsViewport.addEventListener('scroll', () => {
       if (performance.now() < (this._programmaticScrollUntil || 0)) return;
       if (!this.parsedLyrics || this.parsedLyrics.length === 0) return;
-      if (browseRaf) cancelAnimationFrame(browseRaf);
-      browseRaf = requestAnimationFrame(() => {
+      if (this._browseScrollRaf) cancelAnimationFrame(this._browseScrollRaf);
+      this._browseScrollRaf = requestAnimationFrame(() => {
+        this._browseScrollRaf = null;
+        if (performance.now() < (this._programmaticScrollUntil || 0)) return;
         enterManualBrowse();
       });
     }, { passive: true });
@@ -3881,6 +3876,11 @@ class LyricsApp {
 
   _resumeLyricsAutoSync() {
     this._manualScrollActive = false;
+    if (this._browseScrollRaf) {
+      cancelAnimationFrame(this._browseScrollRaf);
+      this._browseScrollRaf = null;
+    }
+    this._programmaticScrollUntil = performance.now() + 1500;
     if (this.lyricsViewport) this.lyricsViewport.classList.remove('is-manual-browse');
     if (this.lyricsScrollWrap) {
       this.lyricsScrollWrap.classList.remove('is-manual-browse');
@@ -3892,6 +3892,7 @@ class LyricsApp {
       this.btnLyricsResumeSync.style.display = 'none';
       this.btnLyricsResumeSync.classList.remove('point-up');
     }
+    this._measureLyricPositions();
     this.syncLyrics(this.player ? this.player.currentTime : 0, true, true);
   }
 
@@ -4105,8 +4106,9 @@ class LyricsApp {
         top: lines[targetIdx] ? lines[targetIdx].offsetTop : 0,
         height: lines[targetIdx] ? (lines[targetIdx].offsetHeight || 48) : 48
       };
-      const targetTop = Math.max(0, resolvedPos.top - (wrapHeight / 2) + (resolvedPos.height / 2));
-      this._programmaticScrollUntil = performance.now() + (smoothScroll ? 600 : 120);
+      const maxScrollTop = Math.max(0, (this.lyricsViewport.scrollHeight || 0) - wrapHeight);
+      const targetTop = Math.max(0, Math.min(maxScrollTop, resolvedPos.top - (wrapHeight / 2) + (resolvedPos.height / 2)));
+      this._programmaticScrollUntil = performance.now() + (smoothScroll ? 1200 : 180);
       this.lyricsViewport.scrollTo({
         top: targetTop,
         behavior: (smoothScroll && !this.isPerfLite) ? 'smooth' : 'auto'
@@ -5715,6 +5717,7 @@ class LyricsApp {
         if (indicator && allowRefresh) {
           indicator.classList.add('dragging');
           const pullDist = Math.min(82, dy * 0.45);
+          indicator.classList.toggle('is-ready', pullDist >= threshold);
           indicator.style.transform = `translateX(-50%) translateY(${pullDist - 65}px)`;
           indicator.style.opacity = Math.min(1, pullDist / 38);
           if (pullDist >= threshold) {
@@ -5734,7 +5737,7 @@ class LyricsApp {
         overscrollOffset = 0;
         applyTabOffset(activeScrollTab, 0, false);
         if (indicator) {
-          indicator.classList.remove('dragging');
+          indicator.classList.remove('dragging', 'is-ready');
           indicator.style.opacity = '0';
           indicator.style.transform = 'translateX(-50%) translateY(-65px)';
         }
@@ -5777,6 +5780,7 @@ class LyricsApp {
         }
 
         setTimeout(() => {
+          indicator.classList.remove('is-ready');
           indicator.style.transform = 'translateX(-50%) translateY(-65px)';
           indicator.style.opacity = '0';
           if (ptrSpinner) {
@@ -5787,6 +5791,7 @@ class LyricsApp {
           isRefreshing = false;
         }, 500);
       } else {
+        indicator.classList.remove('is-ready');
         indicator.style.transform = 'translateX(-50%) translateY(-65px)';
         indicator.style.opacity = '0';
       }
